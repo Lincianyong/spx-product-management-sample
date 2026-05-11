@@ -9,6 +9,7 @@ import { SortableList, DragHandle } from "@/components/SortableList";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { toast } from "@/components/ui";
 import type { Ticket } from "@/lib/types";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function MyWorkPage() {
   const tickets = useAppStore((s) => s.tickets);
@@ -16,6 +17,8 @@ export default function MyWorkPage() {
   const setPersonalRanks = useAppStore((s) => s.setPersonalRanks);
   const user = useCurrentUser();
   const [openKey, setOpenKey] = useState<string | null>(null);
+
+  useDocumentTitle(user ? `My Work · ${user.displayName}` : "My Work");
 
   if (!user) return null;
 

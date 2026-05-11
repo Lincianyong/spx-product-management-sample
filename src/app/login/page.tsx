@@ -7,8 +7,11 @@ import { authenticate, mockAccounts } from "@/lib/auth";
 import { useAppStore } from "@/lib/store";
 import { landingForRole } from "@/lib/utils";
 import { seedUsers } from "@/lib/mock-data";
+import { SpxLogo } from "@/components/SpxLogo";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function LoginPage() {
+  useDocumentTitle("Sign in");
   const router = useRouter();
   const signIn = useAppStore((s) => s.signIn);
   const hydrated = useAppStore((s) => s.hydrated);
@@ -48,9 +51,11 @@ export default function LoginPage() {
       {/* Editorial left */}
       <section className="hidden lg:flex flex-col justify-between w-1/2 bg-bg-elevated p-16 border-r border-rule">
         <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 flex items-center gap-3">
+          <SpxLogo size="md" showExpress />
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 flex items-center gap-3 mt-4">
             <span className="block w-8 h-px bg-rule" />
-            <span>SPX Express · AI Eng</span>
+            <span className="display italic text-ink text-[15px] normal-case tracking-normal">Cadence</span>
+            <span>· AI Engineering</span>
           </div>
           <h1 className="display text-display-l text-ink mt-10 leading-[1.05]">
             Plan with <span className="text-accent">conviction</span>.

@@ -10,6 +10,7 @@ import { CommentComposer } from "@/components/comments/CommentComposer";
 import { Markdown } from "@/components/Markdown";
 import { computeEpicHealth } from "@/lib/health";
 import { Tombstone } from "@/components/Tombstone";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function EpicDetailPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
@@ -24,6 +25,7 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
   const [tab, setTab] = useState<"overview" | "projects" | "timeline" | "activity" | "comments">("overview");
 
   const epic = epics.find((e) => e.key === key);
+  useDocumentTitle(epic ? `${epic.key} · ${epic.title}` : `${key} · Epic not found`);
   if (!epic) {
     return <Tombstone kind="epic" keyOrHandle={key} />;
   }

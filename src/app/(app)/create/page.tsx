@@ -7,6 +7,7 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import { AiTag, Button, Input, Textarea, Pill, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { TicketType } from "@/lib/types";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const MODES = [
   { id: "quick", label: "Quick", hint: "Title + parent + type. ~30 seconds." },
@@ -60,6 +61,9 @@ export default function CreatePage() {
 function CreatePageInner() {
   const params = useSearchParams();
   const initialType = (params.get("type") as TicketType | null) ?? "engineering";
+  useDocumentTitle(
+    initialType === "tech_task" ? "New Tech Task" : initialType === "bug" ? "New Bug" : "New Ticket"
+  );
   const [mode, setMode] = useState<(typeof MODES)[number]["id"]>("full");
 
   return (

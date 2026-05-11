@@ -5,6 +5,7 @@ import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Pill, PriorityPill, TypePill, Button } from "@/components/ui";
 import { cn, statusLabel, relativeTime } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const STATUS_VARIANT: Record<string, "default" | "ok" | "warn" | "danger" | "ai"> = {
   triage: "warn",
@@ -21,6 +22,7 @@ const STATUS_VARIANT: Record<string, "default" | "ok" | "warn" | "danger" | "ai"
 };
 
 export default function MyBugsPage() {
+  useDocumentTitle("My Bugs");
   const tickets = useAppStore((s) => s.tickets);
   const user = useCurrentUser();
 

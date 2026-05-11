@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { RealtimeSimToggle } from "@/components/RealtimeSim";
+import { SpxLogo } from "@/components/SpxLogo";
 
 interface NavItem {
   label: string;
@@ -81,11 +82,11 @@ export function Sidebar() {
       {/* Brand */}
       <div className="px-5 pt-6 pb-5 border-b border-rule-soft">
         <Link href="/" className="block">
-          <div className="display text-[26px] leading-none text-ink">Cadence</div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] mt-1.5 flex items-center gap-2">
+          <SpxLogo size="sm" showExpress />
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-2 flex items-center gap-2">
             <span className="block w-4 h-px bg-rule" />
-            <span className="text-[#EE4D2D] font-semibold">SPX</span>
-            <span className="text-ink-3">Express · AI Eng</span>
+            <span className="display italic text-ink text-[14px] leading-none normal-case tracking-normal">Cadence</span>
+            <span>· AI Eng</span>
           </div>
         </Link>
       </div>

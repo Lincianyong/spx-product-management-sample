@@ -8,6 +8,7 @@ import { Avatar, HealthPill, Pill, RolePill } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { cn, formatDate, podLabel, relativeTime, roleLabel } from "@/lib/utils";
 import { Tombstone } from "@/components/Tombstone";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function ProfilePage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = use(params);
@@ -17,6 +18,7 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
   const sprints = useAppStore((s) => s.sprints);
 
   const user = users.find((u) => u.handle === handle);
+  useDocumentTitle(user ? `${user.displayName} · @${user.handle}` : `@${handle} · Not found`);
   if (!user) {
     return <Tombstone kind="user" keyOrHandle={`@${handle}`} />;
   }

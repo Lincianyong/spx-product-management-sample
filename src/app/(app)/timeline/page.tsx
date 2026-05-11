@@ -7,10 +7,12 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, HealthPill, toast } from "@/components/ui";
 import { cn, formatDate } from "@/lib/utils";
 import type { Epic } from "@/lib/types";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 type Zoom = "week" | "month" | "quarter";
 
 export default function TimelinePage() {
+  useDocumentTitle("Timeline");
   const epics = useAppStore((s) => s.epics);
   const projects = useAppStore((s) => s.projects);
   const users = useAppStore((s) => s.users);

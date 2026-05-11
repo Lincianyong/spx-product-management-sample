@@ -7,6 +7,7 @@ import { useAppStore } from "@/lib/store";
 import { Avatar, Pill, SlideOver } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const WEEKS = 12;
 
@@ -26,6 +27,7 @@ function endOfWeek(start: Date) {
 }
 
 export default function HeatmapPage() {
+  useDocumentTitle("Workload Heatmap");
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const [podFilter, setPodFilter] = useState<string>("all");

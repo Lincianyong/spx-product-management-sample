@@ -6,6 +6,7 @@ import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, Pill, Button, toast } from "@/components/ui";
 import { cn, relativeTime } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const KIND_LABEL: Record<string, string> = {
   mention: "Mention",
@@ -24,6 +25,7 @@ const KIND_LABEL: Record<string, string> = {
 const SLA: Record<string, number> = { P0: 4, P1: 24, P2: 168 };
 
 export default function NotificationsPage() {
+  useDocumentTitle("Notifications");
   const notifications = useAppStore((s) => s.notifications);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);

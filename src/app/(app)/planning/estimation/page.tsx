@@ -7,10 +7,12 @@ import { PlanningNav } from "@/components/PlanningNav";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { AiTag, Button, Pill, PriorityPill, TypePill, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const CONCERN_FLAGS = ["no repro", "needs decomposition", "blocked", "spike first"];
 
 export default function EstimationPage() {
+  useDocumentTitle("Estimation · Stage 4b");
   const tickets = useAppStore((s) => s.tickets);
   const projects = useAppStore((s) => s.projects);
   const setTicketField = useAppStore((s) => s.setTicketField);

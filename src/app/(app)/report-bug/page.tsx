@@ -4,8 +4,10 @@ import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button, Input, Textarea, Pill, toast } from "@/components/ui";
 import { useCurrentUser } from "@/lib/store";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function ReportBugPage() {
+  useDocumentTitle("Report Bug");
   const user = useCurrentUser();
   const [title, setTitle] = useState("");
   const [repro, setRepro] = useState("");

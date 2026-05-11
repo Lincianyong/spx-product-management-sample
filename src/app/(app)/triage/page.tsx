@@ -6,6 +6,7 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, Button, Pill, PriorityPill, TypePill, AiTag, toast } from "@/components/ui";
 import { Modal, Textarea } from "@/components/ui";
 import { cn, relativeTime } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const SLA: Record<string, number> = { P0: 4, P1: 24, P2: 168 };
 
@@ -30,6 +31,8 @@ export default function TriagePage() {
     () => tickets.filter((t) => t.status === "triage" || t.status === "reproduced"),
     [tickets]
   );
+
+  useDocumentTitle(triage.length > 0 ? `Triage (${triage.length})` : "Triage");
 
   const toggleSelect = (id: string) =>
     setSelected((prev) => {

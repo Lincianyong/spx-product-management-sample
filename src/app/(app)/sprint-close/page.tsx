@@ -7,8 +7,10 @@ import { Avatar, Button, Pill, toast } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function SprintClosePage() {
+  useDocumentTitle("Sprint Close · Retro");
   const sprints = useAppStore((s) => s.sprints);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);

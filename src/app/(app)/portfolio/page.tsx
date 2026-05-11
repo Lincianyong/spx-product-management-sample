@@ -5,8 +5,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
 import { Avatar, HealthPill, Pill } from "@/components/ui";
 import { cn, formatDate, healthLabel } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function PortfolioPage() {
+  useDocumentTitle("Portfolio Health");
   const epics = useAppStore((s) => s.epics);
   const projects = useAppStore((s) => s.projects);
   const tickets = useAppStore((s) => s.tickets);

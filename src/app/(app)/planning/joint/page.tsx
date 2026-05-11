@@ -8,8 +8,10 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import { AiTag, Avatar, Button, Pill, PriorityPill, TypePill, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function JointPlanningPage() {
+  useDocumentTitle("Joint Planning · Stage 4c");
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const sprints = useAppStore((s) => s.sprints);

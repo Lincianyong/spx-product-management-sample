@@ -11,6 +11,7 @@ import { toast } from "@/components/ui";
 import type { TicketStatus, Ticket } from "@/lib/types";
 import { STATUS_TRANSITIONS, TRANSITIONS_REQUIRING_CONFIRM } from "@/lib/types";
 import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 interface Column {
   status: TicketStatus;
@@ -35,6 +36,8 @@ export default function SprintBoardPage() {
   const viewingSprint = selectedSprintId
     ? sprints.find((s) => s.id === selectedSprintId) ?? activeSprint
     : activeSprint;
+
+  useDocumentTitle(viewingSprint ? `Sprint Board · ${viewingSprint.key}` : "Sprint Board");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 

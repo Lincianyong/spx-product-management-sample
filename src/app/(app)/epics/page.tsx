@@ -8,6 +8,7 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, HealthPill, Pill, Button, Modal, Input, toast } from "@/components/ui";
 import { cn, healthLabel, formatDate } from "@/lib/utils";
 import type { Epic, Health } from "@/lib/types";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
@@ -22,6 +23,7 @@ export default function EpicBoardPage() {
 }
 
 function EpicBoardInner() {
+  useDocumentTitle("Epic Board");
   const router = useRouter();
   const params = useSearchParams();
   const epics = useAppStore((s) => s.epics);

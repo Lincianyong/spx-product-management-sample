@@ -10,6 +10,7 @@ import { Markdown } from "@/components/Markdown";
 import { cn, formatDate, statusLabel } from "@/lib/utils";
 import { computeProjectHealth } from "@/lib/health";
 import { Tombstone } from "@/components/Tombstone";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
@@ -21,6 +22,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ key: s
   const [openKey, setOpenKey] = useState<string | null>(null);
 
   const project = projects.find((p) => p.key === key);
+  useDocumentTitle(project ? `${project.key} · ${project.title}` : `${key} · Project not found`);
   if (!project) {
     return <Tombstone kind="project" keyOrHandle={key} />;
   }

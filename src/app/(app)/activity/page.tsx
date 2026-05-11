@@ -6,8 +6,10 @@ import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
 import { Avatar, Pill } from "@/components/ui";
 import { cn, relativeTime } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function ActivityPage() {
+  useDocumentTitle("Activity Log");
   const activity = useAppStore((s) => s.activity);
   const users = useAppStore((s) => s.users);
   const tickets = useAppStore((s) => s.tickets);

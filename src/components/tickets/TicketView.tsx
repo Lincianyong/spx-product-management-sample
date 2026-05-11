@@ -13,6 +13,7 @@ import { LinkedWorkGraph } from "@/components/tickets/LinkedWorkGraph";
 import { CopyLinkButton } from "@/components/CopyLinkMenu";
 import { ContextMenu, useContextMenu } from "@/components/ui";
 import { Tombstone } from "@/components/Tombstone";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 interface Props {
   ticketKey: string;
@@ -44,6 +45,15 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
   const [acCommentFor, setAcCommentFor] = useState<string | null>(null);
 
   const ticket = tickets.find((t) => t.key === ticketKey);
+
+  useDocumentTitle(
+    variant === "page"
+      ? ticket
+        ? `${ticket.key} · ${ticket.title}`
+        : `${ticketKey} · Not found`
+      : null
+  );
+
   if (!ticket) {
     return <Tombstone kind="ticket" keyOrHandle={ticketKey} reason="not_found" />;
   }

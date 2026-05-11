@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Button, Pill, RolePill, Modal, Input, Textarea, toast } from "@/components/ui";
 import { cn, roleLabel } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const TABS = ["workspace", "sso", "roles", "integrations", "automations", "notifications"] as const;
 type Tab = (typeof TABS)[number];
@@ -57,6 +58,7 @@ const INITIAL_AUTOMATIONS: Automation[] = [
 ];
 
 export default function SettingsPage() {
+  useDocumentTitle("Settings");
   const user = useCurrentUser();
   const resetMockData = useAppStore((s) => s.resetMockData);
   const [tab, setTab] = useState<Tab>("workspace");

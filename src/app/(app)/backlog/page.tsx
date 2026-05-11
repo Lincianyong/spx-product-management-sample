@@ -7,12 +7,14 @@ import { useAppStore } from "@/lib/store";
 import { Pill, PriorityPill, TypePill, toast } from "@/components/ui";
 import { SortableList, DragHandle } from "@/components/SortableList";
 import { cn, daysBetween, formatDate } from "@/lib/utils";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function BacklogPage() {
   const tickets = useAppStore((s) => s.tickets);
   const projects = useAppStore((s) => s.projects);
   const setBacklogRanks = useAppStore((s) => s.setBacklogRanks);
   const [projectFilter, setProjectFilter] = useState<string>("all");
+  useDocumentTitle("Backlog");
 
   const backlog = useMemo(() => {
     const base = tickets.filter((t) => t.status === "backlog");

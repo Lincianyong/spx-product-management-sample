@@ -9,8 +9,10 @@ import { Avatar, Button, Pill, PriorityPill, TypePill, toast } from "@/component
 import { SortableList, DragHandle } from "@/components/SortableList";
 import { cn, formatDate } from "@/lib/utils";
 import type { Ticket } from "@/lib/types";
+import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function PicklistPage() {
+  useDocumentTitle("Picklist · Stage 4a");
   const tickets = useAppStore((s) => s.tickets);
   const projects = useAppStore((s) => s.projects);
   const users = useAppStore((s) => s.users);
