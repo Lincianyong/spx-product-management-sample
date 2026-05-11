@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
@@ -14,6 +14,14 @@ type View = (typeof VIEWS)[number];
 type GroupBy = "health" | "quarter" | "pic";
 
 export default function EpicBoardPage() {
+  return (
+    <Suspense fallback={<div className="text-[13px] text-ink-3">Loading…</div>}>
+      <EpicBoardInner />
+    </Suspense>
+  );
+}
+
+function EpicBoardInner() {
   const router = useRouter();
   const params = useSearchParams();
   const epics = useAppStore((s) => s.epics);

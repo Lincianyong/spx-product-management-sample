@@ -2,15 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
-import { Pill, toast } from "@/components/ui";
+import { toast } from "@/components/ui";
 import { statusLabel } from "@/lib/utils";
-
-// Simulated "other user activity" — picks a random in-flight ticket every 30-90s
-// and applies a non-destructive change (status flash, comment, mention).
 
 const STORAGE_KEY = "cadence:realtime-sim";
 
-export function RealtimeSim() {
+function useRealtimeSim() {
   const flashTicket = useAppStore((s) => s.flashTicket);
   const [enabled, setEnabled] = useState(false);
 
@@ -39,7 +36,6 @@ export function RealtimeSim() {
         `${actor?.displayName ?? "Someone"} touched ${pick.key} · ${statusLabel[pick.status]}`,
         { kind: "info", ttl: 3500 }
       );
-      // Schedule next tick
       const next = 30000 + Math.random() * 60000;
       timer = window.setTimeout(tick, next);
     };
@@ -56,6 +52,28 @@ export function RealtimeSim() {
     toast(next ? "Realtime sim on — expect random card flashes" : "Realtime sim off", { kind: "info" });
   };
 
+  return { enabled, toggle };
+}
+
+/** Sidebar-bottom variant — full-width row with label + dot indicator. */
+export function RealtimeSimToggle() {
+  const { enabled, toggle } = useRealtimeSim();
+  return (
+    <button
+      onClick={toggle}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-[6px] text-[12px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink hover:bg-rule-soft transition-colors duration-100"
+      title="Toggle realtime simulation — fires occasional card flashes simulating other users"
+    >
+      <span className={`w-2 h-2 rounded-full ${enabled ? "bg-ok animate-pulse" : "bg-rule"}`} />
+      <span className="flex-1 text-left">Realtime sim</span>
+      <span className="text-ink-4">{enabled ? "on" : "off"}</span>
+    </button>
+  );
+}
+
+/** Backwards-compat: the old floating pill. No longer mounted but kept for completeness. */
+export function RealtimeSim() {
+  const { enabled, toggle } = useRealtimeSim();
   return (
     <button
       onClick={toggle}

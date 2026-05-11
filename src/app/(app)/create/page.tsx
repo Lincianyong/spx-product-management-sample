@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { AiTag, Button, Input, Textarea, Pill, toast } from "@/components/ui";
@@ -50,12 +50,22 @@ const SLASH_COMMANDS = [
 const DRAFT_KEY = "cadence:create-draft";
 
 export default function CreatePage() {
+  return (
+    <Suspense fallback={<div className="text-[13px] text-ink-3">Loading…</div>}>
+      <CreatePageInner />
+    </Suspense>
+  );
+}
+
+function CreatePageInner() {
+  const params = useSearchParams();
+  const initialType = (params.get("type") as TicketType | null) ?? "engineering";
   const [mode, setMode] = useState<(typeof MODES)[number]["id"]>("full");
 
   return (
     <div>
       <PageHeader
-        eyebrow="S-01 · Create Ticket"
+        eyebrow={`S-01 · Create Ticket${initialType !== "engineering" ? ` · ${initialType === "bug" ? "Bug" : "Tech Task"}` : ""}`}
         title={
           <>
             Capture <em className="text-accent">cleanly</em>. Triage later.
@@ -80,20 +90,20 @@ export default function CreatePage() {
         ))}
       </div>
 
-      {mode === "quick" && <QuickForm />}
-      {mode === "full" && <FullForm />}
+      {mode === "quick" && <QuickForm initialType={initialType} />}
+      {mode === "full" && <FullForm initialType={initialType} />}
       {mode === "bulk" && <BulkForm />}
     </div>
   );
 }
 
-function QuickForm() {
+function QuickForm({ initialType = "engineering" }: { initialType?: TicketType }) {
   const router = useRouter();
   const projects = useAppStore((s) => s.projects);
   const user = useCurrentUser();
   const [title, setTitle] = useState("");
   const [parent, setParent] = useState("");
-  const [type, setType] = useState<TicketType>("engineering");
+  const [type, setType] = useState<TicketType>(initialType);
 
   const submit = () => {
     if (!title.trim() || !user) return;
@@ -158,7 +168,7 @@ function QuickForm() {
   );
 }
 
-function FullForm() {
+function FullForm({ initialType = "engineering" }: { initialType?: TicketType }) {
   const router = useRouter();
   const projects = useAppStore((s) => s.projects);
   const user = useCurrentUser();
@@ -169,10 +179,29 @@ function FullForm() {
   const [recurring, setRecurring] = useState<"none" | "weekly" | "monthly">("none");
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [parent, setParent] = useState("");
-  const [type, setType] = useState<TicketType>("engineering");
+  const [type, setType] = useState<TicketType>(initialType);
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashAnchor, setSlashAnchor] = useState(0);
   const [hasDraft, setHasDraft] = useState(false);
+
+  // If type changes via the initial query param, auto-apply matching template.
+  useEffect(() => {
+    if (initialType === "tech_task") {
+      const tpl = TEMPLATES.find((t) => t.id === "tpl_tech");
+      if (tpl) {
+        setType("tech_task");
+        setDescription((d) => d || tpl.description);
+        setSubtasks((s) => (s.length ? s : tpl.ac));
+      }
+    } else if (initialType === "bug") {
+      const tpl = TEMPLATES.find((t) => t.id === "tpl_bug");
+      if (tpl) {
+        setType("bug");
+        setDescription((d) => d || tpl.description);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialType]);
 
   // Autosave draft
   useEffect(() => {

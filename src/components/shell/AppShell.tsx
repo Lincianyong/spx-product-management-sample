@@ -4,58 +4,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { landingForRole, cn, roleLabel } from "@/lib/utils";
-import { Avatar, RolePill, Pill } from "@/components/ui";
+import { landingForRole, cn } from "@/lib/utils";
+import { Avatar, RolePill } from "@/components/ui";
 import { ToastViewport, toast } from "@/components/ui";
-import type { Role } from "@/lib/types";
 import { CmdK } from "@/components/CmdK";
 import { QuickCreate } from "@/components/QuickCreate";
 import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 import { AccessDenied } from "@/components/AccessDenied";
 import { pathRequiresCap, can } from "@/lib/permissions";
 import { Onboarding } from "@/components/Onboarding";
-import { RealtimeSim } from "@/components/RealtimeSim";
-
-interface NavItem {
-  label: string;
-  href: string;
-  match?: (p: string) => boolean;
-  badge?: () => number;
-}
-
-function navForRole(role: Role | undefined, triageCount: number, notifCount: number): NavItem[] {
-  if (!role) return [];
-  const base: NavItem[] = [];
-  if (role === "guest") {
-    return [
-      { label: "Report Bug", href: "/report-bug" },
-      { label: "My Bugs", href: "/my-bugs" },
-    ];
-  }
-  if (role === "pm" || role === "admin") {
-    base.push({ label: "Epic Board", href: "/epics" });
-    base.push({ label: "Triage", href: "/triage", badge: () => triageCount });
-    base.push({ label: "Backlog", href: "/backlog" });
-    base.push({ label: "Planning", href: "/planning/picklist" });
-  }
-  if (role === "em") {
-    base.push({ label: "Sprint", href: "/sprint" });
-    base.push({ label: "Heatmap", href: "/heatmap" });
-    base.push({ label: "Planning", href: "/planning/picklist" });
-    base.push({ label: "Epic Board", href: "/epics" });
-  }
-  if (role === "engineer" || role === "designer") {
-    base.push({ label: "My Work", href: "/me" });
-    base.push({ label: "Sprint", href: "/sprint" });
-    base.push({ label: "Epic Board", href: "/epics" });
-  }
-  if (role === "leadership") {
-    base.push({ label: "Portfolio", href: "/portfolio" });
-    base.push({ label: "Epic Board", href: "/epics" });
-    base.push({ label: "Timeline", href: "/timeline" });
-  }
-  return base;
-}
+import { Sidebar } from "@/components/shell/Sidebar";
+import type { Role } from "@/lib/types";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -64,7 +23,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const user = useCurrentUser();
   const signOut = useAppStore((s) => s.signOut);
   const resetMockData = useAppStore((s) => s.resetMockData);
-  const tickets = useAppStore((s) => s.tickets);
   const notifications = useAppStore((s) => s.notifications);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -88,7 +46,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
 
     const onKey = (e: KeyboardEvent) => {
-      // Cmd/Ctrl shortcuts work even in inputs
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
         e.preventDefault();
         setQuickCreate(true);
@@ -115,7 +72,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // G chord
       if (e.key === "g" || e.key === "G") {
         gPressed = true;
         if (gTimer) window.clearTimeout(gTimer);
@@ -152,10 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!hydrated) return null;
   if (!user) return null;
 
-  const triageCount = tickets.filter((t) => t.status === "triage").length;
   const myNotifs = notifications.filter((n) => n.userId === user.id && !n.archived && !n.read).length;
-
-  const nav = navForRole(user.role, triageCount, myNotifs);
 
   const handleSignOut = () => {
     signOut();
@@ -170,56 +123,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 topbar-blur border-b border-rule">
-        <div className="max-w-[1440px] mx-auto px-8 h-14 flex items-center gap-6">
-          <Link href={landingForRole(user.role)} className="flex items-center gap-2">
-            <span className="display text-[22px] text-ink leading-none">Cadence</span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 hidden md:inline">
-              SPX Express
-            </span>
-          </Link>
+      <Sidebar />
 
-          <nav className="flex items-center gap-1 ml-4 flex-1">
-            {nav.map((item) => {
-              const active = pathname.startsWith(item.href);
-              const badge = item.badge ? item.badge() : 0;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "px-3 h-9 inline-flex items-center gap-2 rounded-[6px] text-[13px]",
-                    "transition-colors duration-100",
-                    active ? "text-ink bg-bg-card" : "text-ink-2 hover:text-ink hover:bg-rule-soft"
-                  )}
-                >
-                  {item.label}
-                  {badge > 0 && (
-                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-warn-soft text-warn font-mono text-[10px]">
-                      {badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+      {/* Slim topbar */}
+      <header className="fixed top-0 left-[240px] right-0 z-20 topbar-blur border-b border-rule h-12">
+        <div className="h-full px-6 flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true });
+              window.dispatchEvent(ev);
+            }}
+            className="inline-flex items-center gap-2 h-8 px-3 rounded-[6px] bg-bg-card border border-rule hover:border-ink-4 transition-colors duration-100 text-[12px] text-ink-3 w-72"
+          >
+            <span>Search tickets, epics, actions…</span>
+            <span className="ml-auto font-mono text-[10px] text-ink-4">⌘K</span>
+          </button>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true });
-                window.dispatchEvent(ev);
-              }}
-              className="hidden md:inline-flex items-center gap-2 px-3 h-9 rounded-[6px] bg-bg-card border border-rule hover:border-ink-4 transition-colors duration-100 text-[12px] text-ink-3"
-            >
-              <span>Search…</span>
-              <span className="font-mono text-[10px] text-ink-4">⌘K</span>
-            </button>
-
+          <div className="ml-auto flex items-center gap-3">
             <Link
               href="/notifications"
-              className="relative w-9 h-9 inline-flex items-center justify-center rounded-[6px] bg-bg-card border border-rule hover:border-ink-4 transition-colors duration-100"
+              className="relative w-8 h-8 inline-flex items-center justify-center rounded-[6px] bg-bg-card border border-rule hover:border-ink-4 transition-colors duration-100"
               aria-label="Notifications"
             >
               <span className="text-[14px]">○</span>
@@ -233,10 +157,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((s) => !s)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 px-2 h-8 rounded-[6px] hover:bg-rule-soft transition-colors duration-100"
                 aria-label="Profile menu"
               >
-                <Avatar user={user} size="sm" />
+                <Avatar user={user} size="xs" />
+                <span className="text-[12px] text-ink truncate max-w-[120px]">{user.displayName.split(" ")[0]}</span>
+                <span className="text-ink-4 text-[10px]">▾</span>
               </button>
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-64 bg-bg-card border border-rule rounded-[8px] shadow-lg p-2 z-50">
@@ -247,6 +173,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <RolePill role={user.role} />
                     </div>
                   </div>
+                  <Link
+                    href={`/u/${user.handle}`}
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-3 py-2 text-[13px] text-ink-2 hover:bg-rule-soft rounded-[6px]"
+                  >
+                    My profile
+                  </Link>
                   <Link
                     href="/settings"
                     onClick={() => setMenuOpen(false)}
@@ -273,17 +206,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main id="main" className="max-w-[1440px] mx-auto px-8 pt-8 pb-16">
-        <RouteGuard pathname={pathname} role={user.role}>
-          {children}
-        </RouteGuard>
+      {/* Main content */}
+      <main id="main" className="ml-[240px] pt-12 min-h-screen">
+        <div className="max-w-[1440px] mx-auto px-8 pt-8 pb-16">
+          <RouteGuard pathname={pathname} role={user.role}>
+            {children}
+          </RouteGuard>
+        </div>
       </main>
+
       <ToastViewport />
       <CmdK />
       <QuickCreate open={quickCreate} onClose={() => setQuickCreate(false)} />
       <ShortcutsHelp open={shortcuts} onClose={() => setShortcuts(false)} />
       <Onboarding />
-      <RealtimeSim />
     </>
   );
 }

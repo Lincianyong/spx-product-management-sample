@@ -37,7 +37,7 @@ export default function MyBugsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Guest · my bug reports"
+        eyebrow="Bugs you've filed"
         title={
           <>
             What <em className="text-accent">you've filed</em>.

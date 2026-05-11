@@ -1,7 +1,9 @@
 import type { Role } from "./types";
 
 // Surface-level access: which roles can land on which URLs.
-// Mirror the docs' R-01 to R-07 + RC matrix.
+// NOTE: capabilities are intentionally flattened — every role gets every cap
+// for now. The matrix below is kept (and re-imposed via PERMISSIONS_LEGACY)
+// so we can tighten it again later without recreating the structure.
 export type Capability =
   | "view_triage"
   | "view_backlog"
@@ -31,11 +33,25 @@ const ALL: Capability[] = [
   "view_triage", "view_backlog", "view_planning", "view_sprint", "view_my_work",
   "view_epics", "view_portfolio", "view_heatmap", "view_timeline",
   "view_notifications", "view_activity", "view_settings", "view_create",
+  "view_report_bug", "view_my_bugs",
   "commit_sprint", "edit_epic", "edit_project", "triage_action",
   "create_ticket", "set_points", "assign_ticket", "comment",
 ];
 
+// Flat: every role gets every capability.
 export const PERMISSIONS: Record<Role, Capability[]> = {
+  admin: ALL,
+  pm: ALL,
+  em: ALL,
+  engineer: ALL,
+  designer: ALL,
+  leadership: ALL,
+  guest: ALL,
+};
+
+// Kept for future re-tightening. Mirrors the docs' R-01 to R-07 + RC matrix.
+// To re-enable role-based gates, replace PERMISSIONS export above with this.
+export const PERMISSIONS_LEGACY: Record<Role, Capability[]> = {
   admin: [...ALL, "view_report_bug"],
   pm: [
     "view_triage", "view_backlog", "view_planning", "view_sprint", "view_my_work",
@@ -72,7 +88,8 @@ export function can(role: Role | undefined, cap: Capability): boolean {
   return PERMISSIONS[role].includes(cap);
 }
 
-// Map URL prefix → required capability
+// Map URL prefix → required capability.
+// With flat PERMISSIONS, every role passes. The guard is wired so we can re-impose later.
 const URL_GUARD: { prefix: string; cap: Capability }[] = [
   { prefix: "/triage", cap: "view_triage" },
   { prefix: "/backlog", cap: "view_backlog" },
