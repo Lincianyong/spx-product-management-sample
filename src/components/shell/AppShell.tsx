@@ -9,6 +9,10 @@ import { Avatar, RolePill, Pill } from "@/components/ui";
 import { ToastViewport, toast } from "@/components/ui";
 import type { Role } from "@/lib/types";
 import { CmdK } from "@/components/CmdK";
+import { QuickCreate } from "@/components/QuickCreate";
+import { ShortcutsHelp } from "@/components/ShortcutsHelp";
+import { AccessDenied } from "@/components/AccessDenied";
+import { pathRequiresCap, can } from "@/lib/permissions";
 
 interface NavItem {
   label: string;
@@ -59,10 +63,86 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const notifications = useAppStore((s) => s.notifications);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [quickCreate, setQuickCreate] = useState(false);
+  const [shortcuts, setShortcuts] = useState(false);
 
   useEffect(() => {
     if (hydrated && !user) router.replace("/login");
   }, [hydrated, user, router]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    let gPressed = false;
+    let gTimer: number | null = null;
+
+    const inEditable = (el: EventTarget | null) => {
+      const t = el as HTMLElement | null;
+      if (!t) return false;
+      const tag = t.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t.isContentEditable;
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      // Cmd/Ctrl shortcuts work even in inputs
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        setQuickCreate(true);
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === ",") {
+        e.preventDefault();
+        navigator.clipboard?.writeText(window.location.href);
+        toast("Link copied — current page");
+        return;
+      }
+
+      if (inEditable(e.target)) return;
+
+      if (e.key === "?") {
+        e.preventDefault();
+        setShortcuts(true);
+        return;
+      }
+      if (e.key === "/") {
+        e.preventDefault();
+        const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true });
+        window.dispatchEvent(ev);
+        return;
+      }
+
+      // G chord
+      if (e.key === "g" || e.key === "G") {
+        gPressed = true;
+        if (gTimer) window.clearTimeout(gTimer);
+        gTimer = window.setTimeout(() => {
+          gPressed = false;
+        }, 1000);
+        return;
+      }
+      if (gPressed) {
+        const k = e.key.toLowerCase();
+        const map: Record<string, string> = {
+          b: "/sprint",
+          m: "/me",
+          e: "/epics",
+          t: "/triage",
+          p: "/portfolio",
+          n: "/notifications",
+        };
+        if (map[k]) {
+          e.preventDefault();
+          gPressed = false;
+          router.push(map[k]);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (gTimer) window.clearTimeout(gTimer);
+    };
+  }, [router]);
 
   if (!hydrated) return null;
   if (!user) return null;
@@ -188,9 +268,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main id="main" className="max-w-[1440px] mx-auto px-8 pt-8 pb-16">{children}</main>
+      <main id="main" className="max-w-[1440px] mx-auto px-8 pt-8 pb-16">
+        <RouteGuard pathname={pathname} role={user.role}>
+          {children}
+        </RouteGuard>
+      </main>
       <ToastViewport />
       <CmdK />
+      <QuickCreate open={quickCreate} onClose={() => setQuickCreate(false)} />
+      <ShortcutsHelp open={shortcuts} onClose={() => setShortcuts(false)} />
     </>
   );
+}
+
+function RouteGuard({ pathname, role, children }: { pathname: string; role: Role; children: React.ReactNode }) {
+  const required = pathRequiresCap(pathname);
+  if (!required) return <>{children}</>;
+  if (!can(role, required)) {
+    return <AccessDenied />;
+  }
+  return <>{children}</>;
 }

@@ -19,6 +19,7 @@ export const healthLabel: Record<Health, string> = {
 export const statusLabel: Record<TicketStatus, string> = {
   draft: "Draft",
   triage: "Triage",
+  reproduced: "Reproduced",
   backlog: "Backlog",
   scheduled: "Scheduled",
   in_progress: "In Progress",
@@ -26,6 +27,7 @@ export const statusLabel: Record<TicketStatus, string> = {
   verifying: "Verifying",
   done: "Done",
   verified: "Verified",
+  cannot_reproduce: "Cannot Reproduce",
   cancelled: "Cancelled",
 };
 

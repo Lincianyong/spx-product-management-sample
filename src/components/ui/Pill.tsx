@@ -54,12 +54,14 @@ export function PriorityPill({ p }: { p: Priority }) {
   return <Pill variant={v}>{p}</Pill>;
 }
 
-export function HealthPill({ h }: { h: Health }) {
+export function HealthPill({ h, reason }: { h: Health; reason?: string }) {
   const v = h === "on_track" ? "ok" : h === "at_risk" ? "warn" : h === "blocked" ? "danger" : "neutral";
   return (
-    <Pill variant={v} dot>
-      {healthLabel[h]}
-    </Pill>
+    <span title={reason} className="inline-flex">
+      <Pill variant={v} dot>
+        {healthLabel[h]}
+      </Pill>
+    </span>
   );
 }
 

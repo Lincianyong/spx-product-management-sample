@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
+import { SortableList, DragHandle } from "@/components/SortableList";
 import { useAppStore, useCurrentUser } from "@/lib/store";
+import { toast } from "@/components/ui";
 import type { Ticket } from "@/lib/types";
 
 export default function MyWorkPage() {
   const tickets = useAppStore((s) => s.tickets);
   const sprints = useAppStore((s) => s.sprints);
+  const setPersonalRanks = useAppStore((s) => s.setPersonalRanks);
   const user = useCurrentUser();
   const [openKey, setOpenKey] = useState<string | null>(null);
 
@@ -18,9 +21,18 @@ export default function MyWorkPage() {
 
   const activeSprint = sprints.find((s) => s.state === "active");
 
-  const thisSprint = tickets.filter(
-    (t) => t.assigneeId === user.id && t.sprintId === activeSprint?.id && t.status !== "done" && t.status !== "verified"
-  );
+  const thisSprint = useMemo(() => {
+    const arr = tickets.filter(
+      (t) => t.assigneeId === user.id && t.sprintId === activeSprint?.id && t.status !== "done" && t.status !== "verified"
+    );
+    return [...arr].sort((a, b) => (a.personalRank ?? 99) - (b.personalRank ?? 99));
+  }, [tickets, user.id, activeSprint?.id]);
+
+  const onReorderThisSprint = (next: typeof thisSprint) => {
+    const ranks = next.map((t, idx) => ({ ticketId: t.id, rank: idx + 1 }));
+    setPersonalRanks(ranks);
+    toast("Personal priority saved. Others don't see this.", { kind: "info" });
+  };
 
   const upNext = tickets.filter(
     (t) => t.assigneeId === user.id && t.status === "backlog"
@@ -48,14 +60,23 @@ export default function MyWorkPage() {
       />
 
       <div className="grid grid-cols-2 gap-6">
-        <Panel title="This sprint" count={thisSprint.length} eyebrow="On now">
+        <Panel title="This sprint" count={thisSprint.length} eyebrow="On now · drag (⠿) for personal order">
           {thisSprint.length === 0 ? (
             <EmptyEcho text="Nothing on your plate this sprint. Pick up an ad-hoc, or grab from the queue below." />
           ) : (
-            <div className="grid grid-cols-1 gap-2">
-              {thisSprint.map((t) => (
-                <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} />
-              ))}
+            <div className="flex flex-col gap-2">
+              <SortableList
+                items={thisSprint}
+                onReorder={onReorderThisSprint}
+                renderItem={(t, handle) => (
+                  <div className="flex items-start gap-2">
+                    <DragHandle handleProps={handle} className="mt-3.5 text-[16px]" />
+                    <div className="flex-1 min-w-0">
+                      <TicketCard ticket={t} onOpen={setOpenKey} />
+                    </div>
+                  </div>
+                )}
+              />
             </div>
           )}
         </Panel>

@@ -4,21 +4,38 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
-import { Avatar, Pill, PriorityPill, TypePill } from "@/components/ui";
+import { Pill, PriorityPill, TypePill, toast } from "@/components/ui";
+import { SortableList, DragHandle } from "@/components/SortableList";
 import { cn, daysBetween, formatDate } from "@/lib/utils";
 
 export default function BacklogPage() {
   const tickets = useAppStore((s) => s.tickets);
   const projects = useAppStore((s) => s.projects);
+  const setBacklogRanks = useAppStore((s) => s.setBacklogRanks);
   const [projectFilter, setProjectFilter] = useState<string>("all");
 
   const backlog = useMemo(() => {
     const base = tickets.filter((t) => t.status === "backlog");
-    if (projectFilter === "all") return base;
-    return base.filter((t) => projects.find((p) => p.id === t.projectId)?.key === projectFilter);
+    const filtered = projectFilter === "all"
+      ? base
+      : base.filter((t) => projects.find((p) => p.id === t.projectId)?.key === projectFilter);
+    // sort by backlogRank if set, then priority
+    return [...filtered].sort((a, b) => {
+      if (a.backlogRank != null && b.backlogRank != null) return a.backlogRank - b.backlogRank;
+      if (a.backlogRank != null) return -1;
+      if (b.backlogRank != null) return 1;
+      const order: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
+      return order[a.priority] - order[b.priority];
+    });
   }, [tickets, projectFilter, projects]);
 
   const today = new Date().toISOString();
+
+  const onReorder = (next: typeof backlog) => {
+    const ranks = next.map((t, idx) => ({ ticketId: t.id, rank: idx + 1 }));
+    setBacklogRanks(ranks);
+    toast("Backlog re-ranked", { kind: "info" });
+  };
 
   return (
     <div>
@@ -29,7 +46,7 @@ export default function BacklogPage() {
             <em className="text-accent">DoR-ready</em>, waiting to be picked.
           </>
         }
-        lede="Pool of tickets that have made it through Triage. Sort by priority, drop into a sprint via Picklist."
+        lede="Drag the handle (⠿) to re-prioritize. Picklist (Stage 4a) pulls from the top."
         actions={
           <select
             value={projectFilter}
@@ -50,42 +67,50 @@ export default function BacklogPage() {
         <EmptyState title="Backlog is dry." body="Add work to keep the engine fed. Create or confirm Triage tickets." />
       ) : (
         <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-bg-elevated">
-              <tr className="border-b border-rule">
-                {["", "Key", "Title", "Type", "Priority", "Project", "Created", "Age"].map((h) => (
-                  <th key={h} className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 px-4 py-3">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {backlog.map((t) => {
-                const age = daysBetween(t.createdAt, today);
-                const stale = age >= 28;
-                const project = projects.find((p) => p.id === t.projectId);
-                return (
-                  <tr key={t.id} className={cn("border-b border-rule-soft hover:bg-bg-elevated", stale && "bg-warn-soft/30")}>
-                    <td className="px-4 py-3 w-8">
-                      {stale && <Pill variant="warn">stale</Pill>}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[12px]">
-                      <Link href={`/t/${t.key}`} className="text-ink hover:text-accent underline-offset-2 hover:underline">
-                        {t.key}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-[14px] text-ink max-w-md truncate">{t.title}</td>
-                    <td className="px-4 py-3"><TypePill t={t.type} /></td>
-                    <td className="px-4 py-3"><PriorityPill p={t.priority} /></td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{project?.key ?? "—"}</td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{formatDate(t.createdAt)}</td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{age}d</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="grid grid-cols-[40px_40px_100px_1fr_80px_80px_120px_100px_60px] gap-3 px-4 py-3 bg-bg-elevated border-b border-rule font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
+            <span></span>
+            <span>Rank</span>
+            <span>Key</span>
+            <span>Title</span>
+            <span>Type</span>
+            <span>Priority</span>
+            <span>Project</span>
+            <span>Created</span>
+            <span>Age</span>
+          </div>
+          <SortableList
+            items={backlog}
+            onReorder={onReorder}
+            renderItem={(t, handle) => {
+              const age = daysBetween(t.createdAt, today);
+              const stale = age >= 28;
+              const project = projects.find((p) => p.id === t.projectId);
+              const rank = backlog.findIndex((x) => x.id === t.id) + 1;
+              return (
+                <div
+                  className={cn(
+                    "grid grid-cols-[40px_40px_100px_1fr_80px_80px_120px_100px_60px] gap-3 px-4 py-3 items-center border-b border-rule-soft bg-bg-card",
+                    stale && "bg-warn-soft/30"
+                  )}
+                >
+                  <DragHandle handleProps={handle} className="text-[16px]" />
+                  <span className="font-mono text-[12px] text-ink-3">#{rank}</span>
+                  <Link href={`/t/${t.key}`} className="font-mono text-[12px] text-ink hover:text-accent underline-offset-2 hover:underline">
+                    {t.key}
+                  </Link>
+                  <div className="text-[14px] text-ink truncate flex items-center gap-2">
+                    {stale && <Pill variant="warn">stale</Pill>}
+                    <span className="truncate">{t.title}</span>
+                  </div>
+                  <TypePill t={t.type} />
+                  <PriorityPill p={t.priority} />
+                  <span className="font-mono text-[12px] text-ink-3">{project?.key ?? "—"}</span>
+                  <span className="font-mono text-[12px] text-ink-3">{formatDate(t.createdAt)}</span>
+                  <span className="font-mono text-[12px] text-ink-3">{age}d</span>
+                </div>
+              );
+            }}
+          />
         </div>
       )}
     </div>

@@ -5,7 +5,12 @@ import Link from "next/link";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, Button, Pill, PriorityPill, TypePill, AiTag, toast } from "@/components/ui";
 import { cn, statusLabel, relativeTime, formatDate } from "@/lib/utils";
-import type { TicketStatus } from "@/lib/types";
+import type { TicketStatus, Comment } from "@/lib/types";
+import { CommentThread } from "@/components/comments/CommentThread";
+import { CommentComposer } from "@/components/comments/CommentComposer";
+import { Markdown } from "@/components/Markdown";
+import { LinkedWorkGraph } from "@/components/tickets/LinkedWorkGraph";
+import { CopyLinkButton } from "@/components/CopyLinkMenu";
 
 interface Props {
   ticketKey: string;
@@ -16,10 +21,8 @@ interface Props {
 const STATUS_FLOW: Record<string, TicketStatus[]> = {
   engineering: ["scheduled", "in_progress", "review", "done"],
   tech_task: ["scheduled", "in_progress", "review", "done"],
-  bug: ["scheduled", "in_progress", "review", "verifying", "verified"],
+  bug: ["reproduced", "scheduled", "in_progress", "review", "verifying", "verified"],
 };
-
-const REACTIONS = ["👍", "✅", "❤️", "🎉", "👀", "🤔", "❌", "🚀"];
 
 export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
   const tickets = useAppStore((s) => s.tickets);
@@ -36,7 +39,7 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
   const user = useCurrentUser();
 
   const [tab, setTab] = useState<"activity" | "comments" | "links">("comments");
-  const [commentDraft, setCommentDraft] = useState("");
+  const [acCommentFor, setAcCommentFor] = useState<string | null>(null);
 
   const ticket = tickets.find((t) => t.key === ticketKey);
   if (!ticket) {
@@ -77,24 +80,31 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
     });
   };
 
-  const copyLink = () => {
-    const url = `${window.location.origin}/t/${ticket.key}`;
-    navigator.clipboard?.writeText(url);
-    toast(`Link copied — ${ticket.key}`, { kind: "success" });
-  };
-
-  const submitComment = () => {
-    if (!commentDraft.trim() || !user) return;
+  const submitComment = (body: string, mentions: string[]) => {
+    if (!user) return;
     addComment({
       entityType: "ticket",
       entityId: ticket.id,
       parentCommentId: null,
       authorId: user.id,
-      body: commentDraft.trim(),
-      mentions: [],
+      body,
+      mentions,
     });
-    setCommentDraft("");
     toast("Comment added", { kind: "success" });
+  };
+
+  const submitAcComment = (acId: string, body: string, mentions: string[]) => {
+    if (!user) return;
+    addComment({
+      entityType: "ac_item",
+      entityId: acId,
+      parentCommentId: null,
+      authorId: user.id,
+      body,
+      mentions,
+    });
+    setAcCommentFor(null);
+    toast("Comment added to acceptance criterion");
   };
 
   return (
@@ -133,9 +143,7 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="secondary" size="sm" onClick={copyLink}>
-            Copy link
-          </Button>
+          <CopyLinkButton ticketKey={ticket.key} ticketTitle={ticket.title} />
           {next && (
             <Button variant="primary" size="sm" onClick={advance}>
               Move to {statusLabel[next]} →
@@ -159,9 +167,11 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
         <div className="col-span-2 space-y-6">
           <section>
             <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">Description</div>
-            <div className="prose prose-sm max-w-none text-ink-2 whitespace-pre-wrap text-[14px] leading-relaxed">
-              {ticket.description}
-            </div>
+            {ticket.description ? (
+              <Markdown source={ticket.description} />
+            ) : (
+              <p className="text-[13px] italic text-ink-3">No description yet.</p>
+            )}
           </section>
 
           {ticket.type === "bug" && (
@@ -198,19 +208,48 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
                 Acceptance criteria · {ticket.acceptanceCriteria.filter((a) => a.done).length} of {ticket.acceptanceCriteria.length}
               </div>
               <ul className="space-y-2">
-                {ticket.acceptanceCriteria.map((ac) => (
-                  <li key={ac.id}>
-                    <label className="flex items-start gap-3 px-3 py-2 rounded-[6px] hover:bg-rule-soft cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={ac.done}
-                        onChange={() => user && toggleAC(ticket.id, ac.id, user.id)}
-                        className="mt-1 w-4 h-4 accent-accent"
-                      />
-                      <span className={cn("text-[14px]", ac.done && "line-through text-ink-4")}>{ac.text}</span>
-                    </label>
-                  </li>
-                ))}
+                {ticket.acceptanceCriteria.map((ac) => {
+                  const acComments = comments.filter((c) => c.entityType === "ac_item" && c.entityId === ac.id && !c.parentCommentId);
+                  return (
+                    <li key={ac.id} className="group">
+                      <div className="flex items-start gap-3 px-3 py-2 rounded-[6px] hover:bg-rule-soft">
+                        <input
+                          type="checkbox"
+                          checked={ac.done}
+                          onChange={() => user && toggleAC(ticket.id, ac.id, user.id)}
+                          className="mt-1 w-4 h-4 accent-accent"
+                        />
+                        <span className={cn("flex-1 text-[14px]", ac.done && "line-through text-ink-4")}>{ac.text}</span>
+                        <button
+                          onClick={() => setAcCommentFor(acCommentFor === ac.id ? null : ac.id)}
+                          className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity duration-100"
+                        >
+                          {acComments.length > 0 ? `${acComments.length} comment${acComments.length === 1 ? "" : "s"}` : "Comment"}
+                        </button>
+                      </div>
+                      {(acComments.length > 0 || acCommentFor === ac.id) && (
+                        <div className="ml-7 mt-2 mb-3 space-y-2">
+                          {acComments.map((c) => (
+                            <CommentThread
+                              key={c.id}
+                              comment={c}
+                              replies={comments.filter((x) => x.parentCommentId === c.id)}
+                            />
+                          ))}
+                          {acCommentFor === ac.id && (
+                            <CommentComposer
+                              placeholder={`Comment on this acceptance criterion…`}
+                              autoFocus
+                              onSubmit={(body, mentions) => submitAcComment(ac.id, body, mentions)}
+                              onCancel={() => setAcCommentFor(null)}
+                              submitLabel="Comment"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           )}
@@ -241,21 +280,13 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
                       key={c.id}
                       comment={c}
                       replies={ticketComments.filter((x) => x.parentCommentId === c.id)}
-                      onReact={(emoji) => user && reactToComment(c.id, emoji, user.id)}
                     />
                   ))}
+                {ticketComments.filter((c) => !c.parentCommentId).length === 0 && (
+                  <p className="text-[13px] italic text-ink-3">No comments yet. Start the thread.</p>
+                )}
                 <div className="mt-4">
-                  <textarea
-                    value={commentDraft}
-                    onChange={(e) => setCommentDraft(e.target.value)}
-                    placeholder="Write a comment… use @ to mention, type CDN-#### to reference"
-                    className="w-full min-h-[80px] px-3 py-2 rounded-[6px] border border-rule bg-bg-card text-ink text-[14px] placeholder:text-ink-4"
-                  />
-                  <div className="flex justify-end mt-2">
-                    <Button variant="primary" size="sm" onClick={submitComment} disabled={!commentDraft.trim()}>
-                      Comment
-                    </Button>
-                  </div>
+                  <CommentComposer onSubmit={submitComment} />
                 </div>
               </div>
             )}
@@ -288,23 +319,7 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
               </ol>
             )}
 
-            {tab === "links" && (
-              <div className="space-y-3">
-                {ticket.linkedWork.length === 0 && (
-                  <p className="text-[13px] text-ink-3 italic">Nothing linked yet.</p>
-                )}
-                {ticket.linkedWork.map((edge, i) => (
-                  <Link
-                    key={i}
-                    href={`/t/${edge.ticketKey}`}
-                    className="flex items-center gap-3 p-3 rounded-[6px] border border-rule hover:border-accent transition-colors duration-150"
-                  >
-                    <Pill variant="default">{edge.type.replace("_", " ")}</Pill>
-                    <span className="font-mono text-[12px] text-ink-3">{edge.ticketKey}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
+            {tab === "links" && <LinkedWorkGraph ticketKey={ticket.key} />}
           </section>
         </div>
 
@@ -379,77 +394,3 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function CommentThread({
-  comment,
-  replies,
-  onReact,
-}: {
-  comment: import("@/lib/types").Comment;
-  replies: import("@/lib/types").Comment[];
-  onReact: (emoji: string) => void;
-}) {
-  const users = useAppStore((s) => s.users);
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const author = users.find((u) => u.id === comment.authorId);
-  return (
-    <div className="border border-rule rounded-[8px] p-3 bg-bg-card">
-      <div className="flex items-center gap-2 mb-2">
-        <Avatar user={author} size="xs" />
-        <span className="text-[13px] text-ink font-medium">{author?.displayName}</span>
-        <span className="text-[11px] text-ink-3 font-mono">{relativeTime(comment.createdAt)}</span>
-      </div>
-      <div className="text-[14px] text-ink-2 whitespace-pre-wrap">{comment.body}</div>
-      <div className="flex items-center gap-2 mt-2">
-        {Object.entries(comment.reactions).map(([emoji, users]) => (
-          <button
-            key={emoji}
-            onClick={() => onReact(emoji)}
-            className="inline-flex items-center gap-1 px-2 h-6 rounded-[12px] bg-bg-elevated border border-rule hover:border-accent text-[12px]"
-          >
-            <span>{emoji}</span>
-            <span className="font-mono text-[10px] text-ink-3">{users.length}</span>
-          </button>
-        ))}
-        <button
-          onClick={() => setShowReactionPicker((s) => !s)}
-          className="inline-flex items-center px-2 h-6 rounded-[12px] border border-rule text-ink-3 hover:border-accent text-[12px]"
-        >
-          +
-        </button>
-        {showReactionPicker && (
-          <div className="flex items-center gap-1 bg-bg-card border border-rule rounded-[8px] p-1 shadow-sm">
-            {REACTIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => {
-                  onReact(r);
-                  setShowReactionPicker(false);
-                }}
-                className="w-7 h-7 hover:bg-rule-soft rounded-[4px]"
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      {replies.length > 0 && (
-        <div className="mt-3 pl-4 border-l-2 border-rule-soft space-y-2">
-          {replies.map((r) => {
-            const ra = users.find((u) => u.id === r.authorId);
-            return (
-              <div key={r.id} className="py-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Avatar user={ra} size="xs" />
-                  <span className="text-[13px] text-ink font-medium">{ra?.displayName}</span>
-                  <span className="text-[11px] text-ink-3 font-mono">{relativeTime(r.createdAt)}</span>
-                </div>
-                <div className="text-[13px] text-ink-2 whitespace-pre-wrap">{r.body}</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}

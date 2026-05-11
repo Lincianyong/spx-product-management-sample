@@ -24,13 +24,35 @@ import {
   seedActivity,
 } from "./mock-data";
 
+export interface SavedView {
+  id: string;
+  name: string;
+  surface: "epics";
+  viewMode: "kanban" | "list" | "table" | "timeline" | "backlog";
+  groupBy: "health" | "quarter" | "pic";
+  ownerId: string;
+  createdAt: string;
+}
+
 export interface AppState {
   hydrated: boolean;
   setHydrated: (v: boolean) => void;
 
+  // Transient: which ticket was just moved (for flash animation)
+  recentlyMovedTicketId: string | null;
+  flashTicket: (ticketId: string) => void;
+
+  // Transient: currently selected sprint to view on the board (defaults to active)
+  selectedSprintId: string | null;
+  selectSprint: (sprintId: string | null) => void;
+
   currentUserId: string | null;
   signIn: (userId: string) => void;
   signOut: () => void;
+
+  savedViews: SavedView[];
+  saveView: (v: Omit<SavedView, "id" | "createdAt">) => string;
+  deleteView: (id: string) => void;
 
   users: User[];
   epics: Epic[];
@@ -46,12 +68,22 @@ export interface AppState {
   toggleAcceptanceCriterion: (ticketId: string, acId: string, actorId: string) => void;
   setTicketField: (ticketId: string, patch: Partial<Ticket>, actorId: string) => void;
   addComment: (c: Omit<Comment, "id" | "createdAt" | "editedAt" | "reactions" | "resolvedById">) => void;
+  editComment: (commentId: string, body: string, editorId: string) => void;
+  deleteComment: (commentId: string, deleterId: string) => void;
+  resolveComment: (commentId: string, userId: string) => void;
+  unresolveComment: (commentId: string) => void;
   reactToComment: (commentId: string, emoji: string, userId: string) => void;
   markNotificationRead: (id: string, read?: boolean) => void;
   archiveNotification: (id: string) => void;
+  snoozeNotification: (id: string, until: string) => void;
+
+  channelPrefs: Record<string, { inApp: boolean; lark: boolean; email: boolean }>;
+  setChannelPref: (event: string, channel: "inApp" | "lark" | "email", on: boolean) => void;
 
   setPickedForSprint: (ticketIds: string[], picked: boolean) => void;
   setPicklistRanks: (ranks: { ticketId: string; rank: number }[]) => void;
+  setBacklogRanks: (ranks: { ticketId: string; rank: number }[]) => void;
+  setPersonalRanks: (ranks: { ticketId: string; rank: number }[]) => void;
   commitSprint: (sprintId: string) => void;
 
   resetMockData: () => void;
@@ -74,9 +106,33 @@ export const useAppStore = create<AppState>()(
       hydrated: false,
       setHydrated: (v) => set({ hydrated: v }),
 
+      recentlyMovedTicketId: null,
+      flashTicket: (ticketId) => {
+        set({ recentlyMovedTicketId: ticketId });
+        if (typeof window !== "undefined") {
+          window.setTimeout(() => {
+            const cur = useAppStore.getState().recentlyMovedTicketId;
+            if (cur === ticketId) set({ recentlyMovedTicketId: null });
+          }, 1500);
+        }
+      },
+
+      selectedSprintId: null,
+      selectSprint: (sprintId) => set({ selectedSprintId: sprintId }),
+
       currentUserId: null,
       signIn: (userId) => set({ currentUserId: userId }),
       signOut: () => set({ currentUserId: null }),
+
+      savedViews: [],
+      saveView: (v) => {
+        const id = `sv_${Date.now()}`;
+        set((s) => ({
+          savedViews: [...s.savedViews, { ...v, id, createdAt: new Date().toISOString() }],
+        }));
+        return id;
+      },
+      deleteView: (id) => set((s) => ({ savedViews: s.savedViews.filter((v) => v.id !== id) })),
 
       ...baseSeed(),
 
@@ -89,6 +145,27 @@ export const useAppStore = create<AppState>()(
           if (status === "in_progress" && !ticket.startedAt) updates.startedAt = new Date().toISOString();
           if ((status === "done" || status === "verified") && !ticket.closedAt)
             updates.closedAt = new Date().toISOString();
+
+          // Bug-specific side effects: notify reporter on Verifying
+          const newNotifications: typeof s.notifications = [];
+          if (ticket.type === "bug" && status === "verifying") {
+            newNotifications.push({
+              id: `n_${Date.now()}_v`,
+              userId: ticket.authorId,
+              kind: "bug_needs_verify",
+              body: `${ticket.key} is ready for you to verify`,
+              entityType: "ticket",
+              entityKey: ticket.key,
+              actorId,
+              createdAt: new Date().toISOString(),
+              read: false,
+              archived: false,
+            });
+          }
+          if (ticket.type === "bug" && status === "verified") {
+            // Close out any prior verify reminders
+          }
+
           return {
             tickets: s.tickets.map((t) => (t.id === ticketId ? { ...t, ...updates } : t)),
             activity: [
@@ -106,6 +183,7 @@ export const useAppStore = create<AppState>()(
                 aiInfluenced: false,
               },
             ],
+            notifications: [...s.notifications, ...newNotifications],
           };
         }),
 
@@ -169,6 +247,38 @@ export const useAppStore = create<AppState>()(
           ],
         })),
 
+      editComment: (commentId, body, editorId) =>
+        set((s) => ({
+          comments: s.comments.map((c) =>
+            c.id === commentId && c.authorId === editorId
+              ? { ...c, body, editedAt: new Date().toISOString() }
+              : c
+          ),
+        })),
+
+      deleteComment: (commentId, deleterId) =>
+        set((s) => ({
+          comments: s.comments.map((c) =>
+            c.id === commentId
+              ? { ...c, body: "[deleted]", deletedAt: new Date().toISOString(), authorId: c.authorId }
+              : c
+          ),
+        })),
+
+      resolveComment: (commentId, userId) =>
+        set((s) => ({
+          comments: s.comments.map((c) =>
+            c.id === commentId ? { ...c, resolvedById: userId, resolvedAt: new Date().toISOString() } : c
+          ),
+        })),
+
+      unresolveComment: (commentId) =>
+        set((s) => ({
+          comments: s.comments.map((c) =>
+            c.id === commentId ? { ...c, resolvedById: null, resolvedAt: null } : c
+          ),
+        })),
+
       reactToComment: (commentId, emoji, userId) =>
         set((s) => ({
           comments: s.comments.map((c) => {
@@ -193,6 +303,28 @@ export const useAppStore = create<AppState>()(
           notifications: s.notifications.map((n) => (n.id === id ? { ...n, archived: true } : n)),
         })),
 
+      snoozeNotification: (id, until) =>
+        set((s) => ({
+          notifications: s.notifications.map((n) => (n.id === id ? { ...n, snoozedUntil: until, read: true } : n)),
+        })),
+
+      channelPrefs: {
+        mention: { inApp: true, lark: true, email: false },
+        assignment: { inApp: true, lark: true, email: false },
+        status_change: { inApp: true, lark: false, email: false },
+        sla_breach: { inApp: true, lark: true, email: true },
+        sprint_commit: { inApp: true, lark: true, email: false },
+        bug_needs_verify: { inApp: true, lark: true, email: false },
+        digest: { inApp: false, lark: false, email: true },
+      },
+      setChannelPref: (event, channel, on) =>
+        set((s) => {
+          const prev = s.channelPrefs[event] ?? { inApp: false, lark: false, email: false };
+          return {
+            channelPrefs: { ...s.channelPrefs, [event]: { ...prev, [channel]: on } },
+          };
+        }),
+
       setPickedForSprint: (ticketIds, picked) =>
         set((s) => ({
           tickets: s.tickets.map((t) =>
@@ -205,6 +337,22 @@ export const useAppStore = create<AppState>()(
           tickets: s.tickets.map((t) => {
             const r = ranks.find((x) => x.ticketId === t.id);
             return r ? { ...t, picklistRank: r.rank } : t;
+          }),
+        })),
+
+      setBacklogRanks: (ranks) =>
+        set((s) => ({
+          tickets: s.tickets.map((t) => {
+            const r = ranks.find((x) => x.ticketId === t.id);
+            return r ? { ...t, backlogRank: r.rank } : t;
+          }),
+        })),
+
+      setPersonalRanks: (ranks) =>
+        set((s) => ({
+          tickets: s.tickets.map((t) => {
+            const r = ranks.find((x) => x.ticketId === t.id);
+            return r ? { ...t, personalRank: r.rank } : t;
           }),
         })),
 
@@ -249,6 +397,8 @@ export const useAppStore = create<AppState>()(
         comments: s.comments,
         notifications: s.notifications,
         activity: s.activity,
+        savedViews: s.savedViews,
+        channelPrefs: s.channelPrefs,
       }),
     }
   )

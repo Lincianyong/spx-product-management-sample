@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, Button, Pill, HealthPill, toast } from "@/components/ui";
 import { cn, formatDate, healthLabel, relativeTime } from "@/lib/utils";
+import { CommentThread } from "@/components/comments/CommentThread";
+import { CommentComposer } from "@/components/comments/CommentComposer";
+import { Markdown } from "@/components/Markdown";
+import { computeEpicHealth } from "@/lib/health";
 
 export default function EpicDetailPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
@@ -17,7 +21,6 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
   const user = useCurrentUser();
 
   const [tab, setTab] = useState<"overview" | "projects" | "timeline" | "activity" | "comments">("overview");
-  const [draft, setDraft] = useState("");
 
   const epic = epics.find((e) => e.key === key);
   if (!epic) {
@@ -32,22 +35,22 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
   const pm = users.find((u) => u.id === epic.pmPicId);
   const childProjects = projects.filter((p) => p.epicId === epic.id);
   const allTickets = tickets.filter((t) => childProjects.some((p) => p.id === t.projectId));
+  const signal = computeEpicHealth(epic, projects, tickets);
   const doneTickets = allTickets.filter((t) => t.status === "done" || t.status === "verified").length;
   const progressPct = allTickets.length === 0 ? 0 : Math.round((doneTickets / allTickets.length) * 100);
 
   const epicComments = comments.filter((c) => c.entityType === "epic" && c.entityId === epic.id);
 
-  const submit = () => {
-    if (!draft.trim() || !user) return;
+  const submit = (body: string, mentions: string[]) => {
+    if (!user) return;
     addComment({
       entityType: "epic",
       entityId: epic.id,
       parentCommentId: null,
       authorId: user.id,
-      body: draft.trim(),
-      mentions: [],
+      body,
+      mentions,
     });
-    setDraft("");
     toast("Comment posted to Epic thread");
   };
 
@@ -64,7 +67,7 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
         <div className="flex items-start justify-between gap-6">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 mb-3">
-              <HealthPill h={epic.health} />
+              <HealthPill h={signal.health} reason={signal.reason} />
               <Pill variant="default">{epic.quarter}</Pill>
               {epic.tags.map((t) => <Pill key={t} variant="neutral">{t}</Pill>)}
             </div>
@@ -108,7 +111,7 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
           <div className="col-span-2 space-y-4">
             <div className="bg-bg-card border border-rule rounded-[8px] p-5">
               <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">Thesis</div>
-              <p className="text-[15px] text-ink-2 leading-relaxed whitespace-pre-wrap">{epic.thesis}</p>
+              <Markdown source={epic.thesis} />
             </div>
 
             <div>
@@ -129,7 +132,7 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
           </div>
 
           <aside className="space-y-3">
-            <Side title="Health" value={<HealthPill h={epic.health} />} />
+            <Side title="Health" value={<HealthPill h={signal.health} reason={signal.reason} />} />
             <Side title="Quarter" value={epic.quarter} />
             <Side title="Start" value={formatDate(epic.startDate)} />
             <Side title="Target end" value={formatDate(epic.targetEndDate)} />
@@ -173,33 +176,19 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
 
       {tab === "comments" && (
         <div className="max-w-3xl space-y-4">
-          {epicComments.length === 0 && (
+          {epicComments.filter((c) => !c.parentCommentId).length === 0 && (
             <p className="text-[13px] text-ink-3 italic">No leadership comments yet. Use this thread for context that should outlive the Project layer.</p>
           )}
-          {epicComments.map((c) => {
-            const author = users.find((u) => u.id === c.authorId);
-            return (
-              <div key={c.id} className="bg-bg-card border border-rule rounded-[8px] p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Avatar user={author} size="xs" />
-                  <span className="text-[13px] text-ink font-medium">{author?.displayName}</span>
-                  <span className="text-[11px] text-ink-3 font-mono">{relativeTime(c.createdAt)}</span>
-                </div>
-                <div className="text-[14px] text-ink-2 whitespace-pre-wrap">{c.body}</div>
-              </div>
-            );
-          })}
-          <div>
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Comment at the Epic level — leadership and PMs see this."
-              className="w-full min-h-[80px] px-3 py-2 rounded-[6px] border border-rule bg-bg-card text-ink text-[14px] placeholder:text-ink-4"
-            />
-            <div className="flex justify-end mt-2">
-              <Button variant="primary" size="sm" onClick={submit} disabled={!draft.trim()}>Post</Button>
-            </div>
-          </div>
+          {epicComments
+            .filter((c) => !c.parentCommentId)
+            .map((c) => (
+              <CommentThread
+                key={c.id}
+                comment={c}
+                replies={epicComments.filter((x) => x.parentCommentId === c.id)}
+              />
+            ))}
+          <CommentComposer placeholder="Comment at the Epic level — leadership and PMs see this." onSubmit={submit} submitLabel="Post" />
         </div>
       )}
     </div>

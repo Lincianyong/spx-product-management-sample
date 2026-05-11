@@ -6,7 +6,9 @@ import { useAppStore } from "@/lib/store";
 import { Avatar, Pill, HealthPill, Button, toast } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
+import { Markdown } from "@/components/Markdown";
 import { cn, formatDate, statusLabel } from "@/lib/utils";
+import { computeProjectHealth } from "@/lib/health";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
@@ -31,6 +33,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ key: s
   const pm = users.find((u) => u.id === project.pmPicId);
   const em = users.find((u) => u.id === project.emPicId);
   const projTickets = tickets.filter((t) => t.projectId === project.id);
+  const signal = computeProjectHealth(project, tickets);
   const backlog = projTickets.filter((t) => t.status === "backlog");
   const inFlight = projTickets.filter((t) => t.status !== "backlog" && t.status !== "done" && t.status !== "verified" && t.status !== "triage");
   const done = projTickets.filter((t) => t.status === "done" || t.status === "verified");
@@ -51,12 +54,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ key: s
       <div className="flex items-start justify-between gap-6 mb-8">
         <div className="max-w-2xl">
           <div className="flex items-center gap-2 mb-3">
-            <HealthPill h={project.health} />
-            <Pill variant="default">{statusLabel[(project.status as any) === "in_progress" ? "in_progress" : "backlog"]}</Pill>
+            <HealthPill h={signal.health} reason={signal.reason} />
+            <Pill variant="default">{statusLabel[(project.status as unknown as "in_progress" | "backlog") === "in_progress" ? "in_progress" : "backlog"]}</Pill>
             <Pill variant="neutral">{project.pod}</Pill>
           </div>
           <h1 className="display text-display-l text-ink leading-[1.05]">{project.title}</h1>
-          <p className="font-body text-body-l text-ink-2 mt-4">{project.description}</p>
+          <div className="font-body text-body-l text-ink-2 mt-4">
+            <Markdown source={project.description} />
+          </div>
         </div>
         <Button variant="secondary" size="sm" onClick={() => { navigator.clipboard?.writeText(window.location.href); toast(`Link copied — ${project.key}`); }}>
           Copy link

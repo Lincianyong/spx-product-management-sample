@@ -18,6 +18,7 @@ export type TicketType = "engineering" | "bug" | "tech_task";
 export type TicketStatus =
   | "draft"
   | "triage"
+  | "reproduced"
   | "backlog"
   | "scheduled"
   | "in_progress"
@@ -25,6 +26,7 @@ export type TicketStatus =
   | "verifying"
   | "done"
   | "verified"
+  | "cannot_reproduce"
   | "cancelled";
 
 export type SprintState = "planning" | "active" | "closed";
@@ -115,6 +117,8 @@ export interface Ticket {
   linkedWork: LinkedWorkEdge[];
   carryOver: boolean;
   createdAt: string;
+  backlogRank?: number;
+  personalRank?: number;
   // Bug-specific
   severity?: "S1" | "S2" | "S3";
   reproSteps?: string;
@@ -154,8 +158,10 @@ export interface Comment {
   mentions: string[];
   createdAt: string;
   editedAt: string | null;
+  deletedAt?: string | null;
   reactions: Record<string, string[]>;
   resolvedById: string | null;
+  resolvedAt?: string | null;
 }
 
 export interface Notification {

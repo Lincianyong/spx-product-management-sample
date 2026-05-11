@@ -1,19 +1,24 @@
 "use client";
 
 import { Command } from "cmdk";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { toast } from "@/components/ui";
+import type { TicketStatus } from "@/lib/types";
+import { statusLabel } from "@/lib/utils";
 
 export function CmdK() {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const router = useRouter();
   const user = useCurrentUser();
   const tickets = useAppStore((s) => s.tickets);
   const epics = useAppStore((s) => s.epics);
   const projects = useAppStore((s) => s.projects);
+  const users = useAppStore((s) => s.users);
   const setTicketStatus = useAppStore((s) => s.setTicketStatus);
+  const setTicketField = useAppStore((s) => s.setTicketField);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -27,12 +32,88 @@ export function CmdK() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  if (!user) return null;
-
   const go = (path: string) => {
     setOpen(false);
     router.push(path);
   };
+
+  // Natural language matchers
+  const nlActions = useMemo(() => {
+    if (!query || !user) return [];
+    const q = query.trim().toLowerCase();
+    const out: { label: string; run: () => void }[] = [];
+
+    // Pattern: "assign <KEY> to <name>"
+    const assignMatch = q.match(/^assign\s+([a-z]{2,4}-\d+)\s+to\s+(.+)$/);
+    if (assignMatch) {
+      const key = assignMatch[1].toUpperCase();
+      const namePart = assignMatch[2].trim();
+      const ticket = tickets.find((t) => t.key === key);
+      const candidate = users.find(
+        (u) => u.displayName.toLowerCase().includes(namePart) || u.handle.includes(namePart) || u.email.startsWith(namePart)
+      );
+      if (ticket && candidate) {
+        out.push({
+          label: `Assign ${ticket.key} → ${candidate.displayName}`,
+          run: () => {
+            setTicketField(ticket.id, { assigneeId: candidate.id }, user.id);
+            toast(`${ticket.key} assigned to ${candidate.displayName}`);
+            setOpen(false);
+          },
+        });
+      }
+    }
+
+    // Pattern: "move <KEY> to <status>"
+    const moveMatch = q.match(/^(?:move|set)\s+([a-z]{2,4}-\d+)\s+to\s+(.+)$/);
+    if (moveMatch) {
+      const key = moveMatch[1].toUpperCase();
+      const target = moveMatch[2].trim();
+      const ticket = tickets.find((t) => t.key === key);
+      const status = (Object.keys(statusLabel) as TicketStatus[]).find(
+        (s) => statusLabel[s].toLowerCase().includes(target) || s.includes(target.replace(/\s/g, "_"))
+      );
+      if (ticket && status) {
+        out.push({
+          label: `Move ${ticket.key} → ${statusLabel[status]}`,
+          run: () => {
+            setTicketStatus(ticket.id, status, user.id);
+            toast(`${ticket.key} → ${statusLabel[status]}`);
+            setOpen(false);
+          },
+        });
+      }
+    }
+
+    // Pattern: "points <KEY> <num>" / "set points <KEY> <num>"
+    const pointsMatch = q.match(/^(?:set\s+)?points?\s+([a-z]{2,4}-\d+)\s+(\d+)$/);
+    if (pointsMatch) {
+      const key = pointsMatch[1].toUpperCase();
+      const points = parseInt(pointsMatch[2], 10);
+      const ticket = tickets.find((t) => t.key === key);
+      if (ticket && points >= 1 && points <= 21) {
+        out.push({
+          label: `Set ${ticket.key} points → ${points}`,
+          run: () => {
+            setTicketField(ticket.id, { storyPoints: points }, user.id);
+            toast(`${ticket.key} sized to ${points} pt`);
+            setOpen(false);
+          },
+        });
+      }
+    }
+
+    // Pattern: "open <KEY>"
+    const openMatch = q.match(/^open\s+([a-z]{2,4}-\d+)$/);
+    if (openMatch) {
+      const key = openMatch[1].toUpperCase();
+      out.push({ label: `Open ${key}`, run: () => go(`/t/${key}`) });
+    }
+
+    return out;
+  }, [query, user, tickets, users, setTicketStatus, setTicketField, router]);
+
+  if (!user) return null;
 
   return (
     <Command.Dialog
@@ -44,7 +125,9 @@ export function CmdK() {
       <div onClick={() => setOpen(false)} className="absolute inset-0" aria-hidden />
       <div className="relative w-full max-w-xl bg-bg-card rounded-[10px] shadow-lg border border-rule overflow-hidden">
         <Command.Input
-          placeholder="Search tickets, epics, projects, actions…"
+          value={query}
+          onValueChange={setQuery}
+          placeholder='Try "assign CDN-3504 to Andre" or just search…'
           className="w-full h-14 px-5 text-[15px] text-ink bg-bg-card outline-none border-b border-rule-soft placeholder:text-ink-4"
         />
         <Command.List className="max-h-[60vh] overflow-y-auto p-2">
@@ -52,7 +135,18 @@ export function CmdK() {
             No matches. Try a different keyword.
           </Command.Empty>
 
-          <Command.Group heading="Go to" className="text-ink-3 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.14em]">
+          {nlActions.length > 0 && (
+            <Command.Group heading="Suggested action">
+              {nlActions.map((a, i) => (
+                <Item key={i} onSelect={a.run}>
+                  <span className="font-mono text-[10px] text-ai mr-2">✦</span>
+                  {a.label}
+                </Item>
+              ))}
+            </Command.Group>
+          )}
+
+          <Command.Group heading="Go to">
             <Item onSelect={() => go("/epics")}>Epic Board</Item>
             <Item onSelect={() => go("/me")}>My Work</Item>
             <Item onSelect={() => go("/sprint")}>Sprint Board</Item>
@@ -93,34 +187,11 @@ export function CmdK() {
               </Item>
             ))}
           </Command.Group>
-
-          <Command.Group heading="Actions">
-            <Item
-              onSelect={() => {
-                setOpen(false);
-                navigator.clipboard?.writeText(window.location.href);
-                toast("Link copied", { kind: "success" });
-              }}
-            >
-              Copy link to current page
-            </Item>
-            {tickets
-              .filter((t) => t.assigneeId === user.id && t.status === "in_progress")
-              .slice(0, 5)
-              .map((t) => (
-                <Item
-                  key={`act_${t.id}`}
-                  onSelect={() => {
-                    setTicketStatus(t.id, "review", user.id);
-                    setOpen(false);
-                    toast(`${t.key} → Review`);
-                  }}
-                >
-                  Move {t.key} to Review
-                </Item>
-              ))}
-          </Command.Group>
         </Command.List>
+        <div className="px-4 py-2 border-t border-rule-soft font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 flex items-center justify-between">
+          <span>↑↓ Navigate · ↵ Select · Esc Close</span>
+          <span>Try: assign, move, points, open</span>
+        </div>
       </div>
     </Command.Dialog>
   );

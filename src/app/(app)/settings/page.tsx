@@ -120,41 +120,56 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {tab === "notifications" && (
-        <div className="max-w-3xl">
-          <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-bg-elevated">
-                <tr className="border-b border-rule">
-                  {["Event", "In-app", "Lark", "Email"].map((h) => (
-                    <th key={h} className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 px-4 py-3">{h}</th>
-                  ))}
+      {tab === "notifications" && <NotificationPrefsTable />}
+    </div>
+  );
+}
+
+function NotificationPrefsTable() {
+  const prefs = useAppStore((s) => s.channelPrefs);
+  const setPref = useAppStore((s) => s.setChannelPref);
+  const events: { key: string; label: string }[] = [
+    { key: "mention", label: "Mention" },
+    { key: "assignment", label: "Assigned to me" },
+    { key: "status_change", label: "Status on watched" },
+    { key: "sla_breach", label: "SLA breach (my Triage)" },
+    { key: "sprint_commit", label: "Sprint commit" },
+    { key: "bug_needs_verify", label: "Bug needs verification" },
+    { key: "digest", label: "Daily digest" },
+  ];
+  return (
+    <div className="max-w-3xl">
+      <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-bg-elevated">
+            <tr className="border-b border-rule">
+              {["Event", "In-app", "Lark", "Email"].map((h) => (
+                <th key={h} className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 px-4 py-3">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((e) => {
+              const p = prefs[e.key] ?? { inApp: false, lark: false, email: false };
+              return (
+                <tr key={e.key} className="border-b border-rule-soft">
+                  <td className="px-4 py-2.5 text-[13px] text-ink">{e.label}</td>
+                  <td className="px-4 py-2.5">
+                    <input type="checkbox" checked={p.inApp} onChange={(ev) => setPref(e.key, "inApp", ev.target.checked)} className="w-4 h-4 accent-accent" />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <input type="checkbox" checked={p.lark} onChange={(ev) => setPref(e.key, "lark", ev.target.checked)} className="w-4 h-4 accent-accent" />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <input type="checkbox" checked={p.email} onChange={(ev) => setPref(e.key, "email", ev.target.checked)} className="w-4 h-4 accent-accent" />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Mention", true, true, false],
-                  ["Assigned to me", true, true, false],
-                  ["Status on watched", true, false, false],
-                  ["SLA breach (my Triage)", true, true, true],
-                  ["Sprint commit", true, true, false],
-                  ["Bug needs verification", true, true, false],
-                  ["Daily digest", false, false, true],
-                ].map(([name, a, b, c]) => (
-                  <tr key={name as string} className="border-b border-rule-soft">
-                    <td className="px-4 py-2.5 text-[13px] text-ink">{name as string}</td>
-                    {[a, b, c].map((v, i) => (
-                      <td key={i} className="px-4 py-2.5">
-                        <input type="checkbox" defaultChecked={!!v} className="w-4 h-4 accent-accent" />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[12px] text-ink-3 mt-3 font-mono">Preferences persist to localStorage and survive page reloads.</p>
     </div>
   );
 }
