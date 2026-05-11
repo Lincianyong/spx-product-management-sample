@@ -13,6 +13,8 @@ import { QuickCreate } from "@/components/QuickCreate";
 import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 import { AccessDenied } from "@/components/AccessDenied";
 import { pathRequiresCap, can } from "@/lib/permissions";
+import { Onboarding } from "@/components/Onboarding";
+import { RealtimeSim } from "@/components/RealtimeSim";
 
 interface NavItem {
   label: string;
@@ -25,7 +27,10 @@ function navForRole(role: Role | undefined, triageCount: number, notifCount: num
   if (!role) return [];
   const base: NavItem[] = [];
   if (role === "guest") {
-    return [{ label: "Report Bug", href: "/report-bug" }];
+    return [
+      { label: "Report Bug", href: "/report-bug" },
+      { label: "My Bugs", href: "/my-bugs" },
+    ];
   }
   if (role === "pm" || role === "admin") {
     base.push({ label: "Epic Board", href: "/epics" });
@@ -277,6 +282,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CmdK />
       <QuickCreate open={quickCreate} onClose={() => setQuickCreate(false)} />
       <ShortcutsHelp open={shortcuts} onClose={() => setShortcuts(false)} />
+      <Onboarding />
+      <RealtimeSim />
     </>
   );
 }

@@ -6,7 +6,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
 import { Avatar, HealthPill, Pill, RolePill } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
-import { cn, formatDate, podLabel, roleLabel } from "@/lib/utils";
+import { cn, formatDate, podLabel, relativeTime, roleLabel } from "@/lib/utils";
+import { Tombstone } from "@/components/Tombstone";
 
 export default function ProfilePage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = use(params);
@@ -17,12 +18,7 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
 
   const user = users.find((u) => u.handle === handle);
   if (!user) {
-    return (
-      <div className="py-20 text-center">
-        <h2 className="display text-display-s text-ink">No such user.</h2>
-        <Link href="/" className="text-accent hover:underline mt-2 inline-block">← Back</Link>
-      </div>
-    );
+    return <Tombstone kind="user" keyOrHandle={`@${handle}`} />;
   }
 
   const activeSprint = sprints.find((s) => s.state === "active");
@@ -30,8 +26,26 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
   const myEpics = epics.filter((e) => e.pmPicId === user.id);
   const isPM = user.role === "pm" || user.role === "leadership";
 
-  // Mock velocity history (last 6 sprints)
   const velocity = [22, 26, 24, 28, 27, 31];
+
+  // Forward load: 4 weeks ahead with deterministic noise
+  const forwardLoad = Array.from({ length: 4 }, (_, i) => {
+    const base = tickets.filter((t) => t.assigneeId === user.id && t.storyPoints != null)
+      .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
+    const seed = (user.id.charCodeAt(2) + i * 5) % 9;
+    return Math.max(0, base + seed - 4);
+  });
+
+  // Mock PR activity (last 6 PRs)
+  const prActivity = [
+    { repo: "spx/forecasting", title: "CDN-3504 · Drift detection on retrain pipeline", state: "open", merged: false, at: new Date(Date.now() - 3 * 86400000).toISOString() },
+    { repo: "spx/forecasting", title: "CDN-3496 · Calibration channel hookup", state: "merged", merged: true, at: new Date(Date.now() - 5 * 86400000).toISOString() },
+    { repo: "spx/forecasting", title: "CDN-3489 · Retrain DAG retry policy", state: "merged", merged: true, at: new Date(Date.now() - 9 * 86400000).toISOString() },
+    { repo: "spx/router", title: "RTE-880 · Madura cutoff scoring", state: "closed", merged: false, at: new Date(Date.now() - 12 * 86400000).toISOString() },
+    { repo: "spx/forecasting", title: "CDN-3470 · Region-aware seasonality features (draft)", state: "open", merged: false, at: new Date(Date.now() - 14 * 86400000).toISOString() },
+    { repo: "spx/forecasting", title: "CDN-3450 · Add P95 latency to dashboard", state: "merged", merged: true, at: new Date(Date.now() - 20 * 86400000).toISOString() },
+  ];
+
   const blocking = tickets.filter((t) => t.assigneeId === user.id && tickets.some((o) => o.linkedWork.some((e) => e.type === "blocked_by" && e.ticketKey === t.key)));
   const blockedBy = tickets.filter((t) => t.assigneeId === user.id && t.linkedWork.some((e) => e.type === "blocked_by"));
 
@@ -84,26 +98,24 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <BarChart title="Velocity · last 6 sprints" data={velocity} labels={["W14","W15","W16","W17","W18","W19"]} suffix="pt" />
+              <BarChart title="Forward load · next 4 weeks" data={forwardLoad} labels={["W20","W21","W22","W23"]} suffix="pt" cap={user.capacityPoints} />
+            </div>
+
             <div>
-              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">Velocity · last 6 sprints</div>
-              <div className="bg-bg-card border border-rule rounded-[8px] p-5">
-                <div className="flex items-end gap-2 h-32">
-                  {velocity.map((v, i) => {
-                    const max = Math.max(...velocity);
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <div
-                          className="w-full bg-accent rounded-t-[4px] transition-all duration-300"
-                          style={{ height: `${(v / max) * 100}%` }}
-                        />
-                        <span className="font-mono text-[10px] text-ink-3">{v}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="font-mono text-[11px] text-ink-3 mt-2 text-right">
-                  Average · {Math.round(velocity.reduce((a, b) => a + b, 0) / velocity.length)} pts/sprint
-                </div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">Recent PR activity</div>
+              <div className="bg-bg-card border border-rule rounded-[8px] divide-y divide-rule-soft">
+                {prActivity.map((pr, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                    <Pill variant={pr.merged ? "ok" : pr.state === "open" ? "info" : "neutral"}>
+                      {pr.merged ? "merged" : pr.state}
+                    </Pill>
+                    <span className="font-mono text-[11px] text-ink-3">{pr.repo}</span>
+                    <span className="flex-1 text-[13px] text-ink truncate">{pr.title}</span>
+                    <span className="font-mono text-[11px] text-ink-3">{relativeTime(pr.at)}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -134,6 +146,7 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
             <Stat label="Capacity" value={`${user.capacityPoints} pts/sprint`} />
             <Stat label="Pod" value={podLabel(user.pod)} />
             <Stat label="Status" value={user.status === "ooo" ? "Out of office" : user.status === "in_meeting" ? "In a meeting" : "Available"} />
+            <Stat label="Velocity avg" value={`${Math.round(velocity.reduce((a, b) => a + b, 0) / velocity.length)} pt`} />
           </aside>
         </div>
       )}
@@ -146,6 +159,41 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="bg-bg-card border border-rule rounded-[8px] p-3">
       <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mb-1.5">{label}</div>
       <div className="text-[14px] text-ink">{value}</div>
+    </div>
+  );
+}
+
+function BarChart({ title, data, labels, suffix, cap }: { title: string; data: number[]; labels: string[]; suffix?: string; cap?: number }) {
+  const max = Math.max(...data, cap ?? 0, 1);
+  return (
+    <div>
+      <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">{title}</div>
+      <div className="bg-bg-card border border-rule rounded-[8px] p-4">
+        <div className="flex items-end gap-2 h-28 relative">
+          {cap != null && (
+            <div
+              className="absolute left-0 right-0 border-t border-dashed border-warn"
+              style={{ bottom: `${(cap / max) * 100}%` }}
+              aria-hidden
+            >
+              <span className="absolute right-0 -top-3 font-mono text-[9px] text-warn">cap {cap}</span>
+            </div>
+          )}
+          {data.map((v, i) => {
+            const over = cap != null && v > cap;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div
+                  className={cn("w-full rounded-t-[4px] transition-all duration-300", over ? "bg-danger" : "bg-accent")}
+                  style={{ height: `${(v / max) * 100}%` }}
+                  title={`${v}${suffix ?? ""}`}
+                />
+                <span className="font-mono text-[10px] text-ink-3">{labels[i]}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

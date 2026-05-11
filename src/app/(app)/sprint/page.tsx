@@ -9,6 +9,7 @@ import { Button, Pill } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui";
 import type { TicketStatus, Ticket } from "@/lib/types";
+import { STATUS_TRANSITIONS, TRANSITIONS_REQUIRING_CONFIRM } from "@/lib/types";
 import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
 
 interface Column {
@@ -82,12 +83,29 @@ export default function SprintBoardPage() {
     const newStatus = over.id as TicketStatus;
     const ticket = tickets.find((t) => t.id === ticketId);
     if (!ticket || ticket.status === newStatus) return;
+
+    // Validate the transition
+    const allowed = STATUS_TRANSITIONS[ticket.type]?.[ticket.status] ?? [];
+    if (!allowed.includes(newStatus)) {
+      toast(`${ticket.key} · ${ticket.status} → ${newStatus} isn't allowed for ${ticket.type}`, { kind: "error" });
+      return;
+    }
+    // Done-gate AC: if moving to done, all AC must be checked
+    if (newStatus === "done" && ticket.acceptanceCriteria.length > 0 && !ticket.acceptanceCriteria.every((ac) => ac.done)) {
+      toast(`Can't move ${ticket.key} to Done — acceptance criteria are unchecked.`, { kind: "error" });
+      return;
+    }
+
+    const isRegression = TRANSITIONS_REQUIRING_CONFIRM.some((t) => t.from === ticket.status && t.to === newStatus);
     const prev = ticket.status;
     setTicketStatus(ticketId, newStatus, user.id);
     flashTicket(ticketId);
-    toast(`${ticket.key} → ${labelFor(newStatus)}`, {
-      undo: () => setTicketStatus(ticketId, prev, user.id),
-    });
+    toast(
+      isRegression
+        ? `↩ ${ticket.key} regressed → ${labelFor(newStatus)} (audit logged)`
+        : `${ticket.key} → ${labelFor(newStatus)}`,
+      { undo: () => setTicketStatus(ticketId, prev, user.id, { force: true }), kind: isRegression ? "info" : "success" }
+    );
   };
 
   if (!viewingSprint) {

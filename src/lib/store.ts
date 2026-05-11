@@ -13,6 +13,7 @@ import type {
   User,
   TicketStatus,
 } from "./types";
+import { STATUS_TRANSITIONS } from "./types";
 import {
   seedUsers,
   seedEpics,
@@ -64,7 +65,8 @@ export interface AppState {
   activity: ActivityEntry[];
 
   // Mutations
-  setTicketStatus: (ticketId: string, status: TicketStatus, actorId: string) => void;
+  setTicketStatus: (ticketId: string, status: TicketStatus, actorId: string, opts?: { force?: boolean }) => void;
+  isValidTransition: (ticketId: string, to: TicketStatus) => boolean;
   toggleAcceptanceCriterion: (ticketId: string, acId: string, actorId: string) => void;
   setTicketField: (ticketId: string, patch: Partial<Ticket>, actorId: string) => void;
   addComment: (c: Omit<Comment, "id" | "createdAt" | "editedAt" | "reactions" | "resolvedById">) => void;
@@ -136,10 +138,24 @@ export const useAppStore = create<AppState>()(
 
       ...baseSeed(),
 
-      setTicketStatus: (ticketId, status, actorId) =>
+      isValidTransition: (ticketId: string, to: TicketStatus): boolean => {
+        const ticket = get().tickets.find((t: Ticket) => t.id === ticketId);
+        if (!ticket) return false;
+        const allowed = STATUS_TRANSITIONS[ticket.type]?.[ticket.status] ?? [];
+        return allowed.includes(to);
+      },
+
+      setTicketStatus: (ticketId, status, actorId, opts) =>
         set((s) => {
           const ticket = s.tickets.find((t) => t.id === ticketId);
           if (!ticket) return s;
+          // Validate transition (unless forced)
+          if (!opts?.force) {
+            const allowed = STATUS_TRANSITIONS[ticket.type]?.[ticket.status] ?? [];
+            if (!allowed.includes(status) && status !== ticket.status) {
+              return s;
+            }
+          }
           const before = ticket.status;
           const updates: Partial<Ticket> = { status };
           if (status === "in_progress" && !ticket.startedAt) updates.startedAt = new Date().toISOString();

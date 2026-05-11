@@ -17,6 +17,7 @@ export type Capability =
   | "view_settings"
   | "view_report_bug"
   | "view_create"
+  | "view_my_bugs"
   | "commit_sprint"
   | "edit_epic"
   | "edit_project"
@@ -63,7 +64,7 @@ export const PERMISSIONS: Record<Role, Capability[]> = {
     "view_portfolio", "view_epics", "view_timeline", "view_heatmap",
     "view_notifications", "view_settings", "comment",
   ],
-  guest: ["view_report_bug"],
+  guest: ["view_report_bug", "view_my_bugs"],
 };
 
 export function can(role: Role | undefined, cap: Capability): boolean {
@@ -88,6 +89,7 @@ const URL_GUARD: { prefix: string; cap: Capability }[] = [
   { prefix: "/settings", cap: "view_settings" },
   { prefix: "/create", cap: "view_create" },
   { prefix: "/report-bug", cap: "view_report_bug" },
+  { prefix: "/my-bugs", cap: "view_my_bugs" },
 ];
 
 export function pathRequiresCap(pathname: string): Capability | null {

@@ -9,6 +9,7 @@ import { CommentThread } from "@/components/comments/CommentThread";
 import { CommentComposer } from "@/components/comments/CommentComposer";
 import { Markdown } from "@/components/Markdown";
 import { computeEpicHealth } from "@/lib/health";
+import { Tombstone } from "@/components/Tombstone";
 
 export default function EpicDetailPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
@@ -24,12 +25,7 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
 
   const epic = epics.find((e) => e.key === key);
   if (!epic) {
-    return (
-      <div className="py-20 text-center">
-        <h2 className="display text-display-s text-ink">Epic not found.</h2>
-        <Link href="/epics" className="text-accent hover:underline mt-2 inline-block">← Back to Epic Board</Link>
-      </div>
-    );
+    return <Tombstone kind="epic" keyOrHandle={key} />;
   }
 
   const pm = users.find((u) => u.id === epic.pmPicId);
@@ -41,7 +37,7 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
 
   const epicComments = comments.filter((c) => c.entityType === "epic" && c.entityId === epic.id);
 
-  const submit = (body: string, mentions: string[]) => {
+  const submit = (body: string, mentions: string[], attachments: import("@/lib/types").Attachment[]) => {
     if (!user) return;
     addComment({
       entityType: "epic",
@@ -50,6 +46,7 @@ export default function EpicDetailPage({ params }: { params: Promise<{ key: stri
       authorId: user.id,
       body,
       mentions,
+      attachments,
     });
     toast("Comment posted to Epic thread");
   };

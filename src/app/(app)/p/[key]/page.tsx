@@ -9,6 +9,7 @@ import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
 import { Markdown } from "@/components/Markdown";
 import { cn, formatDate, statusLabel } from "@/lib/utils";
 import { computeProjectHealth } from "@/lib/health";
+import { Tombstone } from "@/components/Tombstone";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
@@ -21,12 +22,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ key: s
 
   const project = projects.find((p) => p.key === key);
   if (!project) {
-    return (
-      <div className="py-20 text-center">
-        <h2 className="display text-display-s text-ink">Project not found.</h2>
-        <Link href="/epics" className="text-accent hover:underline mt-2 inline-block">← Back</Link>
-      </div>
-    );
+    return <Tombstone kind="project" keyOrHandle={key} />;
   }
 
   const epic = epics.find((e) => e.id === project.epicId);

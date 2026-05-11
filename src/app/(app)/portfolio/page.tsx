@@ -62,6 +62,14 @@ export default function PortfolioPage() {
         </div>
       </section>
 
+      {/* On-time delivery trend */}
+      <section className="mb-8">
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">On-time delivery · last 8 sprints</div>
+        <div className="bg-bg-card border border-rule rounded-[8px] p-5">
+          <OnTimeTrend />
+        </div>
+      </section>
+
       <div className="grid grid-cols-3 gap-6">
         {/* Epics */}
         <section className="col-span-2">
@@ -124,6 +132,71 @@ export default function PortfolioPage() {
           </section>
         </aside>
       </div>
+    </div>
+  );
+}
+
+function OnTimeTrend() {
+  // Mock 8-sprint history of on-time %
+  const series = [82, 78, 85, 88, 76, 81, 87, 84];
+  const labels = ["W12","W13","W14","W15","W16","W17","W18","W19"];
+  const max = 100;
+  const min = 60;
+  const w = 720;
+  const h = 140;
+  const padL = 30;
+  const padR = 8;
+  const padT = 10;
+  const padB = 26;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+  const points = series.map((v, i) => {
+    const x = padL + (i / (series.length - 1)) * innerW;
+    const y = padT + ((max - v) / (max - min)) * innerH;
+    return { x, y, v };
+  });
+  const dPath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const avg = Math.round(series.reduce((a, b) => a + b, 0) / series.length);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">% of committed work shipped on time</span>
+        <span className="font-mono text-[12px] text-ink-2">avg {avg}% · last {series[series.length - 1]}%</span>
+      </div>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full">
+        {/* Grid lines */}
+        {[60, 70, 80, 90, 100].map((tick) => {
+          const y = padT + ((max - tick) / (max - min)) * innerH;
+          return (
+            <g key={tick}>
+              <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="var(--rule-soft)" strokeWidth="1" />
+              <text x={padL - 6} y={y + 4} textAnchor="end" className="font-mono fill-[var(--ink-3)]" style={{ fontSize: 10 }}>
+                {tick}
+              </text>
+            </g>
+          );
+        })}
+        {/* Target band 80%+ */}
+        <rect
+          x={padL}
+          y={padT}
+          width={innerW}
+          height={((max - 80) / (max - min)) * innerH}
+          fill="var(--ok-soft)"
+          opacity="0.4"
+        />
+        {/* Line */}
+        <path d={dPath} fill="none" stroke="var(--accent)" strokeWidth="2" />
+        {/* Dots */}
+        {points.map((p, i) => (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r="3" fill="var(--accent)" />
+            <text x={p.x} y={h - 10} textAnchor="middle" className="font-mono fill-[var(--ink-3)]" style={{ fontSize: 10 }}>
+              {labels[i]}
+            </text>
+          </g>
+        ))}
+      </svg>
     </div>
   );
 }

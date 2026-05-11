@@ -11,6 +11,8 @@ import { CommentComposer } from "@/components/comments/CommentComposer";
 import { Markdown } from "@/components/Markdown";
 import { LinkedWorkGraph } from "@/components/tickets/LinkedWorkGraph";
 import { CopyLinkButton } from "@/components/CopyLinkMenu";
+import { ContextMenu, useContextMenu } from "@/components/ui";
+import { Tombstone } from "@/components/Tombstone";
 
 interface Props {
   ticketKey: string;
@@ -43,10 +45,16 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
 
   const ticket = tickets.find((t) => t.key === ticketKey);
   if (!ticket) {
+    return <Tombstone kind="ticket" keyOrHandle={ticketKey} reason="not_found" />;
+  }
+  if (ticket.status === "cancelled" || ticket.status === "cannot_reproduce") {
     return (
-      <div className="p-12 text-center">
-        <div className="display text-display-s text-ink">Not found.</div>
-        <p className="text-ink-3 mt-2">No ticket exists with key {ticketKey}.</p>
+      <div>
+        <Tombstone kind="ticket" keyOrHandle={ticket.key} reason="archived" />
+        <div className="max-w-3xl mx-auto opacity-50 pointer-events-none mt-8">
+          <p className="text-center text-[12px] font-mono text-ink-3 mb-2">↓ Archived history below</p>
+          <hr className="border-rule-soft" />
+        </div>
       </div>
     );
   }
@@ -80,7 +88,7 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
     });
   };
 
-  const submitComment = (body: string, mentions: string[]) => {
+  const submitComment = (body: string, mentions: string[], attachments: import("@/lib/types").Attachment[]) => {
     if (!user) return;
     addComment({
       entityType: "ticket",
@@ -89,11 +97,12 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
       authorId: user.id,
       body,
       mentions,
+      attachments,
     });
     toast("Comment added", { kind: "success" });
   };
 
-  const submitAcComment = (acId: string, body: string, mentions: string[]) => {
+  const submitAcComment = (acId: string, body: string, mentions: string[], attachments: import("@/lib/types").Attachment[]) => {
     if (!user) return;
     addComment({
       entityType: "ac_item",
@@ -102,6 +111,7 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
       authorId: user.id,
       body,
       mentions,
+      attachments,
     });
     setAcCommentFor(null);
     toast("Comment added to acceptance criterion");
@@ -211,22 +221,16 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
                 {ticket.acceptanceCriteria.map((ac) => {
                   const acComments = comments.filter((c) => c.entityType === "ac_item" && c.entityId === ac.id && !c.parentCommentId);
                   return (
-                    <li key={ac.id} className="group">
-                      <div className="flex items-start gap-3 px-3 py-2 rounded-[6px] hover:bg-rule-soft">
-                        <input
-                          type="checkbox"
-                          checked={ac.done}
-                          onChange={() => user && toggleAC(ticket.id, ac.id, user.id)}
-                          className="mt-1 w-4 h-4 accent-accent"
-                        />
-                        <span className={cn("flex-1 text-[14px]", ac.done && "line-through text-ink-4")}>{ac.text}</span>
-                        <button
-                          onClick={() => setAcCommentFor(acCommentFor === ac.id ? null : ac.id)}
-                          className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity duration-100"
-                        >
-                          {acComments.length > 0 ? `${acComments.length} comment${acComments.length === 1 ? "" : "s"}` : "Comment"}
-                        </button>
-                      </div>
+                    <AcItem
+                      key={ac.id}
+                      ac={ac}
+                      ticketId={ticket.id}
+                      ticketKey={ticket.key}
+                      acCommentForId={acCommentFor}
+                      setAcCommentFor={setAcCommentFor}
+                      onToggle={() => user && toggleAC(ticket.id, ac.id, user.id)}
+                      acCommentsCount={acComments.length}
+                    >
                       {(acComments.length > 0 || acCommentFor === ac.id) && (
                         <div className="ml-7 mt-2 mb-3 space-y-2">
                           {acComments.map((c) => (
@@ -240,14 +244,14 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
                             <CommentComposer
                               placeholder={`Comment on this acceptance criterion…`}
                               autoFocus
-                              onSubmit={(body, mentions) => submitAcComment(ac.id, body, mentions)}
+                              onSubmit={(body, mentions, atts) => submitAcComment(ac.id, body, mentions, atts)}
                               onCancel={() => setAcCommentFor(null)}
                               submitLabel="Comment"
                             />
                           )}
                         </div>
                       )}
-                    </li>
+                    </AcItem>
                   );
                 })}
               </ul>
@@ -391,6 +395,133 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-3 pt-0.5">{label}</div>
       <div className="text-[13px] text-ink-2">{value}</div>
     </div>
+  );
+}
+
+function AcItem({
+  ac,
+  ticketId,
+  ticketKey,
+  acCommentForId,
+  setAcCommentFor,
+  onToggle,
+  acCommentsCount,
+  children,
+}: {
+  ac: import("@/lib/types").AcceptanceCriterion;
+  ticketId: string;
+  ticketKey: string;
+  acCommentForId: string | null;
+  setAcCommentFor: (id: string | null) => void;
+  onToggle: () => void;
+  acCommentsCount: number;
+  children: React.ReactNode;
+}) {
+  const menu = useContextMenu();
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkInput, setLinkInput] = useState("");
+  const tickets = useAppStore((s) => s.tickets);
+  const setTicketField = useAppStore((s) => s.setTicketField);
+  const currentUser = useCurrentUser();
+  const linked = ac.linkedTicketKeys ?? [];
+
+  const copyAcLink = () => {
+    if (typeof window === "undefined") return;
+    navigator.clipboard?.writeText(`${window.location.origin}/t/${ticketKey}#ac-${ac.id}`);
+    toast(`Link copied — ${ticketKey} · AC`);
+  };
+
+  const addLink = () => {
+    const key = linkInput.trim().toUpperCase();
+    if (!key.match(/^[A-Z]{2,4}-\d+$/) || !currentUser) return;
+    const t = tickets.find((x) => x.id === ticketId);
+    if (!t) return;
+    const newAcs = t.acceptanceCriteria.map((a) =>
+      a.id === ac.id ? { ...a, linkedTicketKeys: Array.from(new Set([...(a.linkedTicketKeys ?? []), key])) } : a
+    );
+    setTicketField(ticketId, { acceptanceCriteria: newAcs }, currentUser.id);
+    setLinkInput("");
+    setLinkOpen(false);
+    toast(`Linked ${key} to AC`);
+  };
+
+  const removeLink = (key: string) => {
+    const t = tickets.find((x) => x.id === ticketId);
+    if (!t || !currentUser) return;
+    const newAcs = t.acceptanceCriteria.map((a) =>
+      a.id === ac.id ? { ...a, linkedTicketKeys: (a.linkedTicketKeys ?? []).filter((k) => k !== key) } : a
+    );
+    setTicketField(ticketId, { acceptanceCriteria: newAcs }, currentUser.id);
+  };
+
+  return (
+    <li className="group" {...menu.bind}>
+      <div className="flex items-start gap-3 px-3 py-2 rounded-[6px] hover:bg-rule-soft">
+        <input
+          type="checkbox"
+          checked={ac.done}
+          onChange={onToggle}
+          className="mt-1 w-4 h-4 accent-accent"
+        />
+        <span className={cn("flex-1 text-[14px]", ac.done && "line-through text-ink-4")}>{ac.text}</span>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-100">
+          <button
+            onClick={() => setLinkOpen((s) => !s)}
+            className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink"
+          >
+            Link
+          </button>
+          <button
+            onClick={() => setAcCommentFor(acCommentForId === ac.id ? null : ac.id)}
+            className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink"
+          >
+            {acCommentsCount > 0 ? `${acCommentsCount} comment${acCommentsCount === 1 ? "" : "s"}` : "Comment"}
+          </button>
+        </div>
+      </div>
+      {linked.length > 0 && (
+        <div className="ml-7 flex flex-wrap gap-1.5 mt-1 mb-1">
+          {linked.map((k) => {
+            const t = tickets.find((x) => x.key === k);
+            return (
+              <span key={k} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] border border-rule bg-bg-elevated text-[12px]">
+                <Link href={`/t/${k}`} className="font-mono text-ink-2 hover:text-accent">{k}</Link>
+                {t && <span className="text-ink-4 truncate max-w-[200px]">· {t.title}</span>}
+                <button onClick={() => removeLink(k)} className="ml-1 text-ink-4 hover:text-danger">×</button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      {linkOpen && (
+        <div className="ml-7 mt-1 mb-2 flex items-center gap-2">
+          <input
+            value={linkInput}
+            onChange={(e) => setLinkInput(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addLink())}
+            placeholder="CDN-3504"
+            className="h-8 px-2 rounded-[4px] border border-rule bg-bg-card font-mono text-[12px] w-32"
+            autoFocus
+          />
+          <Button variant="primary" size="sm" onClick={addLink} disabled={!linkInput.match(/^[A-Z]{2,4}-\d+$/)}>
+            Link
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setLinkOpen(false)}>Cancel</Button>
+        </div>
+      )}
+      {children}
+      <ContextMenu
+        open={menu.open}
+        position={menu.position}
+        onClose={menu.close}
+        items={[
+          { label: ac.done ? "Mark not done" : "Mark done", onSelect: onToggle },
+          { label: "Link to a ticket…", onSelect: () => setLinkOpen(true) },
+          { label: "Comment on this AC", onSelect: () => setAcCommentFor(ac.id) },
+          { label: "Copy link to AC", onSelect: copyAcLink, shortcut: "⌘⇧," },
+        ]}
+      />
+    </li>
   );
 }
 
