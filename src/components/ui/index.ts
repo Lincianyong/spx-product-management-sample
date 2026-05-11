@@ -8,3 +8,5 @@ export { Modal, SlideOver } from "./Modal";
 export { ToastViewport, toast, useToastStore } from "./Toast";
 export { ContextMenu, useContextMenu } from "./ContextMenu";
 export type { ContextMenuItem } from "./ContextMenu";
+export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "./Chart";
+export type { ChartConfig } from "./Chart";

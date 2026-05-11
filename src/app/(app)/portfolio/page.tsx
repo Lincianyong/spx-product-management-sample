@@ -1,11 +1,31 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
-import { Avatar, HealthPill, Pill } from "@/components/ui";
-import { cn, formatDate, healthLabel } from "@/lib/utils";
+import { Avatar, HealthPill, Pill, ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui";
+import { cn, healthLabel } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+
+type Range = "3m" | "6m" | "12m";
+type HealthFilter = "all" | "on_track" | "at_risk" | "blocked" | "not_started";
+type SortBy = "key" | "health" | "projects";
+
+const RANGE_LENGTHS: Record<Range, number> = { "3m": 6, "6m": 12, "12m": 24 };
 
 export default function PortfolioPage() {
   useDocumentTitle("Portfolio Health");
@@ -13,6 +33,10 @@ export default function PortfolioPage() {
   const projects = useAppStore((s) => s.projects);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
+
+  const [range, setRange] = useState<Range>("6m");
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("health");
 
   const total = epics.length;
   const byHealth = {
@@ -22,17 +46,28 @@ export default function PortfolioPage() {
     not_started: epics.filter((e) => e.health === "not_started").length,
   };
 
+  const filteredEpics = useMemo(() => {
+    let arr = epics.slice();
+    if (healthFilter !== "all") arr = arr.filter((e) => e.health === healthFilter);
+    if (sortBy === "key") arr.sort((a, b) => a.key.localeCompare(b.key));
+    if (sortBy === "health") {
+      const order: Record<string, number> = { blocked: 0, at_risk: 1, on_track: 2, not_started: 3 };
+      arr.sort((a, b) => order[a.health] - order[b.health]);
+    }
+    if (sortBy === "projects") {
+      arr.sort(
+        (a, b) =>
+          projects.filter((p) => p.epicId === b.id).length -
+          projects.filter((p) => p.epicId === a.id).length
+      );
+    }
+    return arr;
+  }, [epics, healthFilter, sortBy, projects]);
+
   const blockers = tickets
     .filter((t) => t.blocked || t.status === "scheduled")
     .filter((t) => t.priority === "P0" || t.priority === "P1")
     .slice(0, 5);
-
-  const pods = ["routing", "sorting", "forecasting", "platform"] as const;
-  const allocByPod = pods.map((pod) => ({
-    pod,
-    count: projects.filter((p) => p.pod === pod).length,
-  }));
-  const allocTotal = allocByPod.reduce((a, b) => a + b.count, 0) || 1;
 
   return (
     <div>
@@ -46,6 +81,7 @@ export default function PortfolioPage() {
         lede="Leadership view. Health rolls up Epic → Portfolio. Click any Epic for the full thread."
       />
 
+      {/* Stat row */}
       <div className="grid grid-cols-4 gap-3 mb-8">
         <Stat label="Epics" value={total} />
         <Stat label="On Track" value={byHealth.on_track} accent="ok" />
@@ -53,31 +89,71 @@ export default function PortfolioPage() {
         <Stat label="Blocked" value={byHealth.blocked} accent="danger" />
       </div>
 
-      {/* Health distribution bar */}
-      <section className="mb-8">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">Health distribution</div>
-        <div className="flex h-3 w-full rounded-full overflow-hidden border border-rule">
-          {byHealth.on_track > 0 && <div className="bg-ok" style={{ width: `${(byHealth.on_track / total) * 100}%` }} />}
-          {byHealth.at_risk > 0 && <div className="bg-warn" style={{ width: `${(byHealth.at_risk / total) * 100}%` }} />}
-          {byHealth.blocked > 0 && <div className="bg-danger" style={{ width: `${(byHealth.blocked / total) * 100}%` }} />}
-          {byHealth.not_started > 0 && <div className="bg-neutral" style={{ width: `${(byHealth.not_started / total) * 100}%` }} />}
-        </div>
-      </section>
+      {/* Two-up: health donut + on-time trend */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <HealthDistribution byHealth={byHealth} total={total} />
+        <OnTimeTrend range={range} setRange={setRange} />
+      </div>
 
-      {/* On-time delivery trend */}
-      <section className="mb-8">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">On-time delivery · last 8 sprints</div>
-        <div className="bg-bg-card border border-rule rounded-[8px] p-5">
-          <OnTimeTrend />
-        </div>
-      </section>
+      <div className="grid grid-cols-3 gap-6 mb-8">
+        <AllocationByPod className="col-span-1" />
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Epics */}
+        {/* Top blockers card */}
         <section className="col-span-2">
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">Epics</div>
-          <div className="space-y-2">
-            {epics.map((e) => {
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Top blockers</div>
+            <span className="font-mono text-[11px] text-ink-3">P0 + P1 only</span>
+          </div>
+          <div className="bg-bg-card border border-rule rounded-[8px] divide-y divide-rule-soft">
+            {blockers.length === 0 ? (
+              <p className="px-4 py-6 italic text-[13px] text-ink-3">Nothing blocking right now.</p>
+            ) : (
+              blockers.map((t) => (
+                <Link key={t.id} href={`/t/${t.key}`} className="flex items-center gap-3 px-4 py-3 hover:bg-bg-elevated">
+                  <span className="font-mono text-[11px] text-ink-3 w-20">{t.key}</span>
+                  <Pill variant={t.priority === "P0" ? "danger" : "warn"}>{t.priority}</Pill>
+                  <span className="flex-1 text-[13px] text-ink truncate">{t.title}</span>
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Epics list with filters */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Epics</div>
+          <div className="flex items-center gap-3">
+            <FilterPills
+              label="Health"
+              value={healthFilter}
+              onChange={(v) => setHealthFilter(v as HealthFilter)}
+              options={[
+                { value: "all", label: "All" },
+                { value: "on_track", label: "On Track" },
+                { value: "at_risk", label: "At Risk" },
+                { value: "blocked", label: "Blocked" },
+                { value: "not_started", label: "Not started" },
+              ]}
+            />
+            <FilterPills
+              label="Sort"
+              value={sortBy}
+              onChange={(v) => setSortBy(v as SortBy)}
+              options={[
+                { value: "health", label: "Health" },
+                { value: "key", label: "Key" },
+                { value: "projects", label: "# Projects" },
+              ]}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          {filteredEpics.length === 0 ? (
+            <p className="italic text-[13px] text-ink-3 py-4">No Epics match this filter.</p>
+          ) : (
+            filteredEpics.map((e) => {
               const pm = users.find((u) => u.id === e.pmPicId);
               const childProjects = projects.filter((p) => p.epicId === e.id).length;
               return (
@@ -96,110 +172,207 @@ export default function PortfolioPage() {
                   <Avatar user={pm} size="xs" />
                 </Link>
               );
-            })}
-          </div>
-        </section>
+            })
+          )}
+        </div>
+        <div className="text-[11px] font-mono text-ink-3 mt-2">
+          Showing {filteredEpics.length} of {epics.length} Epics
+        </div>
+      </section>
+    </div>
+  );
+}
 
-        {/* Side */}
-        <aside className="space-y-6">
-          <section>
-            <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">Top blockers</div>
-            <div className="space-y-2">
-              {blockers.map((t) => (
-                <Link key={t.id} href={`/t/${t.key}`} className="block p-3 rounded-[8px] bg-bg-card border border-rule hover:border-danger">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-[11px] text-ink-3">{t.key}</span>
-                    <Pill variant={t.priority === "P0" ? "danger" : "warn"}>{t.priority}</Pill>
-                  </div>
-                  <div className="text-[13px] text-ink truncate">{t.title}</div>
-                </Link>
-              ))}
-              {blockers.length === 0 && <p className="text-[13px] italic text-ink-3">Nothing blocking right now.</p>}
-            </div>
-          </section>
-
-          <section>
-            <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">Allocation by pod</div>
-            <div className="space-y-2">
-              {allocByPod.map((a) => (
-                <div key={a.pod} className="flex items-center gap-3">
-                  <span className="text-[13px] text-ink w-20 capitalize">{a.pod}</span>
-                  <div className="flex-1 h-2 bg-rule-soft rounded-full overflow-hidden">
-                    <div className="h-full bg-accent" style={{ width: `${(a.count / allocTotal) * 100}%` }} />
-                  </div>
-                  <span className="font-mono text-[11px] text-ink-3 w-8 text-right">{a.count}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
+function FilterPills({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">{label}</span>
+      <div className="flex items-center gap-1">
+        {options.map((o) => (
+          <button
+            key={o.value}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              "px-2.5 h-7 text-[11px] font-mono uppercase rounded-[4px] border transition-colors duration-100",
+              value === o.value ? "bg-ink text-bg-card border-ink" : "bg-bg-card text-ink-2 border-rule hover:border-ink-4"
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-function OnTimeTrend() {
-  // Mock 8-sprint history of on-time %
-  const series = [82, 78, 85, 88, 76, 81, 87, 84];
-  const labels = ["W12","W13","W14","W15","W16","W17","W18","W19"];
-  const max = 100;
-  const min = 60;
-  const w = 720;
-  const h = 140;
-  const padL = 30;
-  const padR = 8;
-  const padT = 10;
-  const padB = 26;
-  const innerW = w - padL - padR;
-  const innerH = h - padT - padB;
-  const points = series.map((v, i) => {
-    const x = padL + (i / (series.length - 1)) * innerW;
-    const y = padT + ((max - v) / (max - min)) * innerH;
-    return { x, y, v };
-  });
-  const dPath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-  const avg = Math.round(series.reduce((a, b) => a + b, 0) / series.length);
+function HealthDistribution({ byHealth, total }: { byHealth: Record<string, number>; total: number }) {
+  const data = useMemo(
+    () =>
+      [
+        { key: "on_track", name: "On Track", value: byHealth.on_track, color: "var(--ok)" },
+        { key: "at_risk", name: "At Risk", value: byHealth.at_risk, color: "var(--warn)" },
+        { key: "blocked", name: "Blocked", value: byHealth.blocked, color: "var(--danger)" },
+        { key: "not_started", name: "Not started", value: byHealth.not_started, color: "var(--neutral)" },
+      ].filter((d) => d.value > 0),
+    [byHealth]
+  );
+
+  const config: ChartConfig = {
+    on_track: { label: "On Track", color: "var(--ok)" },
+    at_risk: { label: "At Risk", color: "var(--warn)" },
+    blocked: { label: "Blocked", color: "var(--danger)" },
+    not_started: { label: "Not started", color: "var(--neutral)" },
+  };
+
   return (
-    <div>
+    <section className="bg-bg-card border border-rule rounded-[8px] p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">% of committed work shipped on time</span>
-        <span className="font-mono text-[12px] text-ink-2">avg {avg}% · last {series[series.length - 1]}%</span>
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Health distribution</div>
+        <span className="font-mono text-[11px] text-ink-3">{total} Epics</span>
       </div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full">
-        {/* Grid lines */}
-        {[60, 70, 80, 90, 100].map((tick) => {
-          const y = padT + ((max - tick) / (max - min)) * innerH;
-          return (
-            <g key={tick}>
-              <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="var(--rule-soft)" strokeWidth="1" />
-              <text x={padL - 6} y={y + 4} textAnchor="end" className="font-mono fill-[var(--ink-3)]" style={{ fontSize: 10 }}>
-                {tick}
-              </text>
-            </g>
-          );
-        })}
-        {/* Target band 80%+ */}
-        <rect
-          x={padL}
-          y={padT}
-          width={innerW}
-          height={((max - 80) / (max - min)) * innerH}
-          fill="var(--ok-soft)"
-          opacity="0.4"
+      <div className="h-[220px] flex items-center gap-4">
+        <div className="flex-1 h-full">
+          <ChartContainer config={config}>
+            <PieChart>
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(v) => `${v} ${Number(v) === 1 ? "Epic" : "Epics"} · ${Math.round((Number(v) / total) * 100)}%`}
+                  />
+                }
+              />
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} strokeWidth={2} stroke="var(--bg-card)">
+                {data.map((d) => (
+                  <Cell key={d.key} fill={d.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+        </div>
+        <ul className="space-y-2 pr-2">
+          {data.map((d) => (
+            <li key={d.key} className="flex items-center gap-2 text-[12px]">
+              <span className="w-2.5 h-2.5 rounded-[2px]" style={{ background: d.color }} />
+              <span className="text-ink-2 w-24">{d.name}</span>
+              <span className="font-mono text-ink tabular-nums">{d.value}</span>
+              <span className="font-mono text-[10px] text-ink-3">({Math.round((d.value / total) * 100)}%)</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function OnTimeTrend({ range, setRange }: { range: Range; setRange: (r: Range) => void }) {
+  const fullSeries = useMemo(() => {
+    // 24 sprints back, mock noise around 82%
+    return Array.from({ length: 24 }, (_, i) => {
+      const seed = Math.sin(i * 0.7) * 6 + Math.cos(i * 1.3) * 4;
+      const v = Math.max(60, Math.min(100, 80 + Math.round(seed)));
+      return { sprint: `W${(i % 26) + 1}`, onTime: v };
+    });
+  }, []);
+
+  const data = fullSeries.slice(fullSeries.length - RANGE_LENGTHS[range]);
+  const avg = Math.round(data.reduce((a, b) => a + b.onTime, 0) / data.length);
+  const last = data[data.length - 1]?.onTime ?? 0;
+
+  const config: ChartConfig = {
+    onTime: { label: "On-time %", color: "var(--accent)" },
+  };
+
+  return (
+    <section className="bg-bg-card border border-rule rounded-[8px] p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">On-time delivery trend</div>
+          <div className="font-mono text-[12px] text-ink-3 mt-0.5">avg {avg}% · last {last}%</div>
+        </div>
+        <FilterPills
+          label="Range"
+          value={range}
+          onChange={(v) => setRange(v as Range)}
+          options={[
+            { value: "3m", label: "3M" },
+            { value: "6m", label: "6M" },
+            { value: "12m", label: "12M" },
+          ]}
         />
-        {/* Line */}
-        <path d={dPath} fill="none" stroke="var(--accent)" strokeWidth="2" />
-        {/* Dots */}
-        {points.map((p, i) => (
-          <g key={i}>
-            <circle cx={p.x} cy={p.y} r="3" fill="var(--accent)" />
-            <text x={p.x} y={h - 10} textAnchor="middle" className="font-mono fill-[var(--ink-3)]" style={{ fontSize: 10 }}>
-              {labels[i]}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </div>
+      </div>
+      <div className="h-[220px]">
+        <ChartContainer config={config}>
+          <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="2 4" vertical={false} />
+            <XAxis dataKey="sprint" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+            <YAxis
+              domain={[60, 100]}
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 10 }}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <ReferenceLine y={80} stroke="var(--ok)" strokeDasharray="3 3" />
+            <ChartTooltip content={<ChartTooltipContent formatter={(v) => `${v}%`} />} />
+            <Line
+              type="monotone"
+              dataKey="onTime"
+              stroke="var(--color-onTime)"
+              strokeWidth={2}
+              dot={{ r: 3, fill: "var(--color-onTime)", strokeWidth: 0 }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ChartContainer>
+      </div>
+    </section>
+  );
+}
+
+function AllocationByPod({ className }: { className?: string }) {
+  const projects = useAppStore((s) => s.projects);
+  const pods = ["routing", "sorting", "forecasting", "platform"] as const;
+  const data = useMemo(
+    () =>
+      pods.map((pod) => ({
+        pod: pod.charAt(0).toUpperCase() + pod.slice(1),
+        projects: projects.filter((p) => p.pod === pod).length,
+      })),
+    [projects]
+  );
+
+  const config: ChartConfig = {
+    projects: { label: "Projects", color: "var(--accent)" },
+  };
+
+  return (
+    <section className={cn("bg-bg-card border border-rule rounded-[8px] p-4", className)}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Allocation by pod</div>
+        <span className="font-mono text-[11px] text-ink-3">{projects.length} Projects</span>
+      </div>
+      <div className="h-[220px]">
+        <ChartContainer config={config}>
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 0, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="2 4" horizontal={false} />
+            <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} allowDecimals={false} />
+            <YAxis type="category" dataKey="pod" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} width={80} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="projects" fill="var(--color-projects)" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ChartContainer>
+      </div>
+    </section>
   );
 }
 

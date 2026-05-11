@@ -1,29 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
   <rect width="180" height="180" rx="32" fill="#FFFFFF"/>
   <g fill="#EE4D2D">
+    <g transform="skewX(-12)">
+      <text
+        x="34" y="120"
+        font-family="'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-weight="900"
+        font-style="italic"
+        font-size="92"
+        letter-spacing="-3"
+      >SPX</text>
+    </g>
+    <polygon points="138,22 146,22 110,156 102,156" />
     <text
-      x="90" y="112"
+      x="118" y="148"
       font-family="'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif"
       font-weight="900"
       font-style="italic"
-      font-size="76"
-      letter-spacing="-2"
-      text-anchor="middle"
-    >SPX</text>
-    <text
-      x="118" y="140"
-      font-family="'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-      font-weight="900"
-      font-style="italic"
-      font-size="18"
-      letter-spacing="2"
+      font-size="16"
+      letter-spacing="3"
       text-anchor="middle"
     >EXPRESS</text>
     <g transform="skewX(-30)">
-      <rect x="38" y="150" width="14" height="6"/>
-      <rect x="60" y="150" width="24" height="6"/>
-      <rect x="92" y="150" width="36" height="6"/>
-      <rect x="138" y="150" width="14" height="6"/>
+      <rect x="20" y="158" width="14" height="5"/>
+      <rect x="44" y="158" width="26" height="5"/>
+      <rect x="80" y="158" width="44" height="5"/>
+      <rect x="134" y="158" width="14" height="5"/>
     </g>
   </g>
 </svg>

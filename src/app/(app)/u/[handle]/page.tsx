@@ -1,14 +1,34 @@
 "use client";
 
-import { use } from "react";
+import { use, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
-import { Avatar, HealthPill, Pill, RolePill } from "@/components/ui";
+import {
+  Avatar,
+  HealthPill,
+  Pill,
+  RolePill,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
-import { cn, formatDate, podLabel, relativeTime, roleLabel } from "@/lib/utils";
+import { cn, podLabel, relativeTime, roleLabel } from "@/lib/utils";
 import { Tombstone } from "@/components/Tombstone";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+
+type VelocityRange = "6" | "12";
 
 export default function ProfilePage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = use(params);
@@ -28,17 +48,6 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
   const myEpics = epics.filter((e) => e.pmPicId === user.id);
   const isPM = user.role === "pm" || user.role === "leadership";
 
-  const velocity = [22, 26, 24, 28, 27, 31];
-
-  // Forward load: 4 weeks ahead with deterministic noise
-  const forwardLoad = Array.from({ length: 4 }, (_, i) => {
-    const base = tickets.filter((t) => t.assigneeId === user.id && t.storyPoints != null)
-      .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
-    const seed = (user.id.charCodeAt(2) + i * 5) % 9;
-    return Math.max(0, base + seed - 4);
-  });
-
-  // Mock PR activity (last 6 PRs)
   const prActivity = [
     { repo: "spx/forecasting", title: "CDN-3504 · Drift detection on retrain pipeline", state: "open", merged: false, at: new Date(Date.now() - 3 * 86400000).toISOString() },
     { repo: "spx/forecasting", title: "CDN-3496 · Calibration channel hookup", state: "merged", merged: true, at: new Date(Date.now() - 5 * 86400000).toISOString() },
@@ -101,8 +110,8 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <BarChart title="Velocity · last 6 sprints" data={velocity} labels={["W14","W15","W16","W17","W18","W19"]} suffix="pt" />
-              <BarChart title="Forward load · next 4 weeks" data={forwardLoad} labels={["W20","W21","W22","W23"]} suffix="pt" cap={user.capacityPoints} />
+              <VelocityChart userId={user.id} />
+              <ForwardLoadChart userId={user.id} cap={user.capacityPoints} />
             </div>
 
             <div>
@@ -148,10 +157,112 @@ export default function ProfilePage({ params }: { params: Promise<{ handle: stri
             <Stat label="Capacity" value={`${user.capacityPoints} pts/sprint`} />
             <Stat label="Pod" value={podLabel(user.pod)} />
             <Stat label="Status" value={user.status === "ooo" ? "Out of office" : user.status === "in_meeting" ? "In a meeting" : "Available"} />
-            <Stat label="Velocity avg" value={`${Math.round(velocity.reduce((a, b) => a + b, 0) / velocity.length)} pt`} />
           </aside>
         </div>
       )}
+    </div>
+  );
+}
+
+function VelocityChart({ userId }: { userId: string }) {
+  const [range, setRange] = useState<VelocityRange>("6");
+  // Deterministic mock based on user id
+  const base = userId.charCodeAt(2) % 12;
+  const all = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => {
+        const v = Math.max(10, 24 + Math.round(Math.sin(i + base) * 6 + Math.cos(i * 0.7) * 4));
+        return { sprint: `W${i + 8}`, points: v };
+      }),
+    [base]
+  );
+  const data = all.slice(all.length - Number(range));
+  const avg = Math.round(data.reduce((a, b) => a + b.points, 0) / data.length);
+
+  const config: ChartConfig = {
+    points: { label: "Points shipped", color: "var(--accent)" },
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+          Velocity · {range} sprints
+        </div>
+        <div className="flex items-center gap-1">
+          {(["6", "12"] as VelocityRange[]).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={cn(
+                "px-2 h-6 text-[10px] font-mono uppercase rounded-[4px] border",
+                range === r ? "bg-ink text-bg-card border-ink" : "bg-bg-card text-ink-2 border-rule"
+              )}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="bg-bg-card border border-rule rounded-[8px] p-4">
+        <div className="h-[140px]">
+          <ChartContainer config={config}>
+            <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" vertical={false} />
+              <XAxis dataKey="sprint" tickLine={false} axisLine={false} tick={{ fontSize: 9 }} interval={0} />
+              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9 }} width={28} />
+              <ReferenceLine y={avg} stroke="var(--ink-4)" strokeDasharray="3 3" label={{ value: `avg ${avg}`, position: "insideTopRight", fontSize: 9, fill: "var(--ink-3)" }} />
+              <ChartTooltip content={<ChartTooltipContent formatter={(v) => `${v} pt`} />} />
+              <Bar dataKey="points" fill="var(--color-points)" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+        <div className="flex items-center justify-between mt-2 font-mono text-[10px] text-ink-3">
+          <span>avg {avg} pt</span>
+          <span>last {data[data.length - 1]?.points} pt</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ForwardLoadChart({ userId, cap }: { userId: string; cap: number }) {
+  const data = useMemo(() => {
+    const seed = userId.charCodeAt(2);
+    return Array.from({ length: 4 }, (_, i) => {
+      const v = Math.max(0, cap + Math.round(Math.sin((i + seed) * 1.1) * 4) - 1);
+      return { week: `W${20 + i}`, points: v };
+    });
+  }, [userId, cap]);
+
+  const config: ChartConfig = {
+    points: { label: "Forecast load", color: "var(--accent)" },
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Forward load · 4 weeks</div>
+        <span className="font-mono text-[10px] text-ink-3">cap {cap} pt</span>
+      </div>
+      <div className="bg-bg-card border border-rule rounded-[8px] p-4">
+        <div className="h-[140px]">
+          <ChartContainer config={config}>
+            <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" vertical={false} />
+              <XAxis dataKey="week" tickLine={false} axisLine={false} tick={{ fontSize: 9 }} interval={0} />
+              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9 }} width={28} />
+              <ReferenceLine y={cap} stroke="var(--warn)" strokeDasharray="3 3" />
+              <ChartTooltip content={<ChartTooltipContent formatter={(v) => `${v} pt`} />} />
+              <Bar dataKey="points" radius={[3, 3, 0, 0]}>
+                {data.map((d, i) => (
+                  <Cell key={i} fill={d.points > cap ? "var(--danger)" : "var(--accent)"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ChartContainer>
+        </div>
+      </div>
     </div>
   );
 }
@@ -161,41 +272,6 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="bg-bg-card border border-rule rounded-[8px] p-3">
       <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mb-1.5">{label}</div>
       <div className="text-[14px] text-ink">{value}</div>
-    </div>
-  );
-}
-
-function BarChart({ title, data, labels, suffix, cap }: { title: string; data: number[]; labels: string[]; suffix?: string; cap?: number }) {
-  const max = Math.max(...data, cap ?? 0, 1);
-  return (
-    <div>
-      <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">{title}</div>
-      <div className="bg-bg-card border border-rule rounded-[8px] p-4">
-        <div className="flex items-end gap-2 h-28 relative">
-          {cap != null && (
-            <div
-              className="absolute left-0 right-0 border-t border-dashed border-warn"
-              style={{ bottom: `${(cap / max) * 100}%` }}
-              aria-hidden
-            >
-              <span className="absolute right-0 -top-3 font-mono text-[9px] text-warn">cap {cap}</span>
-            </div>
-          )}
-          {data.map((v, i) => {
-            const over = cap != null && v > cap;
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className={cn("w-full rounded-t-[4px] transition-all duration-300", over ? "bg-danger" : "bg-accent")}
-                  style={{ height: `${(v / max) * 100}%` }}
-                  title={`${v}${suffix ?? ""}`}
-                />
-                <span className="font-mono text-[10px] text-ink-3">{labels[i]}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
