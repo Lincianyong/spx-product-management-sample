@@ -5,7 +5,7 @@ import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useDraggable, use
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Button, Pill } from "@/components/ui";
+import { Button, Pill, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui";
 import type { TicketStatus, Ticket } from "@/lib/types";
@@ -131,18 +131,21 @@ export default function SprintBoardPage() {
         }
         actions={
           <div className="flex items-center gap-2">
-            <select
+            <Select
               value={viewingSprint.id}
-              onChange={(e) => selectSprint(e.target.value === activeSprint?.id ? null : e.target.value)}
-              className="h-8 px-2 text-[12px] font-mono uppercase tracking-[0.06em] rounded-[6px] border border-rule bg-bg-card text-ink-2"
-              aria-label="Sprint switcher"
+              onValueChange={(v) => selectSprint(v === activeSprint?.id ? null : v)}
             >
-              {sprints.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.key} · {s.state}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger size="sm" className="w-44 font-mono uppercase tracking-[0.06em]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sprints.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.key} · {s.state}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FilterChip active={filter === "me"} onClick={() => setFilter("me")}>
               Me
             </FilterChip>

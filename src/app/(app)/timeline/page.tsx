@@ -10,6 +10,9 @@ import type { Epic } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 type Zoom = "week" | "month" | "quarter";
+type RangePreset = "auto" | "1m" | "3m" | "6m" | "12m" | "custom";
+
+const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 export default function TimelinePage() {
   useDocumentTitle("Timeline");
@@ -18,15 +21,46 @@ export default function TimelinePage() {
   const users = useAppStore((s) => s.users);
   const user = useCurrentUser();
   const [zoom, setZoom] = useState<Zoom>("month");
+  const [rangePreset, setRangePreset] = useState<RangePreset>("auto");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffsetDays, setDragOffsetDays] = useState<number>(0);
   const laneRef = useRef<HTMLDivElement>(null);
 
-  const allDates = epics.flatMap((e) => [new Date(e.startDate).getTime(), new Date(e.targetEndDate).getTime()]);
-  const start = Math.min(...allDates);
-  const end = Math.max(...allDates);
+  // Date range derived from preset + epics
+  const { start, end } = useMemo(() => {
+    const allDates = epics.flatMap((e) => [new Date(e.startDate).getTime(), new Date(e.targetEndDate).getTime()]);
+    const epicMin = allDates.length ? Math.min(...allDates) : Date.now();
+    const epicMax = allDates.length ? Math.max(...allDates) : Date.now() + 90 * 86400000;
+    if (rangePreset === "auto") return { start: epicMin, end: epicMax };
+    if (rangePreset === "custom") {
+      const cf = customFrom ? new Date(customFrom).getTime() : epicMin;
+      const ct = customTo ? new Date(customTo).getTime() : epicMax;
+      return { start: Math.min(cf, ct), end: Math.max(cf, ct) };
+    }
+    const months = rangePreset === "1m" ? 1 : rangePreset === "3m" ? 3 : rangePreset === "6m" ? 6 : 12;
+    const todayTs = Date.now();
+    return { start: todayTs - months * 15 * 86400000, end: todayTs + months * 15 * 86400000 };
+  }, [epics, rangePreset, customFrom, customTo]);
+
   const range = end - start;
   const today = Date.now();
+
+  // Initialize custom inputs from current range when entering custom mode
+  const onPresetChange = (next: RangePreset) => {
+    if (next === "custom" && !customFrom) {
+      setCustomFrom(isoDate(start));
+      setCustomTo(isoDate(end));
+    }
+    setRangePreset(next);
+  };
+
+  const visibleEpics = epics.filter((e) => {
+    const es = new Date(e.startDate).getTime();
+    const ee = new Date(e.targetEndDate).getTime();
+    return ee >= start && es <= end;
+  });
 
   // Dependency arrows derived from Project linked_work edges aggregated to Epic level
   const dependencies = useMemo(() => {
@@ -118,24 +152,78 @@ export default function TimelinePage() {
             The <em className="text-accent">arc</em> of the quarter.
           </>
         }
-        lede="Epics as rows, time horizontal. Drag a bar to reschedule. Arrows show cross-Epic dependencies."
+        lede="Epics as rows, time horizontal. Drag a bar to reschedule. Pick a custom date range to focus."
         actions={
-          <div className="flex items-center gap-1">
-            {(["week", "month", "quarter"] as Zoom[]).map((z) => (
-              <button
-                key={z}
-                onClick={() => setZoom(z)}
-                className={cn(
-                  "px-3 h-8 text-[12px] font-mono uppercase rounded-[6px] border",
-                  zoom === z ? "bg-accent text-bg-card border-accent" : "bg-bg-card text-ink-2 border-rule"
-                )}
-              >
-                {z}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mr-1">Zoom</span>
+              {(["week", "month", "quarter"] as Zoom[]).map((z) => (
+                <button
+                  key={z}
+                  onClick={() => setZoom(z)}
+                  className={cn(
+                    "px-2.5 h-8 text-[11px] font-mono uppercase rounded-[6px] border transition-colors duration-100",
+                    zoom === z ? "bg-accent text-bg-card border-accent" : "bg-bg-card text-ink-2 border-rule hover:border-ink-4"
+                  )}
+                >
+                  {z}
+                </button>
+              ))}
+            </div>
           </div>
         }
       />
+
+      {/* Range bar */}
+      <div className="bg-bg-card border border-rule rounded-[8px] p-3 mb-4 flex flex-wrap items-center gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Range</span>
+        <div className="flex items-center gap-1">
+          {([
+            { v: "auto", label: "Auto" },
+            { v: "1m", label: "1M" },
+            { v: "3m", label: "3M" },
+            { v: "6m", label: "6M" },
+            { v: "12m", label: "12M" },
+            { v: "custom", label: "Custom" },
+          ] as { v: RangePreset; label: string }[]).map((o) => (
+            <button
+              key={o.v}
+              onClick={() => onPresetChange(o.v)}
+              className={cn(
+                "px-2.5 h-7 text-[11px] font-mono uppercase rounded-[4px] border transition-colors duration-100",
+                rangePreset === o.v ? "bg-ink text-bg-card border-ink" : "bg-bg-card text-ink-2 border-rule hover:border-ink-4"
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {rangePreset === "custom" && (
+          <div className="flex items-center gap-2 ml-2">
+            <label className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">From</span>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="h-8 px-2 text-[12px] rounded-[6px] border border-rule bg-bg-card"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">To</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="h-8 px-2 text-[12px] rounded-[6px] border border-rule bg-bg-card"
+              />
+            </label>
+          </div>
+        )}
+        <span className="ml-auto font-mono text-[11px] text-ink-3">
+          {formatDate(isoDate(start))} – {formatDate(isoDate(end))} · {visibleEpics.length} of {epics.length} Epics in range
+        </span>
+      </div>
 
       <div className="bg-bg-card border border-rule rounded-[8px] p-6 relative overflow-hidden">
         {/* Today line */}
@@ -162,7 +250,10 @@ export default function TimelinePage() {
         </div>
 
         <div ref={laneRef} className="space-y-3 relative">
-          {epics.map((e) => {
+          {visibleEpics.length === 0 && (
+            <p className="text-[13px] italic text-ink-3 py-6 text-center">No Epics fall in this date range. Widen the range or pick Auto.</p>
+          )}
+          {visibleEpics.map((e) => {
             const isDragged = draggingId === e.id;
             const offset = isDragged ? (dragOffsetDays / (range / 86400000)) * 100 : 0;
             const left = ((new Date(e.startDate).getTime() - start) / range) * 100 + offset;

@@ -4,7 +4,17 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
-import { Pill, PriorityPill, TypePill, toast } from "@/components/ui";
+import {
+  Pill,
+  PriorityPill,
+  TypePill,
+  toast,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui";
 import { SortableList, DragHandle } from "@/components/SortableList";
 import { cn, daysBetween, formatDate } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
@@ -50,18 +60,19 @@ export default function BacklogPage() {
         }
         lede="Drag the handle (⠿) to re-prioritize. Picklist (Stage 4a) pulls from the top."
         actions={
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="h-9 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]"
-          >
-            <option value="all">All Projects</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.key}>
-                {p.key} · {p.title}
-              </option>
-            ))}
-          </select>
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger size="sm" className="w-64">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Projects</SelectItem>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.key}>
+                  {p.key} · {p.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         }
       />
 

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore } from "@/lib/store";
-import { Avatar, Pill, SlideOver } from "@/components/ui";
+import { Avatar, Pill, SlideOver, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
@@ -85,17 +85,18 @@ export default function HeatmapPage() {
         }
         lede="Engineers by week. Color and number are % capacity. Click any cell to drill into the assigned tickets."
         actions={
-          <select
-            value={podFilter}
-            onChange={(e) => setPodFilter(e.target.value)}
-            className="h-9 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]"
-          >
-            <option value="all">All pods</option>
-            <option value="routing">Routing</option>
-            <option value="sorting">Sorting</option>
-            <option value="forecasting">Forecasting</option>
-            <option value="platform">Platform</option>
-          </select>
+          <Select value={podFilter} onValueChange={setPodFilter}>
+            <SelectTrigger size="sm" className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All pods</SelectItem>
+              <SelectItem value="routing">Routing</SelectItem>
+              <SelectItem value="sorting">Sorting</SelectItem>
+              <SelectItem value="forecasting">Forecasting</SelectItem>
+              <SelectItem value="platform">Platform</SelectItem>
+            </SelectContent>
+          </Select>
         }
       />
 

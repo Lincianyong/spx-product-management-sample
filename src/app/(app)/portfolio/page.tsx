@@ -16,27 +16,43 @@ import {
   YAxis,
 } from "recharts";
 import { PageHeader } from "@/components/PageHeader";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, HealthPill, Pill, ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui";
-import { cn, healthLabel } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 type Range = "3m" | "6m" | "12m";
 type HealthFilter = "all" | "on_track" | "at_risk" | "blocked" | "not_started";
 type SortBy = "key" | "health" | "projects";
+type Scope = "all" | "team" | "personal";
 
 const RANGE_LENGTHS: Record<Range, number> = { "3m": 6, "6m": 12, "12m": 24 };
 
 export default function PortfolioPage() {
   useDocumentTitle("Portfolio Health");
-  const epics = useAppStore((s) => s.epics);
+  const allEpics = useAppStore((s) => s.epics);
   const projects = useAppStore((s) => s.projects);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
+  const currentUser = useCurrentUser();
 
+  const [scope, setScope] = useState<Scope>("all");
   const [range, setRange] = useState<Range>("6m");
   const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("health");
+
+  // Scope filter — applied first
+  const epics = useMemo(() => {
+    if (!currentUser || scope === "all") return allEpics;
+    if (scope === "personal") return allEpics.filter((e) => e.pmPicId === currentUser.id);
+    // team: epics whose child projects include the user's pod
+    const userPod = currentUser.pod;
+    if (!userPod) return allEpics; // PMs/leadership without pod see all in team mode
+    const teamEpicIds = new Set(
+      projects.filter((p) => p.pod === userPod).map((p) => p.epicId)
+    );
+    return allEpics.filter((e) => teamEpicIds.has(e.id));
+  }, [allEpics, projects, scope, currentUser]);
 
   const total = epics.length;
   const byHealth = {
@@ -78,8 +94,26 @@ export default function PortfolioPage() {
             The <em className="text-accent">whole bet</em>, at a glance.
           </>
         }
-        lede="Leadership view. Health rolls up Epic → Portfolio. Click any Epic for the full thread."
+        lede="Health rolls up Epic → Portfolio. Toggle scope to focus on your pod or just your owned Epics."
+        actions={
+          <FilterPills
+            label="Scope"
+            value={scope}
+            onChange={(v) => setScope(v as Scope)}
+            options={[
+              { value: "all", label: "All" },
+              { value: "team", label: currentUser?.pod ? `Team · ${currentUser.pod}` : "Team" },
+              { value: "personal", label: "Personal" },
+            ]}
+          />
+        }
       />
+
+      {epics.length === 0 && (
+        <div className="bg-warn-soft border border-warn rounded-[8px] px-4 py-3 mb-6 text-[13px] text-warn">
+          No Epics match this scope. Try switching to <button onClick={() => setScope("all")} className="underline">All</button>.
+        </div>
+      )}
 
       {/* Stat row */}
       <div className="grid grid-cols-4 gap-3 mb-8">

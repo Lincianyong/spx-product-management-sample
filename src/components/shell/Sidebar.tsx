@@ -2,6 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Activity,
+  Bug,
+  CheckSquare,
+  Columns3,
+  Compass,
+  FileText,
+  Filter,
+  Flag,
+  Grid3x3,
+  Inbox,
+  LayoutGrid,
+  List,
+  Plus,
+  Settings as SettingsIcon,
+  Sigma,
+  TrendingUp,
+  User as UserIcon,
+  Users,
+  Wrench,
+} from "lucide-react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { RealtimeSimToggle } from "@/components/RealtimeSim";
@@ -10,9 +31,10 @@ import { SpxLogo } from "@/components/SpxLogo";
 interface NavItem {
   label: string;
   href: string;
+  icon: React.ComponentType<{ className?: string }>;
   count?: () => number;
   hint?: string;
-  prefix?: string; // for active match if different from href
+  prefix?: string;
 }
 
 interface NavGroup {
@@ -35,44 +57,45 @@ export function Sidebar() {
     {
       title: "Daily",
       items: [
-        { label: "My Work", href: "/me" },
-        { label: "Sprint Board", href: "/sprint" },
+        { label: "My Work", href: "/me", icon: UserIcon },
+        { label: "Sprint Board", href: "/sprint", icon: Columns3 },
       ],
     },
     {
       title: "Plan",
       items: [
-        { label: "Triage", href: "/triage", count: () => triageCount },
-        { label: "Backlog", href: "/backlog" },
-        { label: "Picklist", href: "/planning/picklist", hint: "PM" },
-        { label: "Estimation", href: "/planning/estimation", hint: "Eng" },
-        { label: "Joint Planning", href: "/planning/joint", hint: "All" },
-        { label: "Sprint Close", href: "/sprint-close" },
+        { label: "Triage", href: "/triage", icon: Inbox, count: () => triageCount },
+        { label: "Backlog", href: "/backlog", icon: List },
+        { label: "Picklist", href: "/planning/picklist", icon: CheckSquare, hint: "PM" },
+        { label: "Estimation", href: "/planning/estimation", icon: Sigma, hint: "Eng" },
+        { label: "Joint Planning", href: "/planning/joint", icon: Users, hint: "All" },
+        { label: "Sprint Funnel", href: "/planning/funnel", icon: Filter },
+        { label: "Sprint Close", href: "/sprint-close", icon: Flag },
       ],
     },
     {
       title: "Portfolio",
       items: [
-        { label: "Epic Board", href: "/epics" },
-        { label: "Timeline", href: "/timeline" },
-        { label: "Portfolio Health", href: "/portfolio" },
-        { label: "Workload Heatmap", href: "/heatmap" },
+        { label: "Epic Board", href: "/epics", icon: LayoutGrid },
+        { label: "Timeline", href: "/timeline", icon: TrendingUp },
+        { label: "Portfolio Health", href: "/portfolio", icon: Activity },
+        { label: "Workload Heatmap", href: "/heatmap", icon: Grid3x3 },
       ],
     },
     {
       title: "Capture",
       items: [
-        { label: "+ New Ticket", href: "/create" },
-        { label: "+ Report Bug", href: "/report-bug" },
-        { label: "+ Tech Task", href: "/create?type=tech_task", prefix: "/create" },
-        { label: "My Bugs", href: "/my-bugs" },
+        { label: "New Epic", href: "/create-epic", icon: Compass },
+        { label: "New Ticket", href: "/create", icon: Plus, prefix: "/create" },
+        { label: "New Tech Task", href: "/create?type=tech_task", icon: Wrench, prefix: "/create" },
+        { label: "Report Bug", href: "/report-bug", icon: Bug },
+        { label: "My Bugs", href: "/my-bugs", icon: FileText },
       ],
     },
     {
       title: "Workspace",
       items: [
-        { label: "Activity", href: "/activity" },
-        { label: "Settings", href: "/settings" },
+        { label: "Settings", href: "/settings", icon: SettingsIcon },
       ],
     },
   ];
@@ -101,17 +124,17 @@ export function Sidebar() {
             <ul className="space-y-0.5">
               {g.items.map((item) => {
                 const matchPath = item.prefix ?? item.href.split("?")[0];
-                // Active when current path equals the item's matchPath, plus avoid /create matching /create?type
                 const isActive =
                   pathname === matchPath ||
                   (matchPath !== "/" && pathname.startsWith(matchPath + "/"));
                 const count = item.count?.() ?? 0;
+                const Icon = item.icon;
                 return (
                   <li key={item.label}>
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center justify-between gap-2 px-3 py-1.5 rounded-[6px] text-[13px] transition-colors duration-100 relative",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-[6px] text-[13px] transition-colors duration-100 relative",
                         isActive
                           ? "bg-accent-soft text-ink font-medium"
                           : "text-ink-2 hover:text-ink hover:bg-rule-soft"
@@ -120,7 +143,8 @@ export function Sidebar() {
                       {isActive && (
                         <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full bg-accent" aria-hidden />
                       )}
-                      <span className="truncate">{item.label}</span>
+                      <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-accent" : "text-ink-3")} />
+                      <span className="truncate flex-1">{item.label}</span>
                       <span className="flex items-center gap-1.5 shrink-0">
                         {item.hint && (
                           <span className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.06em]">

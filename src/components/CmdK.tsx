@@ -158,6 +158,8 @@ export function CmdK() {
             <Item onSelect={() => go("/heatmap")}>Workload Heatmap</Item>
             <Item onSelect={() => go("/portfolio")}>Portfolio Health</Item>
             <Item onSelect={() => go("/notifications")}>Notifications</Item>
+            <Item onSelect={() => go("/planning/funnel")}>Sprint Funnel</Item>
+            <Item onSelect={() => go("/create-epic")}>New Epic</Item>
             <Item onSelect={() => go("/settings")}>Settings</Item>
           </Command.Group>
 

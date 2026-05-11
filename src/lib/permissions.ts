@@ -15,7 +15,6 @@ export type Capability =
   | "view_heatmap"
   | "view_timeline"
   | "view_notifications"
-  | "view_activity"
   | "view_settings"
   | "view_report_bug"
   | "view_create"
@@ -32,7 +31,7 @@ export type Capability =
 const ALL: Capability[] = [
   "view_triage", "view_backlog", "view_planning", "view_sprint", "view_my_work",
   "view_epics", "view_portfolio", "view_heatmap", "view_timeline",
-  "view_notifications", "view_activity", "view_settings", "view_create",
+  "view_notifications", "view_settings", "view_create",
   "view_report_bug", "view_my_bugs",
   "commit_sprint", "edit_epic", "edit_project", "triage_action",
   "create_ticket", "set_points", "assign_ticket", "comment",
@@ -56,14 +55,14 @@ export const PERMISSIONS_LEGACY: Record<Role, Capability[]> = {
   pm: [
     "view_triage", "view_backlog", "view_planning", "view_sprint", "view_my_work",
     "view_epics", "view_portfolio", "view_heatmap", "view_timeline",
-    "view_notifications", "view_activity", "view_settings", "view_create",
+    "view_notifications", "view_settings", "view_create",
     "commit_sprint", "edit_epic", "edit_project", "triage_action",
     "create_ticket", "assign_ticket", "comment",
   ],
   em: [
     "view_backlog", "view_planning", "view_sprint", "view_my_work",
     "view_epics", "view_portfolio", "view_heatmap", "view_timeline",
-    "view_notifications", "view_activity", "view_settings", "view_create",
+    "view_notifications", "view_settings", "view_create",
     "commit_sprint", "edit_project", "create_ticket", "set_points", "assign_ticket", "comment",
   ],
   engineer: [
@@ -102,7 +101,6 @@ const URL_GUARD: { prefix: string; cap: Capability }[] = [
   { prefix: "/heatmap", cap: "view_heatmap" },
   { prefix: "/timeline", cap: "view_timeline" },
   { prefix: "/notifications", cap: "view_notifications" },
-  { prefix: "/activity", cap: "view_activity" },
   { prefix: "/settings", cap: "view_settings" },
   { prefix: "/create", cap: "view_create" },
   { prefix: "/report-bug", cap: "view_report_bug" },

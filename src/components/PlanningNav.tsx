@@ -8,6 +8,7 @@ const STAGES = [
   { href: "/planning/picklist", label: "Picklist", stage: "4a", role: "PM alone · ~30 min Mon" },
   { href: "/planning/estimation", label: "Estimation", stage: "4b", role: "Engineers + EM · ~45 min Tue" },
   { href: "/planning/joint", label: "Joint Planning", stage: "4c", role: "Whole team · ~30 min Tue" },
+  { href: "/planning/funnel", label: "Funnel", stage: "↻", role: "Live view of where tickets are stuck" },
 ];
 
 export function PlanningNav() {

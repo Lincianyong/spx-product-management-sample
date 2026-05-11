@@ -10,3 +10,13 @@ export { ContextMenu, useContextMenu } from "./ContextMenu";
 export type { ContextMenuItem } from "./ContextMenu";
 export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "./Chart";
 export type { ChartConfig } from "./Chart";
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+} from "./Select";
