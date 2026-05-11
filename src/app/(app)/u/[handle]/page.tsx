@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bar,
@@ -30,8 +30,8 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 type VelocityRange = "6" | "12";
 
-export default function ProfilePage({ params }: { params: Promise<{ handle: string }> }) {
-  const { handle } = use(params);
+export default function ProfilePage({ params }: { params: { handle: string } }) {
+  const { handle } = params;
   const users = useAppStore((s) => s.users);
   const tickets = useAppStore((s) => s.tickets);
   const epics = useAppStore((s) => s.epics);

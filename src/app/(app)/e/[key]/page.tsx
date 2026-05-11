@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, Button, Pill, HealthPill, toast } from "@/components/ui";
@@ -12,8 +12,8 @@ import { computeEpicHealth } from "@/lib/health";
 import { Tombstone } from "@/components/Tombstone";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
-export default function EpicDetailPage({ params }: { params: Promise<{ key: string }> }) {
-  const { key } = use(params);
+export default function EpicDetailPage({ params }: { params: { key: string } }) {
+  const { key } = params;
   const epics = useAppStore((s) => s.epics);
   const projects = useAppStore((s) => s.projects);
   const tickets = useAppStore((s) => s.tickets);
