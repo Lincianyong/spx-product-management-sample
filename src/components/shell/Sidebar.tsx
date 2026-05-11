@@ -82,9 +82,10 @@ export function Sidebar() {
       <div className="px-5 pt-6 pb-5 border-b border-rule-soft">
         <Link href="/" className="block">
           <div className="display text-[26px] leading-none text-ink">Cadence</div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-1.5 flex items-center gap-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] mt-1.5 flex items-center gap-2">
             <span className="block w-4 h-px bg-rule" />
-            <span>SPX Express · AI Eng</span>
+            <span className="text-[#EE4D2D] font-semibold">SPX</span>
+            <span className="text-ink-3">Express · AI Eng</span>
           </div>
         </Link>
       </div>
