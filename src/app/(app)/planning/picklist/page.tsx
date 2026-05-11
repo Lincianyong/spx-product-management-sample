@@ -10,10 +10,14 @@ import { SortableList, DragHandle } from "@/components/SortableList";
 import { cn, formatDate } from "@/lib/utils";
 import type { Ticket } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+import { can } from "@/lib/permissions";
+import { LaneBanner } from "@/components/LaneBanner";
 
 export default function PicklistPage() {
   useDocumentTitle("Picklist · Stage 4a");
   const tickets = useAppStore((s) => s.tickets);
+  const currentUser = useCurrentUser();
+  const canPick = can(currentUser?.role, "pick_for_sprint");
   const projects = useAppStore((s) => s.projects);
   const users = useAppStore((s) => s.users);
   const sprints = useAppStore((s) => s.sprints);
@@ -54,23 +58,31 @@ export default function PicklistPage() {
   }, [unpicked, sortBy]);
 
   const togglePicked = (ticketId: string, checked: boolean) => {
+    if (!canPick) {
+      toast("Only PM can modify the picklist.", { kind: "error" });
+      return;
+    }
     setPickedForSprint([ticketId], checked);
     if (planningSprint) {
       setTicketField(ticketId, { sprintId: checked ? planningSprint.id : null }, user?.id ?? "");
     }
     if (checked) {
-      // Append rank to end
       const nextRank = (sortedPicked.length || 0) + 1;
       setPicklistRanks([{ ticketId, rank: nextRank }]);
     }
   };
 
   const onReorderPicked = (next: Ticket[]) => {
+    if (!canPick) return;
     const ranks = next.map((t, idx) => ({ ticketId: t.id, rank: idx + 1 }));
     setPicklistRanks(ranks);
   };
 
   const send = () => {
+    if (!canPick) {
+      toast("Only PM can hand off to Engineering.", { kind: "error" });
+      return;
+    }
     if (picked.length === 0) {
       toast("Pick at least one ticket first.", { kind: "error" });
       return;
@@ -93,6 +105,14 @@ export default function PicklistPage() {
 
       <PlanningNav />
 
+      {!canPick && (
+        <LaneBanner
+          lane="PM"
+          surface="Picklist"
+          ownerCopy="Open Estimation (Stage 4b) to act in your lane."
+        />
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Sort backlog by</span>
@@ -109,7 +129,7 @@ export default function PicklistPage() {
             </button>
           ))}
         </div>
-        <Button variant="primary" onClick={send}>
+        <Button variant="primary" onClick={send} disabled={!canPick} title={!canPick ? "Only PM can hand off" : undefined}>
           Send {picked.length} to Engineering Sprint Planning →
         </Button>
       </div>
@@ -140,10 +160,11 @@ export default function PicklistPage() {
                   t={t}
                   rank={sortedPicked.findIndex((x) => x.id === t.id) + 1}
                   onToggle={() => togglePicked(t.id, false)}
-                  handle={handle}
+                  handle={canPick ? handle : undefined}
                   projects={projects}
                   users={users}
                   picked
+                  disabled={!canPick}
                 />
               )}
             />
@@ -168,6 +189,7 @@ export default function PicklistPage() {
                 projects={projects}
                 users={users}
                 picked={false}
+                disabled={!canPick}
               />
             ))
           )}
@@ -205,6 +227,7 @@ function PickRow({
   projects,
   users,
   picked,
+  disabled,
 }: {
   t: Ticket;
   rank: number | null;
@@ -213,6 +236,7 @@ function PickRow({
   projects: import("@/lib/types").Project[];
   users: import("@/lib/types").User[];
   picked: boolean;
+  disabled?: boolean;
 }) {
   const project = projects.find((p) => p.id === t.projectId);
   const author = users.find((u) => u.id === t.authorId);
@@ -224,7 +248,14 @@ function PickRow({
       )}
     >
       {handle ? <DragHandle handleProps={handle} className="text-[16px]" /> : <span />}
-      <input type="checkbox" checked={picked} onChange={onToggle} className="w-4 h-4 accent-accent" />
+      <input
+        type="checkbox"
+        checked={picked}
+        onChange={onToggle}
+        disabled={disabled}
+        title={disabled ? "Only PM can modify the picklist" : undefined}
+        className="w-4 h-4 accent-accent disabled:opacity-40 disabled:cursor-not-allowed"
+      />
       <span className="font-mono text-[12px] text-ink-3">{rank ?? "—"}</span>
       <span className="font-mono text-[12px] text-ink">{t.key}</span>
       <span className="text-[14px] text-ink truncate flex items-center gap-2">

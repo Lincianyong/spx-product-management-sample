@@ -27,11 +27,12 @@ export type Capability =
   | "create_ticket"
   | "create_tech_task"
   | "create_bug"
-  | "commit_sprint"
+  | "pick_for_sprint"   // Stage 4a — PM lane (check picks, drag rank, send to Eng)
+  | "set_points"        // Stage 4b — Eng lane (estimate, concern flags, hand to Joint)
+  | "commit_sprint"     // Stage 4c — PM/EM (assign + commit)
   | "edit_epic"
   | "edit_project"
   | "triage_action"
-  | "set_points"
   | "assign_ticket"
   | "comment";
 
@@ -42,9 +43,10 @@ const FLAT_VIEWS: Capability[] = [
   "view_create",
 ];
 
+// Universal-action caps: anyone can comment / edit (still lane-gated for picklist+estimation
+// at the action level below).
 const FLAT_ACTIONS: Capability[] = [
-  "commit_sprint", "edit_epic", "edit_project", "triage_action",
-  "set_points", "assign_ticket", "comment",
+  "edit_epic", "edit_project", "triage_action", "assign_ticket", "comment",
 ];
 
 // Lane-specific creation per the spec:
@@ -58,26 +60,33 @@ export const PERMISSIONS: Record<Role, Capability[]> = {
     ...FLAT_VIEWS,
     ...FLAT_ACTIONS,
     "create_epic", "create_ticket", "create_tech_task", "create_bug",
+    "pick_for_sprint", "set_points", "commit_sprint",
   ],
   pm: [
     ...FLAT_VIEWS,
     ...FLAT_ACTIONS,
     "create_epic", "create_ticket", "create_bug",
+    "pick_for_sprint",   // Stage 4a — PM lane
+    "commit_sprint",     // Stage 4c — assigns + commits
   ],
   em: [
     ...FLAT_VIEWS,
     ...FLAT_ACTIONS,
     "create_tech_task", "create_bug",
+    "set_points",        // Stage 4b — facilitates estimation
+    "commit_sprint",     // Stage 4c — also commits
   ],
   engineer: [
     ...FLAT_VIEWS,
     ...FLAT_ACTIONS,
     "create_tech_task", "create_bug",
+    "set_points",        // Stage 4b — Eng lane
   ],
   designer: [
     ...FLAT_VIEWS,
     ...FLAT_ACTIONS,
     "create_tech_task", "create_bug",
+    "set_points",
   ],
   leadership: [
     ...FLAT_VIEWS,

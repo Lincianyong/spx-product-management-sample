@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { PlanningNav } from "@/components/PlanningNav";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { AiTag, Button, Pill, PriorityPill, TypePill, toast } from "@/components/ui";
+import { AiTag, Button, PriorityPill, TypePill, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+import { can } from "@/lib/permissions";
+import { LaneBanner } from "@/components/LaneBanner";
 
 const CONCERN_FLAGS = ["no repro", "needs decomposition", "blocked", "spike first"];
 
@@ -18,6 +20,7 @@ export default function EstimationPage() {
   const setTicketField = useAppStore((s) => s.setTicketField);
   const user = useCurrentUser();
   const router = useRouter();
+  const canEstimate = can(user?.role, "set_points");
 
   const picked = useMemo(
     () => tickets.filter((t) => t.pickedForSprint).sort((a, b) => (a.picklistRank ?? 99) - (b.picklistRank ?? 99)),
@@ -27,6 +30,10 @@ export default function EstimationPage() {
   const allEstimated = picked.every((t) => t.storyPoints != null);
 
   const setPoints = (ticketId: string, value: string) => {
+    if (!canEstimate) {
+      toast("Only Engineers / EM can set story points.", { kind: "error" });
+      return;
+    }
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1 || num > 21) {
       setTicketField(ticketId, { storyPoints: null }, user?.id ?? "");
@@ -36,6 +43,10 @@ export default function EstimationPage() {
   };
 
   const toggleFlag = (ticketId: string, flag: string) => {
+    if (!canEstimate) {
+      toast("Only Engineers / EM can flag concerns.", { kind: "error" });
+      return;
+    }
     const t = tickets.find((x) => x.id === ticketId);
     if (!t) return;
     const flags = t.concernFlags.includes(flag) ? t.concernFlags.filter((f) => f !== flag) : [...t.concernFlags, flag];
@@ -43,6 +54,10 @@ export default function EstimationPage() {
   };
 
   const hand = () => {
+    if (!canEstimate) {
+      toast("Only Engineers / EM can hand off to Joint Planning.", { kind: "error" });
+      return;
+    }
     if (!allEstimated) {
       toast("All picked tickets need a points estimate before handing off.", { kind: "error" });
       return;
@@ -65,8 +80,21 @@ export default function EstimationPage() {
 
       <PlanningNav />
 
+      {!canEstimate && (
+        <LaneBanner
+          lane="Eng"
+          surface="Estimation"
+          ownerCopy="Open Picklist (4a) or Joint Planning (4c) for your lane."
+        />
+      )}
+
       <div className="flex justify-end mb-4">
-        <Button variant="primary" onClick={hand} disabled={!allEstimated}>
+        <Button
+          variant="primary"
+          onClick={hand}
+          disabled={!allEstimated || !canEstimate}
+          title={!canEstimate ? "Only Engineers / EM can hand off" : undefined}
+        >
           Hand to Joint Planning →
         </Button>
       </div>
@@ -95,11 +123,14 @@ export default function EstimationPage() {
                       <button
                         key={f}
                         onClick={() => toggleFlag(t.id, f)}
+                        disabled={!canEstimate}
+                        title={!canEstimate ? "Only Engineers / EM can flag concerns" : undefined}
                         className={cn(
                           "px-2 h-6 rounded-[4px] text-[11px] font-mono uppercase tracking-[0.04em] border",
                           t.concernFlags.includes(f)
                             ? "bg-warn-soft text-warn border-warn-soft"
-                            : "bg-bg-card text-ink-3 border-rule hover:border-ink-4"
+                            : "bg-bg-card text-ink-3 border-rule hover:border-ink-4",
+                          !canEstimate && "opacity-50 cursor-not-allowed"
                         )}
                       >
                         {f}
@@ -117,10 +148,12 @@ export default function EstimationPage() {
                       max={21}
                       value={t.storyPoints ?? ""}
                       onChange={(e) => setPoints(t.id, e.target.value)}
-                      className="w-16 h-9 px-2 text-center font-mono text-[14px] rounded-[6px] border border-rule bg-bg-card"
+                      disabled={!canEstimate}
+                      title={!canEstimate ? "Only Engineers / EM can set points" : undefined}
+                      className="w-16 h-9 px-2 text-center font-mono text-[14px] rounded-[6px] border border-rule bg-bg-card disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </label>
-                  {t.aiSuggestedPoints && (
+                  {t.aiSuggestedPoints && canEstimate && (
                     <AiTag
                       label={String(t.aiSuggestedPoints.value)}
                       confidence={t.aiSuggestedPoints.confidence}
