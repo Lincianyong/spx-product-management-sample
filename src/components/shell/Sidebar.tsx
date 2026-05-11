@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { can, type Capability } from "@/lib/permissions";
 import { RealtimeSimToggle } from "@/components/RealtimeSim";
 import { SpxLogo } from "@/components/SpxLogo";
 
@@ -35,6 +36,7 @@ interface NavItem {
   count?: () => number;
   hint?: string;
   prefix?: string;
+  requires?: Capability;
 }
 
 interface NavGroup {
@@ -85,11 +87,11 @@ export function Sidebar() {
     {
       title: "Capture",
       items: [
-        { label: "New Epic", href: "/create-epic", icon: Compass },
-        { label: "New Ticket", href: "/create", icon: Plus, prefix: "/create" },
-        { label: "New Tech Task", href: "/create?type=tech_task", icon: Wrench, prefix: "/create" },
-        { label: "Report Bug", href: "/report-bug", icon: Bug },
-        { label: "My Bugs", href: "/my-bugs", icon: FileText },
+        { label: "New Epic", href: "/create-epic", icon: Compass, requires: "view_create_epic" },
+        { label: "New Ticket", href: "/create", icon: Plus, requires: "view_create_ticket" },
+        { label: "New Tech Task", href: "/create-tech-task", icon: Wrench, requires: "view_create_tech_task" },
+        { label: "Report Bug", href: "/report-bug", icon: Bug, requires: "view_report_bug" },
+        { label: "My Bugs", href: "/my-bugs", icon: FileText, requires: "view_my_bugs" },
       ],
     },
     {
@@ -116,13 +118,16 @@ export function Sidebar() {
 
       {/* Scrollable nav body */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-        {groups.map((g) => (
+        {groups.map((g) => {
+          const visibleItems = g.items.filter((item) => !item.requires || can(user.role, item.requires));
+          if (visibleItems.length === 0) return null;
+          return (
           <div key={g.title}>
             <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
               {g.title}
             </div>
             <ul className="space-y-0.5">
-              {g.items.map((item) => {
+              {visibleItems.map((item) => {
                 const matchPath = item.prefix ?? item.href.split("?")[0];
                 const isActive =
                   pathname === matchPath ||
@@ -161,7 +166,8 @@ export function Sidebar() {
               })}
             </ul>
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Bottom utility */}

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { toast } from "@/components/ui";
+import { can } from "@/lib/permissions";
 import type { TicketStatus } from "@/lib/types";
 import { statusLabel } from "@/lib/utils";
 
@@ -159,7 +160,10 @@ export function CmdK() {
             <Item onSelect={() => go("/portfolio")}>Portfolio Health</Item>
             <Item onSelect={() => go("/notifications")}>Notifications</Item>
             <Item onSelect={() => go("/planning/funnel")}>Sprint Funnel</Item>
-            <Item onSelect={() => go("/create-epic")}>New Epic</Item>
+            {can(user.role, "view_create_epic") && <Item onSelect={() => go("/create-epic")}>New Epic</Item>}
+            {can(user.role, "view_create_ticket") && <Item onSelect={() => go("/create")}>New Ticket</Item>}
+            {can(user.role, "view_create_tech_task") && <Item onSelect={() => go("/create-tech-task")}>New Tech Task</Item>}
+            <Item onSelect={() => go("/report-bug")}>Report Bug</Item>
             <Item onSelect={() => go("/settings")}>Settings</Item>
           </Command.Group>
 

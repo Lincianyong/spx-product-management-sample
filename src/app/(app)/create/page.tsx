@@ -1,43 +1,35 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { AiTag, Button, Input, Textarea, Pill, toast } from "@/components/ui";
+import {
+  AiTag,
+  Button,
+  Input,
+  Textarea,
+  Pill,
+  toast,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui";
 import { cn } from "@/lib/utils";
-import type { TicketType } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 const MODES = [
-  { id: "quick", label: "Quick", hint: "Title + parent + type. ~30 seconds." },
+  { id: "quick", label: "Quick", hint: "Title + parent. ~30 seconds." },
   { id: "full", label: "Full", hint: "Full form with AI drafting + autosave." },
   { id: "bulk", label: "Bulk (CSV)", hint: "Paste rows; we'll map fields." },
 ] as const;
 
-const TEMPLATES: { id: string; name: string; type: TicketType; description: string; ac: string[] }[] = [
-  {
-    id: "tpl_eng",
-    name: "Engineering task",
-    type: "engineering",
-    description: "## What\n\n## Why\n\n## How\n\n## Out of scope",
-    ac: ["Tests cover happy path + edge", "Docs updated", "PR title prefixed with key"],
-  },
-  {
-    id: "tpl_bug",
-    name: "Bug report",
-    type: "bug",
-    description: "## Repro steps\n1. \n2. \n3. \n\n## Expected\n\n## Actual\n\n## Affected scope",
-    ac: [],
-  },
-  {
-    id: "tpl_tech",
-    name: "Tech task",
-    type: "tech_task",
-    description: "## Why now\n\n## Plan\n\n## Blast radius\n\n## Rollback plan\n\n## Migration window",
-    ac: ["Canary 24h green", "Rollback documented", "Owner signed off"],
-  },
-];
+const ENG_TEMPLATE = {
+  description: "## What\n\n## Why\n\n## How\n\n## Out of scope",
+  ac: ["Tests cover happy path + edge", "Docs updated", "PR title prefixed with key"],
+};
 
 const SLASH_COMMANDS = [
   { trigger: "/h2", insert: "## " },
@@ -48,34 +40,22 @@ const SLASH_COMMANDS = [
   { trigger: "/link", insert: "[label](url)" },
 ];
 
-const DRAFT_KEY = "cadence:create-draft";
+const DRAFT_KEY = "cadence:create-draft-engineering";
 
-export default function CreatePage() {
-  return (
-    <Suspense fallback={<div className="text-[13px] text-ink-3">Loading…</div>}>
-      <CreatePageInner />
-    </Suspense>
-  );
-}
-
-function CreatePageInner() {
-  const params = useSearchParams();
-  const initialType = (params.get("type") as TicketType | null) ?? "engineering";
-  useDocumentTitle(
-    initialType === "tech_task" ? "New Tech Task" : initialType === "bug" ? "New Bug" : "New Ticket"
-  );
+export default function CreateTicketPage() {
+  useDocumentTitle("New Engineering Ticket");
   const [mode, setMode] = useState<(typeof MODES)[number]["id"]>("full");
 
   return (
     <div>
       <PageHeader
-        eyebrow={`S-01 · Create Ticket${initialType !== "engineering" ? ` · ${initialType === "bug" ? "Bug" : "Tech Task"}` : ""}`}
+        eyebrow="Create Engineering Ticket · PM lane"
         title={
           <>
-            Capture <em className="text-accent">cleanly</em>. Triage later.
+            New <em className="text-accent">work</em> for the team.
           </>
         }
-        lede="Three modes: a 30-second quick capture, a full editorial form with AI drafting + templates, or a CSV bulk upload."
+        lede="Engineering tickets describe a unit of work for the engineers to estimate and pick up. Routes to Triage."
       />
 
       <div className="flex items-center gap-2 mb-6">
@@ -94,37 +74,35 @@ function CreatePageInner() {
         ))}
       </div>
 
-      {mode === "quick" && <QuickForm initialType={initialType} />}
-      {mode === "full" && <FullForm initialType={initialType} />}
+      {mode === "quick" && <QuickForm />}
+      {mode === "full" && <FullForm />}
       {mode === "bulk" && <BulkForm />}
     </div>
   );
 }
 
-function QuickForm({ initialType = "engineering" }: { initialType?: TicketType }) {
+function QuickForm() {
   const router = useRouter();
   const projects = useAppStore((s) => s.projects);
   const user = useCurrentUser();
   const [title, setTitle] = useState("");
   const [parent, setParent] = useState("");
-  const [type, setType] = useState<TicketType>(initialType);
 
   const submit = () => {
     if (!title.trim() || !user) return;
     const proj = projects.find((p) => p.key === parent);
-    const keyPrefix = type === "bug" ? "BUG" : type === "tech_task" ? "TCH" : "CDN";
-    const newKey = `${keyPrefix}-${Math.floor(Math.random() * 9000 + 1000)}`;
+    const newKey = `CDN-${Math.floor(Math.random() * 9000 + 1000)}`;
     useAppStore.setState((s) => ({
       tickets: [...s.tickets, {
         id: `t_${Date.now()}`,
         key: newKey,
-        type,
+        type: "engineering" as const,
         title: title.trim(),
         description: "",
         acceptanceCriteria: [],
         projectId: proj?.id ?? null,
-        priority: "P2",
-        status: "triage",
+        priority: "P2" as const,
+        status: "triage" as const,
         authorId: user.id,
         tags: [],
         pickedForSprint: false,
@@ -147,32 +125,28 @@ function QuickForm({ initialType = "engineering" }: { initialType?: TicketType }
   return (
     <div className="max-w-2xl space-y-4">
       <Input label="Title" placeholder="What needs to happen?" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent</span>
-          <select value={parent} onChange={(e) => setParent(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[14px]">
-            <option value="">Ad-hoc (no parent)</option>
-            {projects.map((p) => <option key={p.id} value={p.key}>{p.key} · {p.title}</option>)}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Type</span>
-          <select value={type} onChange={(e) => setType(e.target.value as TicketType)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[14px]">
-            <option value="engineering">Engineering</option>
-            <option value="bug">Bug</option>
-            <option value="tech_task">Tech Task</option>
-          </select>
-        </label>
-      </div>
+      <label className="flex flex-col gap-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent project</span>
+        <Select value={parent} onValueChange={setParent}>
+          <SelectTrigger>
+            <SelectValue placeholder="Ad-hoc (no parent)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Ad-hoc (no parent)</SelectItem>
+            {projects.map((p) => <SelectItem key={p.id} value={p.key}>{p.key} · {p.title}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </label>
       <div className="flex items-center gap-2">
         <Button variant="primary" onClick={submit} disabled={!title.trim()}>Create → Triage</Button>
+        <Pill variant="info">Engineering ticket</Pill>
         <span className="text-[12px] font-mono text-ink-3">Tip · ⌘N anywhere for Quick Create</span>
       </div>
     </div>
   );
 }
 
-function FullForm({ initialType = "engineering" }: { initialType?: TicketType }) {
+function FullForm() {
   const router = useRouter();
   const projects = useAppStore((s) => s.projects);
   const user = useCurrentUser();
@@ -183,31 +157,10 @@ function FullForm({ initialType = "engineering" }: { initialType?: TicketType })
   const [recurring, setRecurring] = useState<"none" | "weekly" | "monthly">("none");
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [parent, setParent] = useState("");
-  const [type, setType] = useState<TicketType>(initialType);
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashAnchor, setSlashAnchor] = useState(0);
   const [hasDraft, setHasDraft] = useState(false);
 
-  // If type changes via the initial query param, auto-apply matching template.
-  useEffect(() => {
-    if (initialType === "tech_task") {
-      const tpl = TEMPLATES.find((t) => t.id === "tpl_tech");
-      if (tpl) {
-        setType("tech_task");
-        setDescription((d) => d || tpl.description);
-        setSubtasks((s) => (s.length ? s : tpl.ac));
-      }
-    } else if (initialType === "bug") {
-      const tpl = TEMPLATES.find((t) => t.id === "tpl_bug");
-      if (tpl) {
-        setType("bug");
-        setDescription((d) => d || tpl.description);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialType]);
-
-  // Autosave draft
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(DRAFT_KEY);
@@ -221,9 +174,9 @@ function FullForm({ initialType = "engineering" }: { initialType?: TicketType })
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const payload = JSON.stringify({ title, description, parent, type, subtasks, recurring });
+    const payload = JSON.stringify({ title, description, parent, subtasks, recurring });
     localStorage.setItem(DRAFT_KEY, payload);
-  }, [title, description, parent, type, subtasks, recurring]);
+  }, [title, description, parent, subtasks, recurring]);
 
   const restoreDraft = () => {
     if (typeof window === "undefined") return;
@@ -234,7 +187,6 @@ function FullForm({ initialType = "engineering" }: { initialType?: TicketType })
       setTitle(d.title ?? "");
       setDescription(d.description ?? "");
       setParent(d.parent ?? "");
-      setType(d.type ?? "engineering");
       setSubtasks(d.subtasks ?? []);
       setRecurring(d.recurring ?? "none");
     } catch {}
@@ -242,20 +194,17 @@ function FullForm({ initialType = "engineering" }: { initialType?: TicketType })
     toast("Draft restored");
   };
 
-  const applyTemplate = (tplId: string) => {
-    const tpl = TEMPLATES.find((t) => t.id === tplId);
-    if (!tpl) return;
-    setType(tpl.type);
-    setDescription((d) => d || tpl.description);
-    setSubtasks((s) => (s.length ? s : tpl.ac));
-    toast(`Applied template — ${tpl.name}`);
+  const applyTemplate = () => {
+    setDescription((d) => d || ENG_TEMPLATE.description);
+    setSubtasks((s) => (s.length ? s : ENG_TEMPLATE.ac));
+    toast("Engineering template applied");
   };
 
   const draftFromSource = () => {
     if (!source.trim()) return;
-    setTitle("Doubled push notifications on Samsung S22 (OneUI 6)");
+    setTitle("Drift detection on retrain pipeline");
     setDescription(
-      "## Repro steps\n1. Send any push\n2. Receive on Samsung S22 (OneUI 6)\n\n## Expected\nOne notification.\n\n## Actual\nTwo notifications within 30s.\n\n## Affected scope\n~60 drivers, Jakarta region. Observed since last week's app update."
+      "## What\nDetect when daily retrain produces a model whose validation MAPE deviates >12% from the trailing 7-day baseline.\n\n## Why\nUnblock confidence in nightly model promotions.\n\n## How\nBlock promotion on breach + alert PM/EM channel.\n\n## Out of scope\nPer-region drift breakdown."
     );
     setDrafted(true);
     toast("AI drafted from source — review and edit", { kind: "info" });
@@ -266,7 +215,6 @@ function FullForm({ initialType = "engineering" }: { initialType?: TicketType })
     setDescription(v);
     const caret = e.target.selectionStart ?? v.length;
     setSlashAnchor(caret);
-    // Detect "/<letters>" at line start or after whitespace
     const before = v.slice(0, caret);
     const m = before.match(/(^|\n|\s)(\/[a-z]*)$/);
     setSlashOpen(!!m);
@@ -283,13 +231,11 @@ function FullForm({ initialType = "engineering" }: { initialType?: TicketType })
   const submit = () => {
     if (!title.trim() || !user) return;
     const proj = projects.find((p) => p.key === parent);
-    const keyPrefix = type === "bug" ? "BUG" : type === "tech_task" ? "TCH" : "CDN";
-    const newKey = `${keyPrefix}-${Math.floor(Math.random() * 9000 + 1000)}`;
-    const parentId = `t_${Date.now()}`;
+    const newKey = `CDN-${Math.floor(Math.random() * 9000 + 1000)}`;
     const parentTicket = {
-      id: parentId,
+      id: `t_${Date.now()}`,
       key: newKey,
-      type,
+      type: "engineering" as const,
       title: title.trim(),
       description,
       acceptanceCriteria: subtasks.map((s) => ({ id: `ac_${Math.random().toString(36).slice(2, 8)}`, text: s, done: false })),
@@ -358,61 +304,58 @@ function FullForm({ initialType = "engineering" }: { initialType?: TicketType })
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent</span>
-            <select value={parent} onChange={(e) => setParent(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[14px]">
-              <option value="">Ad-hoc</option>
-              {projects.map((p) => <option key={p.id} value={p.key}>{p.key} · {p.title}</option>)}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Type</span>
-            <select value={type} onChange={(e) => setType(e.target.value as TicketType)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[14px]">
-              <option value="engineering">Engineering</option>
-              <option value="bug">Bug</option>
-              <option value="tech_task">Tech Task</option>
-            </select>
-          </label>
-        </div>
+        <label className="flex flex-col gap-1.5">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent project</span>
+          <Select value={parent} onValueChange={setParent}>
+            <SelectTrigger>
+              <SelectValue placeholder="Ad-hoc (no parent)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Ad-hoc (no parent)</SelectItem>
+              {projects.map((p) => <SelectItem key={p.id} value={p.key}>{p.key} · {p.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </label>
 
         <SubtasksEditor items={subtasks} onChange={setSubtasks} />
 
         <label className="flex items-center gap-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Recurring</span>
-          <select value={recurring} onChange={(e) => setRecurring(e.target.value as typeof recurring)} className="h-9 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]">
-            <option value="none">Once (not recurring)</option>
-            <option value="weekly">Every week</option>
-            <option value="monthly">Every month</option>
-          </select>
+          <Select value={recurring} onValueChange={(v) => setRecurring(v as typeof recurring)}>
+            <SelectTrigger size="sm" className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Once (not recurring)</SelectItem>
+              <SelectItem value="weekly">Every week</SelectItem>
+              <SelectItem value="monthly">Every month</SelectItem>
+            </SelectContent>
+          </Select>
           {recurring !== "none" && <Pill variant="info">Tagged · recurring:{recurring}</Pill>}
         </label>
 
-        <Button variant="primary" onClick={submit} disabled={!title.trim()}>Create → Triage</Button>
+        <div className="flex items-center gap-2 pt-4 border-t border-rule">
+          <Button variant="primary" onClick={submit} disabled={!title.trim()}>Create → Triage</Button>
+          <Pill variant="info">Engineering ticket</Pill>
+        </div>
       </div>
 
       <aside className="space-y-4">
         <div className="bg-bg-elevated border border-rule rounded-[8px] p-4">
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">Templates</div>
-          <div className="space-y-1.5">
-            {TEMPLATES.map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => applyTemplate(tpl.id)}
-                className="w-full text-left px-3 py-2 rounded-[6px] bg-bg-card border border-rule hover:border-accent"
-              >
-                <div className="text-[13px] text-ink">{tpl.name}</div>
-                <div className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.06em]">{tpl.type}</div>
-              </button>
-            ))}
-          </div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">Engineering template</div>
+          <p className="text-[12px] text-ink-3 mb-3">
+            What / Why / How / Out of scope, plus the standard 3-AC checklist.
+          </p>
+          <Button variant="secondary" size="sm" onClick={applyTemplate} className="w-full">
+            Apply template
+          </Button>
         </div>
 
         <div className="bg-bg-elevated border border-rule rounded-[8px] p-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ai">✦ AI Drafting</span>
           </div>
-          <p className="text-[13px] text-ink-3 mb-3">Paste a Slack thread, Lark message, or Sentry trace. AI drafts title + description + AC.</p>
+          <p className="text-[13px] text-ink-3 mb-3">Paste a Slack thread or Sentry trace. AI drafts title + description + AC.</p>
           <textarea
             value={source}
             onChange={(e) => setSource(e.target.value)}
@@ -446,7 +389,7 @@ function SubtasksEditor({ items, onChange }: { items: string[]; onChange: (next:
   return (
     <div>
       <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mb-1.5">
-        Subtasks · acceptance criteria
+        Acceptance criteria · gates Done
       </div>
       <ul className="space-y-1.5 mb-2">
         {items.map((it, i) => (
@@ -477,12 +420,12 @@ function SubtasksEditor({ items, onChange }: { items: string[]; onChange: (next:
 }
 
 function BulkForm() {
-  const [csv, setCsv] = useState("title,type,priority,project\n");
+  const [csv, setCsv] = useState("title,priority,project\n");
   const rows = csv.split("\n").filter(Boolean).length - 1;
   return (
     <div className="max-w-3xl">
       <Textarea
-        label="CSV (first row = headers)"
+        label="CSV (first row = headers; type is locked to engineering)"
         value={csv}
         onChange={(e) => setCsv(e.target.value)}
         className="min-h-[280px] font-mono"

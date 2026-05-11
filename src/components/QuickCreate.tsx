@@ -1,10 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Modal, Button, Input, toast } from "@/components/ui";
+import {
+  Modal,
+  Button,
+  Input,
+  toast,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import type { Ticket } from "@/lib/types";
+import { can } from "@/lib/permissions";
+import type { Ticket, TicketType } from "@/lib/types";
 
 interface Props {
   open: boolean;
@@ -15,21 +26,37 @@ export function QuickCreate({ open, onClose }: Props) {
   const router = useRouter();
   const projects = useAppStore((s) => s.projects);
   const user = useCurrentUser();
+
+  // Type options the current role can actually create
+  const typeOptions = useMemo(() => {
+    if (!user) return [] as { value: TicketType; label: string; prefix: string }[];
+    const opts: { value: TicketType; label: string; prefix: string }[] = [];
+    if (can(user.role, "create_ticket")) opts.push({ value: "engineering", label: "Engineering Ticket", prefix: "CDN" });
+    if (can(user.role, "create_tech_task")) opts.push({ value: "tech_task", label: "Tech Task", prefix: "TCH" });
+    if (can(user.role, "create_bug")) opts.push({ value: "bug", label: "Bug", prefix: "BUG" });
+    return opts;
+  }, [user]);
+
   const [title, setTitle] = useState("");
   const [parent, setParent] = useState("");
-  const [type, setType] = useState<"engineering" | "bug" | "tech_task">("engineering");
+  const [type, setType] = useState<TicketType>(typeOptions[0]?.value ?? "engineering");
+
+  // Sync default type when typeOptions changes (e.g., user role swap)
+  if (typeOptions.length > 0 && !typeOptions.some((o) => o.value === type)) {
+    setType(typeOptions[0].value);
+  }
 
   const close = () => {
     setTitle("");
     setParent("");
-    setType("engineering");
     onClose();
   };
 
   const submit = () => {
     if (!title.trim() || !user) return;
     const proj = projects.find((p) => p.key === parent);
-    const keyPrefix = type === "bug" ? "BUG" : type === "tech_task" ? "TCH" : "CDN";
+    const opt = typeOptions.find((o) => o.value === type);
+    const keyPrefix = opt?.prefix ?? "CDN";
     const newKey = `${keyPrefix}-${Math.floor(Math.random() * 9000 + 1000)}`;
     const newTicket: Ticket = {
       id: `t_${Date.now()}`,
@@ -61,6 +88,21 @@ export function QuickCreate({ open, onClose }: Props) {
     router.push(`/t/${newKey}`);
   };
 
+  if (typeOptions.length === 0) {
+    return (
+      <Modal open={open} onClose={close} title="Quick Create" size="sm">
+        <p className="text-[14px] text-ink-2">
+          Your role doesn't have a creation lane assigned. Use Report Bug if you've spotted an issue.
+        </p>
+        <div className="flex justify-end mt-4">
+          <Button variant="primary" size="sm" onClick={() => { close(); router.push("/report-bug"); }}>
+            Open Report Bug →
+          </Button>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal open={open} onClose={close} title="Quick Create" size="md">
       <div className="space-y-4">
@@ -74,28 +116,30 @@ export function QuickCreate({ open, onClose }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent</span>
-            <select
-              value={parent}
-              onChange={(e) => setParent(e.target.value)}
-              className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[14px]"
-            >
-              <option value="">Ad-hoc (no parent)</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.key}>{p.key} · {p.title}</option>
-              ))}
-            </select>
+            <Select value={parent} onValueChange={setParent}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ad-hoc (no parent)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Ad-hoc (no parent)</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.key}>{p.key} · {p.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Type</span>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as "engineering" | "bug" | "tech_task")}
-              className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[14px]"
-            >
-              <option value="engineering">Engineering</option>
-              <option value="bug">Bug</option>
-              <option value="tech_task">Tech Task</option>
-            </select>
+            <Select value={type} onValueChange={(v) => setType(v as TicketType)} disabled={typeOptions.length === 1}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {typeOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
         </div>
         <div className="flex justify-between items-center pt-2">
