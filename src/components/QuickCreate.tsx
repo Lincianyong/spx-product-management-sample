@@ -22,28 +22,30 @@ interface Props {
   onClose: () => void;
 }
 
+type QuickType = "engineering" | "tech_task" | "bug";
+
+const TYPE_META: Record<QuickType, { label: string; prefix: string; cap: "create_ticket" | "create_tech_task" | "create_bug" }> = {
+  engineering: { label: "Engineering Ticket", prefix: "CDN", cap: "create_ticket" },
+  tech_task:   { label: "Tech Task",          prefix: "TCH", cap: "create_tech_task" },
+  bug:         { label: "Bug",                prefix: "BUG", cap: "create_bug" },
+};
+
 export function QuickCreate({ open, onClose }: Props) {
   const router = useRouter();
   const projects = useAppStore((s) => s.projects);
   const user = useCurrentUser();
 
-  // Type options the current role can actually create
   const typeOptions = useMemo(() => {
-    if (!user) return [] as { value: TicketType; label: string; prefix: string }[];
-    const opts: { value: TicketType; label: string; prefix: string }[] = [];
-    if (can(user.role, "create_ticket")) opts.push({ value: "engineering", label: "Engineering Ticket", prefix: "CDN" });
-    if (can(user.role, "create_tech_task")) opts.push({ value: "tech_task", label: "Tech Task", prefix: "TCH" });
-    if (can(user.role, "create_bug")) opts.push({ value: "bug", label: "Bug", prefix: "BUG" });
-    return opts;
+    if (!user) return [] as QuickType[];
+    return (Object.keys(TYPE_META) as QuickType[]).filter((t) => can(user.role, TYPE_META[t].cap));
   }, [user]);
 
   const [title, setTitle] = useState("");
   const [parent, setParent] = useState("");
-  const [type, setType] = useState<TicketType>(typeOptions[0]?.value ?? "engineering");
+  const [type, setType] = useState<QuickType>(typeOptions[0] ?? "engineering");
 
-  // Sync default type when typeOptions changes (e.g., user role swap)
-  if (typeOptions.length > 0 && !typeOptions.some((o) => o.value === type)) {
-    setType(typeOptions[0].value);
+  if (typeOptions.length > 0 && !typeOptions.includes(type)) {
+    setType(typeOptions[0]);
   }
 
   const close = () => {
@@ -54,14 +56,14 @@ export function QuickCreate({ open, onClose }: Props) {
 
   const submit = () => {
     if (!title.trim() || !user) return;
+    const meta = TYPE_META[type];
     const proj = projects.find((p) => p.key === parent);
-    const opt = typeOptions.find((o) => o.value === type);
-    const keyPrefix = opt?.prefix ?? "CDN";
-    const newKey = `${keyPrefix}-${Math.floor(Math.random() * 9000 + 1000)}`;
+    const newKey = `${meta.prefix}-${Math.floor(Math.random() * 9000 + 1000)}`;
+    const ticketType: TicketType = type === "tech_task" ? "tech_task" : type === "bug" ? "bug" : "engineering";
     const newTicket: Ticket = {
       id: `t_${Date.now()}`,
       key: newKey,
-      type,
+      type: ticketType,
       title: title.trim(),
       description: "",
       acceptanceCriteria: [],
@@ -92,11 +94,11 @@ export function QuickCreate({ open, onClose }: Props) {
     return (
       <Modal open={open} onClose={close} title="Quick Create" size="sm">
         <p className="text-[14px] text-ink-2">
-          Your role doesn't have a creation lane assigned. Use Report Bug if you've spotted an issue.
+          Your role has no creation lane assigned. Open the Create page for the full picker.
         </p>
         <div className="flex justify-end mt-4">
-          <Button variant="primary" size="sm" onClick={() => { close(); router.push("/report-bug"); }}>
-            Open Report Bug →
+          <Button variant="primary" size="sm" onClick={() => { close(); router.push("/create"); }}>
+            Open Create →
           </Button>
         </div>
       </Modal>
@@ -130,20 +132,25 @@ export function QuickCreate({ open, onClose }: Props) {
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Type</span>
-            <Select value={type} onValueChange={(v) => setType(v as TicketType)} disabled={typeOptions.length === 1}>
+            <Select value={type} onValueChange={(v) => setType(v as QuickType)} disabled={typeOptions.length === 1}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {typeOptions.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                {typeOptions.map((t) => (
+                  <SelectItem key={t} value={t}>{TYPE_META[t].label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </label>
         </div>
         <div className="flex justify-between items-center pt-2">
-          <span className="font-mono text-[11px] text-ink-3">Routes to Triage. PM confirms.</span>
+          <button
+            onClick={() => { close(); router.push("/create"); }}
+            className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep"
+          >
+            Open full Create page →
+          </button>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={close}>Cancel</Button>
             <Button variant="primary" size="sm" onClick={submit} disabled={!title.trim()}>

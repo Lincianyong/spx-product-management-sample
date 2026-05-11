@@ -7,7 +7,6 @@ import {
   Bug,
   CheckSquare,
   Columns3,
-  Compass,
   FileText,
   Filter,
   Flag,
@@ -15,13 +14,12 @@ import {
   Inbox,
   LayoutGrid,
   List,
-  Plus,
+  PlusSquare,
   Settings as SettingsIcon,
   Sigma,
   TrendingUp,
   User as UserIcon,
   Users,
-  Wrench,
 } from "lucide-react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -87,9 +85,7 @@ export function Sidebar() {
     {
       title: "Capture",
       items: [
-        { label: "New Epic", href: "/create-epic", icon: Compass, requires: "view_create_epic" },
-        { label: "New Ticket", href: "/create", icon: Plus, requires: "view_create_ticket" },
-        { label: "New Tech Task", href: "/create-tech-task", icon: Wrench, requires: "view_create_tech_task" },
+        { label: "Create", href: "/create", icon: PlusSquare, requires: "view_create" },
         { label: "Report Bug", href: "/report-bug", icon: Bug, requires: "view_report_bug" },
         { label: "My Bugs", href: "/my-bugs", icon: FileText, requires: "view_my_bugs" },
       ],

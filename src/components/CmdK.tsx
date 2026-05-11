@@ -160,10 +160,11 @@ export function CmdK() {
             <Item onSelect={() => go("/portfolio")}>Portfolio Health</Item>
             <Item onSelect={() => go("/notifications")}>Notifications</Item>
             <Item onSelect={() => go("/planning/funnel")}>Sprint Funnel</Item>
-            {can(user.role, "view_create_epic") && <Item onSelect={() => go("/create-epic")}>New Epic</Item>}
-            {can(user.role, "view_create_ticket") && <Item onSelect={() => go("/create")}>New Ticket</Item>}
-            {can(user.role, "view_create_tech_task") && <Item onSelect={() => go("/create-tech-task")}>New Tech Task</Item>}
-            <Item onSelect={() => go("/report-bug")}>Report Bug</Item>
+            <Item onSelect={() => go("/create")}>Create…</Item>
+            {can(user.role, "create_epic") && <Item onSelect={() => go("/create?type=epic")}>New Epic</Item>}
+            {can(user.role, "create_ticket") && <Item onSelect={() => go("/create?type=ticket")}>New Engineering Ticket</Item>}
+            {can(user.role, "create_tech_task") && <Item onSelect={() => go("/create?type=tech-task")}>New Tech Task</Item>}
+            {can(user.role, "create_bug") && <Item onSelect={() => go("/create?type=bug")}>New Bug</Item>}
             <Item onSelect={() => go("/settings")}>Settings</Item>
           </Command.Group>
 
