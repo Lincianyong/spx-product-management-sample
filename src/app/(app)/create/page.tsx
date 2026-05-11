@@ -97,7 +97,7 @@ function CreatePageInner() {
         </button>
       </div>
       <PageHeader
-        eyebrow={`Create ${def.label} · ${def.lane === "All" ? "Anyone" : `${def.lane} lane`}`}
+        eyebrow={def.lane === "All" ? `Create ${def.label}` : `Create ${def.label} · ${def.lane} lane`}
         title={
           <>
             New <em className="text-accent">{def.label.toLowerCase()}</em>.
@@ -116,16 +116,24 @@ function CreatePageInner() {
 
 // ─── Selector ────────────────────────────────────────────────────────
 function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: CreateType) => void }) {
+  const user = useCurrentUser();
+  const lede =
+    !user
+      ? "Pick the kind of work."
+      : allowed.length === 1
+      ? `Your role files ${allowed[0].label.toLowerCase()}s. Click below to start.`
+      : "Your role's creation lanes are below. Pick a kind of work.";
+
   return (
     <div>
       <PageHeader
-        eyebrow="Create"
+        eyebrow={user ? `Create · ${user.displayName.split(" ")[0]}` : "Create"}
         title={
           <>
             What are you <em className="text-accent">filing</em>?
           </>
         }
-        lede="Pick the kind of work. Only the lanes your role can create are shown."
+        lede={lede}
       />
 
       {allowed.length === 0 ? (
@@ -145,7 +153,7 @@ function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: Crea
                 <div className="flex items-center justify-between mb-3">
                   <Icon className="h-5 w-5 text-accent" />
                   <Pill variant={t.lane === "PM" ? "accent" : t.lane === "Eng" ? "info" : "neutral"}>
-                    {t.lane === "All" ? "All" : `${t.lane} lane`}
+                    {t.lane === "All" ? "Universal" : `${t.lane} lane`}
                   </Pill>
                 </div>
                 <h3 className="display text-display-s text-ink mb-2 leading-tight">{t.label}</h3>
@@ -158,15 +166,37 @@ function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: Crea
       )}
 
       <div className="mt-8 max-w-3xl bg-bg-elevated border border-rule rounded-[8px] p-4">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-1.5">Lane logic</div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-1.5">Where it lands</div>
         <p className="text-[12px] text-ink-3 leading-relaxed">
-          PM lane creates Epics + Engineering Tickets. Engineers create Tech Tasks. Bugs are universal —
-          anyone can file them. Bugs and Tickets land in <Link href="/triage" className="text-accent hover:underline">Triage</Link> for
-          PM confirmation; Tech Tasks go through the same Triage; Epics enter the backlog directly.
+          {laneFooter(allowed)}
         </p>
       </div>
     </div>
   );
+}
+
+function laneFooter(allowed: typeof TYPES): React.ReactNode {
+  const has = (id: CreateType) => allowed.some((t) => t.id === id);
+  const parts: React.ReactNode[] = [];
+  if (has("epic")) parts.push("Epics enter the backlog directly.");
+  if (has("ticket") || has("tech-task") || has("bug")) {
+    parts.push(
+      <>
+        Tickets, Tech Tasks, and Bugs land in{" "}
+        <Link href="/triage" className="text-accent hover:underline">Triage</Link>{" "}
+        for PM confirmation.
+      </>
+    );
+  }
+  if (parts.length === 0) {
+    return "Pick a lane above to start.";
+  }
+  return parts.map((p, i) => (
+    <span key={i}>
+      {p}
+      {i < parts.length - 1 ? " " : ""}
+    </span>
+  ));
 }
 
 // ─── Common form helpers ─────────────────────────────────────────────

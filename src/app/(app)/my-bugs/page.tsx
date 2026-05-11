@@ -47,7 +47,7 @@ export default function MyBugsPage() {
         }
         lede="Every bug you've reported, with status. PM triage usually lands within 4h (P0), 24h (P1), or 1 week (P2)."
         actions={
-          <Link href="/report-bug">
+          <Link href="/create?type=bug">
             <Button variant="primary" size="sm">File another bug →</Button>
           </Link>
         }
@@ -58,7 +58,7 @@ export default function MyBugsPage() {
           title="Nothing filed yet."
           body="When you report a bug from this account, it'll appear here with status."
           action={
-            <Link href="/report-bug">
+            <Link href="/create?type=bug">
               <Button variant="primary" size="sm">File a bug</Button>
             </Link>
           }

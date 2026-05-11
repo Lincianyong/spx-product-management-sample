@@ -132,11 +132,10 @@ export function can(role: Role | undefined, cap: Capability): boolean {
   return PERMISSIONS[role].includes(cap);
 }
 
-// URL guard: only the unified Create surface and Guest's report-bug surface
-// are URL-gated. Everything else is open under the flat-caps default.
+// URL guard: only the unified Create surface is URL-gated by capability.
+// Everything else is open under the flat-caps default.
 const URL_GUARD: { prefix: string; cap: Capability }[] = [
   { prefix: "/create", cap: "view_create" },
-  { prefix: "/report-bug", cap: "view_report_bug" },
   { prefix: "/my-bugs", cap: "view_my_bugs" },
 ];
 

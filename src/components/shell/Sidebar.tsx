@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
-  Bug,
   CheckSquare,
   Columns3,
   FileText,
@@ -22,7 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { cn, roleLabel } from "@/lib/utils";
 import { can, type Capability } from "@/lib/permissions";
 import { RealtimeSimToggle } from "@/components/RealtimeSim";
 import { SpxLogo } from "@/components/SpxLogo";
@@ -86,7 +85,6 @@ export function Sidebar() {
       title: "Capture",
       items: [
         { label: "Create", href: "/create", icon: PlusSquare, requires: "view_create" },
-        { label: "Report Bug", href: "/report-bug", icon: Bug, requires: "view_report_bug" },
         { label: "My Bugs", href: "/my-bugs", icon: FileText, requires: "view_my_bugs" },
       ],
     },
@@ -107,7 +105,7 @@ export function Sidebar() {
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-2 flex items-center gap-2">
             <span className="block w-4 h-px bg-rule" />
             <span className="display italic text-ink text-[14px] leading-none normal-case tracking-normal">Cadence</span>
-            <span>· AI Eng</span>
+            <span>· {roleLabel[user.role]}</span>
           </div>
         </Link>
       </div>

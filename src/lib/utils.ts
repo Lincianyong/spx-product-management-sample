@@ -96,7 +96,7 @@ export const landingForRole = (role: R): string => {
     case "designer":
       return "/me";
     case "guest":
-      return "/report-bug";
+      return "/create?type=bug";
     case "admin":
       return "/settings";
     default:
