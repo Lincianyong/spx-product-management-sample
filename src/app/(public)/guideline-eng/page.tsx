@@ -1,23 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { PageHeader } from "@/components/PageHeader";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+import { MockScreen, MockChip } from "../MockScreen";
 
 export default function GuidelineEngPage() {
   useDocumentTitle("Guideline · Engineer");
 
   return (
     <div>
-      <PageHeader
-        eyebrow="Guideline · For Engineer"
-        title={
-          <>
-            What an <em className="text-accent">engineer</em> does on this surface.
-          </>
-        }
-        lede="The day-to-day mechanics: estimation, sprint board lanes, status transitions, and the fields that matter on bugs and tech tasks."
-      />
+      <header className="mb-10">
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">User guide · For Engineer</div>
+        <h1 className="display text-display-l text-ink mb-3">
+          What an <em className="text-accent">engineer</em> does on this surface.
+        </h1>
+        <p className="text-[15px] text-ink-2 leading-relaxed max-w-2xl">
+          The day-to-day mechanics: estimation, sprint board lanes, status transitions, and the fields that matter on bugs and tech tasks.
+        </p>
+      </header>
 
       <SurfaceCard
         eyebrow="Daily · /me"
@@ -28,7 +28,6 @@ export default function GuidelineEngPage() {
           "Mentions card surfaces @mentions where you're tagged.",
           "Personal rank lets you reorder your own queue without changing the sprint board.",
         ]}
-        href="/me"
       />
 
       <SurfaceCard
@@ -40,8 +39,33 @@ export default function GuidelineEngPage() {
           "Concern flags ('needs decomposition', 'unclear scope') are visible to the PM at Joint.",
           "Tickets you flag get pulled out of the sprint slice if they can't be resolved by Joint.",
         ]}
-        href="/planning/estimation"
       />
+
+      <MockScreen
+        title="Estimation · sizing rows"
+        url="/planning/estimation"
+        caption="Each row is a ticket from the picklist. The AI hint sits next to your input — accept the suggested value or override."
+        className="mb-8"
+      >
+        <div className="space-y-1.5">
+          {[
+            { k: "CDN-3504", title: "Drift detection on retrain pipeline", ai: 5, mine: 5, flag: null as string | null },
+            { k: "CDN-3505", title: "Calibration layer after drift gate",   ai: 5, mine: 8, flag: "needs decomposition" },
+            { k: "BUG-4421", title: "Android 14 driver timestamps drift",   ai: 3, mine: 3, flag: null },
+            { k: "RTE-891",  title: "Ferry timetable static loader",        ai: 5, mine: 5, flag: null },
+          ].map((row) => (
+            <div key={row.k} className="bg-bg-card border border-rule rounded-[5px] p-2 flex items-center gap-2">
+              <span className="font-mono text-[10px] text-ink-3 w-16 shrink-0">{row.k}</span>
+              <span className="text-[11px] text-ink truncate flex-1">{row.title}</span>
+              <MockChip tone="accent">AI · {row.ai}pt</MockChip>
+              <div className="bg-bg-elevated border border-rule rounded-[4px] px-2 h-6 inline-flex items-center font-mono text-[10px] text-ink">
+                {row.mine} pt
+              </div>
+              {row.flag && <MockChip tone="warn">{row.flag}</MockChip>}
+            </div>
+          ))}
+        </div>
+      </MockScreen>
 
       <SurfaceCard
         eyebrow="Plan · /sprint"
@@ -52,7 +76,6 @@ export default function GuidelineEngPage() {
           "Card-wide drag — grab anywhere on the card.",
           "Reorder within a lane to signal priority within your own queue.",
         ]}
-        href="/sprint"
       />
 
       <SurfaceCard
@@ -67,6 +90,28 @@ export default function GuidelineEngPage() {
         ]}
       />
 
+      <MockScreen
+        title="Status transitions"
+        url="/sprint"
+        caption="The legal moves between statuses. Cancelled is reachable from any state and prompts for a reason."
+        className="mb-8"
+      >
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          {["scheduled", "in progress", "review", "done"].map((s, i, arr) => (
+            <div key={s} className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="bg-bg-card border border-rule rounded-[5px] px-2.5 h-7 inline-flex items-center font-mono text-[10px] uppercase tracking-[0.06em] text-ink shrink-0">
+                {s}
+              </div>
+              {i < arr.length - 1 && <span className="flex-1 h-px bg-rule" />}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 text-[11px] text-ink-3 flex items-center gap-2">
+          <MockChip tone="danger">cancelled</MockChip>
+          <span>reachable from any state · requires reason</span>
+        </div>
+      </MockScreen>
+
       <SurfaceCard
         eyebrow="Filing bugs"
         title="What a good bug carries."
@@ -78,8 +123,26 @@ export default function GuidelineEngPage() {
           "Severity (S1 · S2 · S3) — drives priority on the board.",
           "Sentry link if available — direct deep link to the trace.",
         ]}
-        href="/create?type=bug"
       />
+
+      <MockScreen
+        title="Bug form · key fields"
+        url="/create?type=bug"
+        caption="The repro + expected/actual + scope + severity quartet is what makes a bug actionable in under a minute."
+        className="mb-8"
+      >
+        <div className="space-y-2">
+          <FormRow label="Title" value="Android 14 driver timestamps drift by ~3 min" />
+          <div className="grid grid-cols-2 gap-2">
+            <FormRow label="Severity" value={<MockChip tone="danger">S1</MockChip>} />
+            <FormRow label="Priority" value={<MockChip tone="warn">P0</MockChip>} />
+          </div>
+          <FormRow label="Repro steps" value="1. Install on Pixel 8 (A14)  2. Mark delivery complete  3. Compare clocks" />
+          <FormRow label="Expected vs actual" value="Expected ±10s of server. Actual ~3 min ahead." />
+          <FormRow label="Affected scope" value="All A14 devices, ~340 active drivers Jakarta region" />
+          <FormRow label="Sentry" value={<span className="font-mono text-[10px] text-accent">sentry.io/issues/INST-12842</span>} />
+        </div>
+      </MockScreen>
 
       <SurfaceCard
         eyebrow="Filing tech tasks"
@@ -90,7 +153,6 @@ export default function GuidelineEngPage() {
           "Rollback plan — concrete steps to revert.",
           "Migration window — optional; for tasks needing a cutover.",
         ]}
-        href="/create?type=tech-task"
       />
 
       <SurfaceCard
@@ -99,10 +161,9 @@ export default function GuidelineEngPage() {
         body="Every ticket you've authored — engineering, bug, tech task — in one searchable list."
         bullets={[
           "Search hits key, title, description, tags.",
-          "Type and state filters are pinned to 180px each.",
+          "Type and state filters pinned to 180px each.",
           "Program multi-select on the second row filters by parent epic's programs.",
         ]}
-        href="/my-tickets"
       />
 
       <SurfaceCard
@@ -127,17 +188,10 @@ export default function GuidelineEngPage() {
   );
 }
 
-function SurfaceCard({ eyebrow, title, body, bullets, href }: { eyebrow: string; title: string; body: string; bullets: string[]; href?: string }) {
+function SurfaceCard({ eyebrow, title, body, bullets }: { eyebrow: string; title: string; body: string; bullets: string[] }) {
   return (
     <section className="bg-bg-card border border-rule rounded-[8px] p-5 mb-4">
-      <div className="flex items-start justify-between mb-2 gap-3">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{eyebrow}</div>
-        {href && (
-          <Link href={href} className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep shrink-0">
-            Open →
-          </Link>
-        )}
-      </div>
+      <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">{eyebrow}</div>
       <h2 className="display text-display-s text-ink mb-2">{title}</h2>
       <p className="text-[13px] text-ink-2 leading-relaxed mb-3">{body}</p>
       <ul className="space-y-1.5">
@@ -149,5 +203,14 @@ function SurfaceCard({ eyebrow, title, body, bullets, href }: { eyebrow: string;
         ))}
       </ul>
     </section>
+  );
+}
+
+function FormRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="bg-bg-card border border-rule rounded-[5px] p-2">
+      <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-ink-3 mb-1">{label}</div>
+      <div className="text-[11px] text-ink leading-snug">{value}</div>
+    </div>
   );
 }
