@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <rect width="180" height="180" rx="36" fill="#FFFFFF"/>
+  <g fill="#EE4D2D">
+    <text
+      x="90" y="120"
+      font-family="'Geist', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+      font-weight="800"
+      font-style="italic"
+      font-size="84"
+      letter-spacing="-4"
+      text-anchor="middle"
+    >SPX</text>
+    <g transform="skewX(-22)">
+      <rect x="40" y="142" width="9" height="6"/>
+      <rect x="56" y="142" width="20" height="6"/>
+      <rect x="86" y="142" width="38" height="6"/>
+      <rect x="138" y="142" width="12" height="6"/>
+    </g>
+  </g>
+</svg>

@@ -126,6 +126,52 @@
   --neutral-soft:var(--neutral-100);
 }
 
+/* ===========================================================
+ * DARK MODE — flip the alias layer; SPX brand orange stays.
+ * Activated by data-theme="dark" on <html>.
+ * =========================================================== */
+[data-theme="dark"] {
+  --bg:           var(--neutral-1000);
+  --bg-elevated:  var(--neutral-900);
+  --bg-card:      var(--neutral-800);
+  --rule:         var(--neutral-700);
+  --rule-soft:    var(--neutral-800);
+
+  --ink:    var(--neutral-0);
+  --ink-2:  var(--neutral-100);
+  --ink-3:  var(--neutral-400);
+  --ink-4:  var(--neutral-500);
+
+  --accent:       var(--brand-500);
+  --accent-soft:  rgba(238, 77, 45, 0.18);
+  --accent-deep:  var(--brand-300);
+
+  --ai:       #B49DFF;
+  --ai-soft:  rgba(91, 63, 184, 0.25);
+
+  --warn:        var(--warning-500);
+  --warn-soft:   rgba(247, 144, 9, 0.18);
+  --danger:      var(--danger-500);
+  --danger-soft: rgba(240, 68, 56, 0.18);
+  --info:        var(--info-500);
+  --info-soft:   rgba(46, 144, 250, 0.18);
+  --ok:          var(--success-500);
+  --ok-soft:     rgba(18, 183, 106, 0.18);
+  --neutral:     var(--neutral-400);
+  --neutral-soft:var(--neutral-700);
+}
+
+[data-theme="dark"] .topbar-blur {
+  background: rgba(17, 20, 26, 0.85);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--neutral-700);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--neutral-500);
+}
+
 * {
   box-sizing: border-box;
 }

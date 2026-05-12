@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Bell, Moon, Sun } from "lucide-react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { landingForRole, cn } from "@/lib/utils";
 import { Avatar, RolePill } from "@/components/ui";
@@ -27,6 +28,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const collapsed = useAppStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const sidebarW = collapsed ? 64 : 240;
+  const theme = useAppStore((s) => s.theme);
+  const toggleTheme = useAppStore((s) => s.toggleTheme);
+
+  // Apply theme to document
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [quickCreate, setQuickCreate] = useState(false);
@@ -151,16 +160,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="ml-auto font-mono text-[10px] text-ink-4">⌘K</span>
           </button>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? "Light mode" : "Dark mode"}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md bg-bg-card border border-rule text-ink-3 hover:text-ink hover:border-ink-4 transition-colors duration-100"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             <Link
               href="/notifications"
-              className="relative w-8 h-8 inline-flex items-center justify-center rounded-[6px] bg-bg-card border border-rule hover:border-ink-4 transition-colors duration-100"
+              className="relative w-8 h-8 inline-flex items-center justify-center rounded-md bg-bg-card border border-rule text-ink-3 hover:text-ink hover:border-ink-4 transition-colors duration-100"
               aria-label="Notifications"
             >
-              <span className="text-[14px]">○</span>
+              <Bell className="h-4 w-4" />
               {myNotifs > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-warn text-bg-card font-mono text-[9px] flex items-center justify-center">
-                  {myNotifs}
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-brand-500 text-white font-mono text-[9px] flex items-center justify-center font-medium">
+                  {myNotifs > 99 ? "99+" : myNotifs}
                 </span>
               )}
             </Link>

@@ -22,8 +22,8 @@ interface Props {
 export function SpxLogo({ size = "sm", className }: Props) {
   // Native PNG aspect: 512 × 205 ≈ 2.498 : 1
   const dims =
-    size === "sm" ? { h: 28, w: 70 } :   // ~topbar (40px is canonical; sidebar is tighter)
-    size === "md" ? { h: 48, w: 120 } :  // login surface
+    size === "sm" ? { h: 22, w: 55 } :   // sidebar (tighter than DS canonical 40px to leave breathing room)
+    size === "md" ? { h: 44, w: 110 } :  // login surface
     { h: 72, w: 180 };                    // hero
 
   return (

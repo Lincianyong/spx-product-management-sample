@@ -51,6 +51,10 @@ export interface AppState {
   toggleSidebar: () => void;
   setSidebarCollapsed: (v: boolean) => void;
 
+  theme: "light" | "dark";
+  toggleTheme: () => void;
+  setTheme: (t: "light" | "dark") => void;
+
   currentUserId: string | null;
   signIn: (userId: string) => void;
   signOut: () => void;
@@ -129,6 +133,10 @@ export const useAppStore = create<AppState>()(
       sidebarCollapsed: false,
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
+
+      theme: "light",
+      toggleTheme: () => set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
+      setTheme: (t) => set({ theme: t }),
 
       currentUserId: null,
       signIn: (userId) => set({ currentUserId: userId }),
@@ -424,6 +432,7 @@ export const useAppStore = create<AppState>()(
         savedViews: s.savedViews,
         channelPrefs: s.channelPrefs,
         sidebarCollapsed: s.sidebarCollapsed,
+        theme: s.theme,
       }),
     }
   )
