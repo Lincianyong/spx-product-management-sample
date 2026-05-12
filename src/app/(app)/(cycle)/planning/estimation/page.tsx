@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { PlanningNav } from "@/components/PlanningNav";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { AiTag, Button, PriorityPill, TypePill, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -78,7 +77,6 @@ export default function EstimationPage() {
         lede="Engineers and EM, together. AI suggests a number with reasoning. You decide. Flag what worries you."
       />
 
-      <PlanningNav />
 
       {!canEstimate && (
         <LaneBanner

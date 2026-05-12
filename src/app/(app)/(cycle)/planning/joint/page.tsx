@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { PlanningNav } from "@/components/PlanningNav";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { AiTag, Avatar, Button, Pill, PriorityPill, TypePill, toast } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -91,7 +90,6 @@ export default function JointPlanningPage() {
         }
       />
 
-      <PlanningNav />
 
       {/* Capacity overview */}
       <section className="mb-6">

@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { PlanningNav } from "@/components/PlanningNav";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import {
   Avatar,
@@ -202,7 +201,6 @@ export default function PicklistPage() {
         lede="PM, alone. ~30 min. Click the checkbox to add to the sprint. Drag (⠿) to re-rank the picked list."
       />
 
-      <PlanningNav />
 
       {!canPick && (
         <LaneBanner

@@ -152,12 +152,13 @@ export function CmdK() {
             <Item onSelect={() => go("/me")}>My Work</Item>
             <Item onSelect={() => go("/sprint")}>Sprint Board</Item>
             <Item onSelect={() => go("/backlog")}>Backlog</Item>
-            <Item onSelect={() => go("/planning/picklist")}>Sprint Planning · Stage 4a</Item>
-            <Item onSelect={() => go("/planning/estimation")}>Sprint Planning · Stage 4b</Item>
-            <Item onSelect={() => go("/planning/joint")}>Sprint Planning · Stage 4c</Item>
+            <Item onSelect={() => go("/planning")}>Planning · Cycle overview</Item>
+            <Item onSelect={() => go("/planning/picklist")}>Planning · Picklist (4a)</Item>
+            <Item onSelect={() => go("/planning/estimation")}>Planning · Estimation (4b)</Item>
+            <Item onSelect={() => go("/planning/joint")}>Planning · Joint (4c)</Item>
+            <Item onSelect={() => go("/sprint-close")}>Planning · Sprint Close</Item>
             <Item onSelect={() => go("/portfolio")}>Portfolio Health</Item>
             <Item onSelect={() => go("/notifications")}>Notifications</Item>
-            <Item onSelect={() => go("/planning/funnel")}>Sprint Funnel</Item>
             <Item onSelect={() => go("/create")}>Create…</Item>
             {can(user.role, "create_epic") && <Item onSelect={() => go("/create?type=epic")}>New Epic</Item>}
             {can(user.role, "create_ticket") && <Item onSelect={() => go("/create?type=ticket")}>New Engineering Ticket</Item>}

@@ -10,17 +10,13 @@ import {
   ChevronsRight,
   Columns3,
   FileText,
-  Filter,
-  Flag,
   Grid3x3,
   LayoutGrid,
   List,
   PlusSquare,
   Settings as SettingsIcon,
-  Sigma,
   TrendingUp,
   User as UserIcon,
-  Users,
 } from "lucide-react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { cn, roleLabel } from "@/lib/utils";
@@ -72,12 +68,8 @@ export function Sidebar() {
     {
       title: "Plan",
       items: [
+        { label: "Planning", href: "/planning", icon: CheckSquare, prefix: "/planning" },
         { label: "Backlog", href: "/backlog", icon: List },
-        { label: "Picklist", href: "/planning/picklist", icon: CheckSquare, hint: "PM" },
-        { label: "Estimation", href: "/planning/estimation", icon: Sigma, hint: "Eng" },
-        { label: "Joint Planning", href: "/planning/joint", icon: Users, hint: "All" },
-        { label: "Sprint Funnel", href: "/planning/funnel", icon: Filter },
-        { label: "Sprint Close", href: "/sprint-close", icon: Flag },
       ],
     },
     {
