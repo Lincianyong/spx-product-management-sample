@@ -69,7 +69,7 @@ export function QuickCreate({ open, onClose }: Props) {
       acceptanceCriteria: [],
       epicId: proj?.id ?? null,
       priority: "P2",
-      status: "triage",
+      status: "backlog",
       authorId: user.id,
       tags: [],
       pickedForSprint: false,
@@ -85,7 +85,7 @@ export function QuickCreate({ open, onClose }: Props) {
       createdAt: new Date().toISOString(),
     };
     useAppStore.setState((s) => ({ tickets: [...s.tickets, newTicket] }));
-    toast(`Created ${newKey} → Triage`, { kind: "success" });
+    toast(`Created ${newKey} → Backlog`, { kind: "success" });
     close();
     router.push(`/t/${newKey}`);
   };
@@ -157,7 +157,7 @@ export function QuickCreate({ open, onClose }: Props) {
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={close}>Cancel</Button>
             <Button variant="primary" size="sm" onClick={submit} disabled={!title.trim()}>
-              Create → Triage
+              Create → Backlog
             </Button>
           </div>
         </div>

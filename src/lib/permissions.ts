@@ -15,7 +15,6 @@ export type Capability =
   | "set_points"      // Stage 4b — Eng lane
   | "commit_sprint"   // Stage 4c — PM commits
   | "edit_epic"
-  | "triage_action"
   | "assign_ticket"
   | "comment"
   // View-level (kept for back-compat in URL guards / older sidebar items)
@@ -24,7 +23,6 @@ export type Capability =
 
 const FLAT_ACTIONS: Capability[] = [
   "edit_epic",
-  "triage_action",
   "assign_ticket",
   "comment",
   "view_create",

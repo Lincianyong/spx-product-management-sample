@@ -12,8 +12,6 @@ export type TicketType = "engineering" | "bug" | "tech_task";
 
 export type TicketStatus =
   | "draft"
-  | "triage"
-  | "reproduced"
   | "backlog"
   | "scheduled"
   | "in_progress"
@@ -24,14 +22,13 @@ export type TicketStatus =
   | "cannot_reproduce"
   | "cancelled";
 
-// Allowed forward (and select backward) transitions per type.
-// `null` for type means default (engineering/tech_task)
+// Allowed forward (and select backward) transitions per type. Triage was
+// removed (two-role app, no untrusted reporters to filter) — new tickets
+// land in `backlog` directly.
 export const STATUS_TRANSITIONS: Record<string, Record<TicketStatus, TicketStatus[]>> = {
   engineering: {
-    draft: ["triage", "cancelled"],
-    triage: ["backlog", "cancelled"],
-    reproduced: [],
-    backlog: ["scheduled", "triage", "cancelled"],
+    draft: ["backlog", "cancelled"],
+    backlog: ["scheduled", "cancelled"],
     scheduled: ["in_progress", "backlog", "cancelled"],
     in_progress: ["review", "scheduled", "cancelled"],
     review: ["done", "in_progress"],
@@ -42,10 +39,8 @@ export const STATUS_TRANSITIONS: Record<string, Record<TicketStatus, TicketStatu
     cancelled: [],
   },
   tech_task: {
-    draft: ["triage", "cancelled"],
-    triage: ["backlog", "cancelled"],
-    reproduced: [],
-    backlog: ["scheduled", "triage", "cancelled"],
+    draft: ["backlog", "cancelled"],
+    backlog: ["scheduled", "cancelled"],
     scheduled: ["in_progress", "backlog", "cancelled"],
     in_progress: ["review", "scheduled", "cancelled"],
     review: ["done", "in_progress"],
@@ -56,10 +51,8 @@ export const STATUS_TRANSITIONS: Record<string, Record<TicketStatus, TicketStatu
     cancelled: [],
   },
   bug: {
-    draft: ["triage", "cancelled"],
-    triage: ["reproduced", "cannot_reproduce", "cancelled"],
-    reproduced: ["backlog", "cannot_reproduce", "cancelled"],
-    backlog: ["scheduled", "cancelled"],
+    draft: ["backlog", "cancelled"],
+    backlog: ["scheduled", "cannot_reproduce", "cancelled"],
     scheduled: ["in_progress", "backlog", "cancelled"],
     in_progress: ["review", "scheduled", "cancelled"],
     review: ["verifying", "in_progress"],
@@ -77,7 +70,6 @@ export const TRANSITIONS_REQUIRING_CONFIRM: { from: TicketStatus; to: TicketStat
   { from: "review", to: "in_progress" },
   { from: "in_progress", to: "scheduled" },
   { from: "scheduled", to: "backlog" },
-  { from: "backlog", to: "triage" },
   { from: "verified", to: "verifying" },
 ];
 
@@ -236,7 +228,6 @@ export interface Notification {
     | "blocked"
     | "health_change"
     | "bug_needs_verify"
-    | "triage_new"
     | "digest";
   body: string;
   entityType?: "ticket" | "epic" | "sprint";

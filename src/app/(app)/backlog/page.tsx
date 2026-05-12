@@ -77,7 +77,7 @@ export default function BacklogPage() {
       />
 
       {backlog.length === 0 ? (
-        <EmptyState title="Backlog is dry." body="Add work to keep the engine fed. Create or confirm Triage tickets." />
+        <EmptyState title="Backlog is dry." body="Add work to keep the engine fed. New tickets land here directly." />
       ) : (
         <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
           <div className="grid grid-cols-[40px_40px_100px_1fr_80px_80px_120px_100px_60px] gap-3 px-4 py-3 bg-bg-elevated border-b border-rule font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">

@@ -103,7 +103,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           b: "/sprint",
           m: "/me",
           e: "/epics",
-          t: "/triage",
           p: "/portfolio",
           n: "/notifications",
         };

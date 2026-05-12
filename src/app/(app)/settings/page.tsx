@@ -11,18 +11,14 @@ const TABS = ["workspace", "sso", "roles", "integrations", "automations", "notif
 type Tab = (typeof TABS)[number];
 
 const ROLE_MATRIX: Record<string, Record<string, "✓" | "—" | "PIC" | "Read">> = {
-  "Create Ticket": { admin: "✓", pm: "✓", em: "✓", engineer: "✓", designer: "✓", leadership: "—", guest: "✓" },
-  "Triage": { admin: "✓", pm: "✓", em: "—", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Promote Triage→Backlog": { admin: "✓", pm: "✓", em: "—", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Create Project": { admin: "✓", pm: "✓", em: "PIC", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Edit Project": { admin: "✓", pm: "✓", em: "PIC", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Create Epic": { admin: "✓", pm: "✓", em: "—", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Edit Epic": { admin: "✓", pm: "PIC", em: "—", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Commit Sprint": { admin: "✓", pm: "✓", em: "✓", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Set Story Points": { admin: "✓", pm: "—", em: "✓", engineer: "✓", designer: "✓", leadership: "—", guest: "—" },
-  "Assign Ticket": { admin: "✓", pm: "✓", em: "✓", engineer: "—", designer: "—", leadership: "—", guest: "—" },
-  "Comment": { admin: "✓", pm: "✓", em: "✓", engineer: "✓", designer: "✓", leadership: "✓", guest: "—" },
-  "View Portfolio": { admin: "✓", pm: "✓", em: "✓", engineer: "✓", designer: "✓", leadership: "✓", guest: "—" },
+  "Create Ticket":      { pm: "✓",   engineer: "✓" },
+  "Create Epic":        { pm: "✓",   engineer: "—" },
+  "Edit Epic":          { pm: "PIC", engineer: "—" },
+  "Commit Sprint":      { pm: "✓",   engineer: "—" },
+  "Set Story Points":   { pm: "—",   engineer: "✓" },
+  "Assign Ticket":      { pm: "✓",   engineer: "—" },
+  "Comment":            { pm: "✓",   engineer: "✓" },
+  "View Portfolio":     { pm: "✓",   engineer: "✓" },
 };
 
 interface Integration {
@@ -35,10 +31,10 @@ interface Integration {
 }
 
 const INITIAL_INTEGRATIONS: Integration[] = [
-  { id: "lark", name: "Lark", status: "Connected", body: "Sprint commit, mention, SLA breach → #cadence.", authType: "OAuth", account: "spxexpress.lark.com" },
+  { id: "lark", name: "Lark", status: "Connected", body: "Sprint commit + mentions → #cadence.", authType: "OAuth", account: "spxexpress.lark.com" },
   { id: "slack", name: "Slack", status: "Off", body: "Optional secondary channel for high-signal events.", authType: "OAuth" },
   { id: "github", name: "GitHub", status: "Connected", body: "PR ↔ ticket linking via [CDN-####] in titles.", authType: "OAuth", account: "spx/forecasting" },
-  { id: "sentry", name: "Sentry", status: "Connected", body: "Bug Triage auto-attaches Sentry trace links.", authType: "API key", account: "spx-prod-org" },
+  { id: "sentry", name: "Sentry", status: "Connected", body: "Bug reports auto-attach Sentry trace links.", authType: "API key", account: "spx-prod-org" },
   { id: "linear", name: "Linear", status: "Off", body: "One-way export for V2.", authType: "API key" },
   { id: "pagerduty", name: "PagerDuty", status: "Off", body: "P0 escalation routing for SRE.", authType: "OAuth" },
 ];
@@ -138,7 +134,6 @@ export default function SettingsPage() {
           <Row label="Pods" value="Routing · Sorting · Forecasting · Platform" />
           <Row label="Markdown subset" value="GitHub-flavored (GFM)" />
           <Row label="AC gates Done" value="Yes" />
-          <Row label="Triage SLA" value="P0 4h · P1 24h · P2 1 week" />
           <div className="pt-4 border-t border-rule">
             <Button variant="danger" size="sm" onClick={() => { resetMockData(); toast("Demo data reset"); }}>
               Reset demo data
@@ -326,7 +321,6 @@ function NotificationPrefsTable() {
     { key: "mention", label: "Mention" },
     { key: "assignment", label: "Assigned to me" },
     { key: "status_change", label: "Status on watched" },
-    { key: "sla_breach", label: "SLA breach (my Triage)" },
     { key: "sprint_commit", label: "Sprint commit" },
     { key: "bug_needs_verify", label: "Bug needs verification" },
     { key: "digest", label: "Daily digest" },

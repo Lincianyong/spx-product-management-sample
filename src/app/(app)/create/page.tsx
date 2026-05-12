@@ -39,7 +39,7 @@ const TYPES: {
   prefix: string;
 }[] = [
   { id: "epic",      label: "Epic",                  lane: "PM",  cap: "create_epic",      icon: Compass, blurb: "Conviction-level bet. Quarter altitude. Title + thesis + PM owner.",                                  prefix: "EPC" },
-  { id: "ticket",    label: "Engineering Ticket",    lane: "PM",  cap: "create_ticket",    icon: FileText, blurb: "A unit of engineering work. Routes to Triage. Engineers estimate it next.",                          prefix: "CDN" },
+  { id: "ticket",    label: "Engineering Ticket",    lane: "PM",  cap: "create_ticket",    icon: FileText, blurb: "A unit of engineering work. Lands in Backlog; PM picks it during the next sprint planning.",          prefix: "CDN" },
   { id: "tech-task", label: "Tech Task",             lane: "Eng", cap: "create_tech_task", icon: Wrench,  blurb: "Internal infra, migration, refactor. Requires blast radius + rollback plan.",                       prefix: "TCH" },
   { id: "bug",       label: "Bug",                   lane: "All", cap: "create_bug",       icon: Bug,     blurb: "Something broken. Repro / Expected / Actual required. Anyone can file.",                              prefix: "BUG" },
 ];
@@ -185,8 +185,8 @@ function laneFooter(allowed: typeof TYPES): React.ReactNode {
     parts.push(
       <>
         Tickets, Tech Tasks, and Bugs land in{" "}
-        <Link href="/triage" className="text-accent hover:underline">Triage</Link>{" "}
-        for PM confirmation.
+        <Link href="/backlog" className="text-accent hover:underline">Backlog</Link>{" "}
+        directly. The PM picks from there at the next sprint planning.
       </>
     );
   }
@@ -339,7 +339,7 @@ function TicketForm() {
       acceptanceCriteria: ac.map((it) => ({ id: `ac_${Math.random().toString(36).slice(2, 8)}`, text: it, done: false })),
       epicId: proj?.id ?? null,
       priority: "P2",
-      status: "triage",
+      status: "backlog",
       authorId: user.id,
       tags: [],
       pickedForSprint: false,
@@ -355,7 +355,7 @@ function TicketForm() {
       createdAt: new Date().toISOString(),
     };
     useAppStore.setState((s) => ({ tickets: [...s.tickets, newTicket] }));
-    toast(`Created ${newKey} → Triage`);
+    toast(`Created ${newKey} → Backlog`);
     goTo(newKey);
   };
 
@@ -376,7 +376,7 @@ function TicketForm() {
         <ParentSelect value={parent} onChange={setParent} />
         <AcEditor items={ac} onChange={setAc} draft={acDraft} setDraft={setAcDraft} />
         <div className="flex items-center gap-2 pt-4 border-t border-rule">
-          <Button variant="primary" onClick={submit} disabled={!title.trim()}>Create → Triage</Button>
+          <Button variant="primary" onClick={submit} disabled={!title.trim()}>Create → Backlog</Button>
           <Pill variant="info">Engineering Ticket</Pill>
         </div>
       </div>
@@ -421,7 +421,7 @@ function TechTaskForm() {
         acceptanceCriteria: ac.map((it) => ({ id: `ac_${Math.random().toString(36).slice(2, 8)}`, text: it, done: false })),
         epicId: proj?.id ?? null,
         priority: "P2" as const,
-        status: "triage" as const,
+        status: "backlog" as const,
         authorId: user.id,
         tags: [],
         pickedForSprint: false,
@@ -440,7 +440,7 @@ function TechTaskForm() {
         migrationWindow: migrationWindow || undefined,
       }],
     }));
-    toast(`Created ${newKey} → Triage`);
+    toast(`Created ${newKey} → Backlog`);
     goTo(newKey);
   };
 
@@ -463,7 +463,7 @@ function TechTaskForm() {
         <ParentSelect value={parent} onChange={setParent} />
         <AcEditor items={ac} onChange={setAc} draft={acDraft} setDraft={setAcDraft} />
         <div className="flex items-center gap-2 pt-4 border-t border-rule">
-          <Button variant="primary" onClick={submit} disabled={!canSubmit}>Create → Triage</Button>
+          <Button variant="primary" onClick={submit} disabled={!canSubmit}>Create → Backlog</Button>
           <Pill variant="neutral">Tech Task</Pill>
         </div>
       </div>
@@ -505,7 +505,7 @@ function BugForm() {
         acceptanceCriteria: [],
         epicId: null,
         priority: severity === "S1" ? "P0" as const : severity === "S2" ? "P1" as const : "P2" as const,
-        status: "triage" as const,
+        status: "backlog" as const,
         authorId: user.id,
         tags: [],
         pickedForSprint: false,
@@ -525,7 +525,7 @@ function BugForm() {
         affectedScope: scope,
       }],
     }));
-    toast(`Filed ${newKey} → Triage`);
+    toast(`Filed ${newKey} → Backlog`);
     goTo(newKey);
   };
 
@@ -555,7 +555,7 @@ function BugForm() {
           </label>
         </div>
         <div className="flex items-center gap-2 pt-4 border-t border-rule">
-          <Button variant="primary" onClick={submit} disabled={!canSubmit}>File bug → Triage</Button>
+          <Button variant="primary" onClick={submit} disabled={!canSubmit}>File bug → Backlog</Button>
           <Pill variant="danger">Bug</Pill>
         </div>
       </div>

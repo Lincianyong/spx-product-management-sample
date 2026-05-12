@@ -151,12 +151,10 @@ export function CmdK() {
             <Item onSelect={() => go("/epics")}>Epic Board</Item>
             <Item onSelect={() => go("/me")}>My Work</Item>
             <Item onSelect={() => go("/sprint")}>Sprint Board</Item>
-            <Item onSelect={() => go("/triage")}>Triage Inbox</Item>
             <Item onSelect={() => go("/backlog")}>Backlog</Item>
             <Item onSelect={() => go("/planning/picklist")}>Sprint Planning · Stage 4a</Item>
             <Item onSelect={() => go("/planning/estimation")}>Sprint Planning · Stage 4b</Item>
             <Item onSelect={() => go("/planning/joint")}>Sprint Planning · Stage 4c</Item>
-            <Item onSelect={() => go("/heatmap")}>Workload Heatmap</Item>
             <Item onSelect={() => go("/portfolio")}>Portfolio Health</Item>
             <Item onSelect={() => go("/notifications")}>Notifications</Item>
             <Item onSelect={() => go("/planning/funnel")}>Sprint Funnel</Item>

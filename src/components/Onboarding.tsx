@@ -10,37 +10,14 @@ const SEEN_KEY = "cadence:onboarded";
 
 const STEPS_BY_ROLE: Record<string, { title: string; body: string }[]> = {
   pm: [
-    { title: "You're the PM.", body: "Albert Halim. You'll see Epic Board on your home. Triage is your daily 15-minute sweep — confirm, decline, dedupe." },
+    { title: "You're the PM.", body: "Epic Board is your home. New work lands directly in Backlog — no triage step." },
     { title: "Three planning stages.", body: "Stage 4a (Monday, alone) you Picklist. 4b (Tuesday, with engineers) they Estimate. 4c (Tuesday, together) you Commit." },
     { title: "Health is computed.", body: "Deviation = time-burn minus progress-burn. Hover any health pill to see the math. AI suggestions show a confidence chip." },
   ],
-  leadership: [
-    { title: "You're Leadership.", body: "Head of AI view. Portfolio Health is your home — health distribution, on-time trend, top blockers, allocation by pod." },
-    { title: "Comment at the Epic level.", body: "Your comments outlive any Project. Use the Epic Detail comments tab to push back on conviction." },
-    { title: "Read-mostly.", body: "You can't commit sprints or triage. You can watch and comment on every Epic." },
-  ],
   engineer: [
-    { title: "Welcome, Andre.", body: "My Work is your home. Four panels: This Sprint, Up Next, You're Blocking, Blocking You." },
+    { title: "Welcome, Engineer.", body: "My Work is your home. Two work lanes (This sprint · In queue) and a collapsible Dependencies strip." },
     { title: "Drag on Sprint Board.", body: "Move your own cards across columns. AC items gate Done — check every box before the column flips." },
     { title: "AI is evidence, not author.", body: "Story-point suggestions show confidence + reasoning. Click ✦ to accept, ignore otherwise." },
-  ],
-  guest: [
-    { title: "You're a guest.", body: "Ronaldo from Ops. You can file bug reports. You won't see internal planning surfaces." },
-    { title: "Three required fields.", body: "Repro, Expected, Actual. The clearer the repro, the faster a fix lands." },
-    { title: "We'll loop back.", body: "PM triages within 4h (P0), 24h (P1), or 1 week (P2). You'll get a Lark ping when accepted or declined." },
-  ],
-  em: [
-    { title: "You're an EM.", body: "Sprint Board (pod-filtered) is your home. You facilitate Stage 4b and own capacity in 4c." },
-    { title: "Heatmap matters.", body: "Workload Heatmap shows 12 weeks forward. Plan around the red." },
-    { title: "Capacity ≤ 125%.", body: "G6 sprint-commit gate blocks pods above 125% load. Soft warning at >100%." },
-  ],
-  designer: [
-    { title: "Welcome, Designer.", body: "My Work is your home. Use the design-task template when creating tickets." },
-    { title: "Same flow as engineers.", body: "Stage 4b you estimate; 4c you take assignments. Status flow same as engineering tickets." },
-    { title: "AC is first-class.", body: "Every Done requires every AC checked. Use them to clarify deliverables up-front." },
-  ],
-  admin: [
-    { title: "You're Admin.", body: "Full surface access. Settings → Roles, Integrations, Notifications are yours to configure." },
   ],
 };
 

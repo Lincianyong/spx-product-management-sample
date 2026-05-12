@@ -17,7 +17,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  Inbox,
   Send,
   Users,
 } from "lucide-react";
@@ -95,7 +94,7 @@ const STAGES: StageDef[] = [
       t.pickedForSprint &&
       t.storyPoints != null &&
       t.assigneeId != null &&
-      (t.status === "backlog" || t.status === "triage"),
+      t.status === "backlog",
     href: "/planning/joint",
   },
   {
@@ -637,14 +636,10 @@ function CTA({
 }
 
 function PmRail({ counts, chokes }: { counts: Record<Stage, Ticket[]>; chokes: { pm: number; eng: number; joint: number } }) {
-  const triageNotShown = useAppStore((s) => s.tickets).filter((t) => t.status === "triage" || t.status === "reproduced").length;
   return (
     <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start min-w-0 overflow-hidden">
       <RailHeader sub="What only you can unstick">PM lane</RailHeader>
       <div className="p-2 space-y-1">
-        {triageNotShown > 0 && (
-          <CTA icon={Inbox} href="/triage" label="Confirm new in Triage" meta={`${triageNotShown} waiting`} intent="warn" />
-        )}
         {counts.picked.length > 0 && (
           <CTA
             icon={Send}
@@ -663,7 +658,7 @@ function PmRail({ counts, chokes }: { counts: Record<Stage, Ticket[]>; chokes: {
             intent={chokes.joint > 0 ? "warn" : "ok"}
           />
         )}
-        {counts.picked.length === 0 && counts.assigned.length === 0 && triageNotShown === 0 && (
+        {counts.picked.length === 0 && counts.assigned.length === 0 && (
           <p className="px-3 py-4 italic text-[13px] text-ink-3">Nothing for you to unstick. Quiet morning.</p>
         )}
       </div>

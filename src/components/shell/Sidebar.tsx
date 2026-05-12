@@ -13,7 +13,6 @@ import {
   Filter,
   Flag,
   Grid3x3,
-  Inbox,
   LayoutGrid,
   List,
   PlusSquare,
@@ -47,14 +46,12 @@ interface NavGroup {
 export function Sidebar() {
   const pathname = usePathname();
   const user = useCurrentUser();
-  const tickets = useAppStore((s) => s.tickets);
   const notifications = useAppStore((s) => s.notifications);
   const collapsed = useAppStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
 
   if (!user) return null;
 
-  const triageCount = tickets.filter((t) => t.status === "triage" || t.status === "reproduced").length;
   const myNotifs = notifications.filter((n) => n.userId === user.id && !n.archived && !n.read).length;
 
   const groups: NavGroup[] = [
@@ -75,7 +72,6 @@ export function Sidebar() {
     {
       title: "Plan",
       items: [
-        { label: "Triage", href: "/triage", icon: Inbox, count: () => triageCount },
         { label: "Backlog", href: "/backlog", icon: List },
         { label: "Picklist", href: "/planning/picklist", icon: CheckSquare, hint: "PM" },
         { label: "Estimation", href: "/planning/estimation", icon: Sigma, hint: "Eng" },

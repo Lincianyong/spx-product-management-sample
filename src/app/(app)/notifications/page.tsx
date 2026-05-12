@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
@@ -18,48 +17,21 @@ const KIND_LABEL: Record<string, string> = {
   blocked: "Blocked",
   health_change: "Health change",
   bug_needs_verify: "Bug needs verify",
-  triage_new: "New in triage",
   digest: "Digest",
 };
-
-const SLA: Record<string, number> = { P0: 4, P1: 24, P2: 168 };
 
 export default function NotificationsPage() {
   useDocumentTitle("Notifications");
   const notifications = useAppStore((s) => s.notifications);
-  const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const markRead = useAppStore((s) => s.markNotificationRead);
   const archive = useAppStore((s) => s.archiveNotification);
   const snooze = useAppStore((s) => s.snoozeNotification);
   const user = useCurrentUser();
 
-  // Inject live SLA-breach signals as virtual notifications (PM only)
-  const slaSignals = useMemo(() => {
-    if (user?.role !== "pm") return [];
-    return tickets
-      .filter((t) => t.status === "triage")
-      .map((t) => {
-        const ageHours = Math.round((Date.now() - new Date(t.createdAt).getTime()) / (1000 * 60 * 60));
-        const limit = SLA[t.priority] ?? 999;
-        if (ageHours > limit) {
-          return {
-            id: `live_sla_${t.id}`,
-            userId: user.id,
-            kind: "sla_breach" as const,
-            body: `${t.key} · ${ageHours}h in Triage (SLA ${limit}h)`,
-            entityType: "ticket" as const,
-            entityKey: t.key,
-            createdAt: t.createdAt,
-            read: false,
-            archived: false,
-            virtual: true,
-          };
-        }
-        return null;
-      })
-      .filter(Boolean) as (import("@/lib/types").Notification & { virtual?: boolean })[];
-  }, [tickets, user]);
+  // Triage SLA signals were removed with the Triage surface — there's no
+  // longer a "ticket awaiting acknowledgement" state to age out.
+  const slaSignals: (import("@/lib/types").Notification & { virtual?: boolean })[] = [];
 
   if (!user) return null;
 

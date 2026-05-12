@@ -25,7 +25,7 @@ interface Props {
 const STATUS_FLOW: Record<string, TicketStatus[]> = {
   engineering: ["scheduled", "in_progress", "review", "done"],
   tech_task: ["scheduled", "in_progress", "review", "done"],
-  bug: ["reproduced", "scheduled", "in_progress", "review", "verifying", "verified"],
+  bug: ["scheduled", "in_progress", "review", "verifying", "verified"],
 };
 
 export function TicketView({ ticketKey, variant = "page", onClose }: Props) {

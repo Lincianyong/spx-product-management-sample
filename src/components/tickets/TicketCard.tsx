@@ -20,7 +20,7 @@ interface Props {
 const NEXT_STATUS_FOR_TYPE: Record<string, TicketStatus[]> = {
   engineering: ["scheduled", "in_progress", "review", "done"],
   tech_task: ["scheduled", "in_progress", "review", "done"],
-  bug: ["reproduced", "scheduled", "in_progress", "review", "verifying", "verified"],
+  bug: ["scheduled", "in_progress", "review", "verifying", "verified"],
 };
 
 export function TicketCard({ ticket, onOpen, compact, dragHandleProps, className, showQuickActions = true }: Props) {

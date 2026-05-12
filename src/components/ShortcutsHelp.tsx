@@ -26,7 +26,6 @@ const GROUPS = [
       ["G B", "Sprint Board"],
       ["G M", "My Work"],
       ["G E", "Epic Board"],
-      ["G T", "Triage Inbox"],
       ["G P", "Portfolio Health"],
       ["G N", "Notifications"],
     ],
