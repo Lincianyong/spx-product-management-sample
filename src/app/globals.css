@@ -2,40 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================================================
+ * SPX Express Design System v1 — token bridge
+ * Source: github.com/Lincianyong/spx-ds (tokens/tokens.css)
+ * Cadence-specific tokens (--ai*) are kept for AI vs human distinction.
+ * =========================================================== */
+
 :root {
+  /* SPX DS — Brand · Orange */
+  --brand-50:  #FFF3F0;
+  --brand-100: #FFE0D7;
+  --brand-200: #FFC1AE;
+  --brand-300: #FF9F7E;
+  --brand-400: #FB7B53;
+  --brand-500: #EE4D2D;
+  --brand-600: #D63A1B;
+  --brand-700: #B12D11;
+  --brand-800: #82220C;
+  --brand-900: #4D1408;
+
+  /* SPX DS — Neutrals · Cool Gray */
+  --neutral-0:    #FFFFFF;
+  --neutral-25:   #FAFAFB;
+  --neutral-50:   #F4F5F7;
+  --neutral-100:  #E8EAEE;
+  --neutral-200:  #D5D9DF;
+  --neutral-300:  #B6BCC6;
+  --neutral-400:  #8A93A1;
+  --neutral-500:  #6B7280;
+  --neutral-600:  #4B5563;
+  --neutral-700:  #343A45;
+  --neutral-800:  #1F242C;
+  --neutral-900:  #11141A;
+  --neutral-1000: #06080C;
+
+  /* SPX DS — Semantic · Success / Warning / Danger / Info */
+  --success-50:  #ECFDF3;
+  --success-100: #D1FADF;
+  --success-500: #12B76A;
+  --success-600: #039855;
+  --success-700: #027A48;
+
+  --warning-50:  #FFFAEB;
+  --warning-100: #FEF0C7;
+  --warning-500: #F79009;
+  --warning-600: #DC6803;
+  --warning-700: #B54708;
+
+  --danger-50:  #FEF3F2;
+  --danger-100: #FEE4E2;
+  --danger-500: #F04438;
+  --danger-600: #D92D20;
+  --danger-700: #B42318;
+
+  --info-50:  #EFF8FF;
+  --info-100: #D1E9FF;
+  --info-500: #2E90FA;
+  --info-600: #1570EF;
+  --info-700: #175CD3;
+
+  /* SPX DS — Data viz */
+  --dv-1: #EE4D2D;
+  --dv-2: #FB7B53;
+  --dv-3: #B12D11;
+  --dv-4: #334155;
+  --dv-5: #94A3B8;
+  --dv-6: #CBD5E1;
+
+  /* SPX DS — Radius */
+  --radius-none: 0;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 9999px;
+
+  /* SPX DS — Elevation */
+  --shadow-1: 0 1px 2px 0 rgba(17, 20, 26, 0.05);
+  --shadow-2: 0 1px 3px 0 rgba(17, 20, 26, 0.08), 0 1px 2px -1px rgba(17, 20, 26, 0.06);
+  --shadow-3: 0 4px 8px -2px rgba(17, 20, 26, 0.08), 0 2px 4px -2px rgba(17, 20, 26, 0.04);
+  --shadow-4: 0 12px 16px -4px rgba(17, 20, 26, 0.10), 0 4px 6px -2px rgba(17, 20, 26, 0.04);
+  --shadow-5: 0 20px 32px -8px rgba(17, 20, 26, 0.14), 0 8px 16px -4px rgba(17, 20, 26, 0.06);
+
+  /* ===========================================================
+   * Cadence semantic aliases — point legacy names at SPX DS tokens.
+   * Lets every existing component (Pill, Card, Button…) inherit
+   * the SPX palette without editing each file.
+   * =========================================================== */
+
   /* Surface neutrals */
-  --bg: #F6F2EB;
-  --bg-elevated: #FBF8F2;
-  --bg-card: #FFFFFF;
-  --rule: #E5DFD3;
-  --rule-soft: #EFEAE0;
+  --bg:           var(--neutral-25);    /* page canvas */
+  --bg-elevated:  var(--neutral-50);    /* striped rows, toolbars */
+  --bg-card:      var(--neutral-0);     /* cards, slide-overs */
+  --rule:         var(--neutral-200);   /* card / input borders */
+  --rule-soft:    var(--neutral-100);   /* dividers */
 
-  /* Ink */
-  --ink: #14110F;
-  --ink-2: #3A352F;
-  --ink-3: #6B645A;
-  --ink-4: #9B9489;
+  /* Ink (text) tiers */
+  --ink:    var(--neutral-1000);  /* page titles, big numbers */
+  --ink-2:  var(--neutral-900);   /* default body */
+  --ink-3:  var(--neutral-500);   /* helper / metadata */
+  --ink-4:  var(--neutral-400);   /* placeholder, disabled */
 
-  /* Accent */
-  --accent: #1E3A2E;
-  --accent-soft: #E8EDE9;
-  --accent-deep: #142A20;
+  /* Brand accent */
+  --accent:       var(--brand-500);
+  --accent-soft:  var(--brand-50);
+  --accent-deep:  var(--brand-700);
 
-  /* AI */
-  --ai: #5B3FB8;
-  --ai-soft: #E8E1F5;
+  /* AI lane — Cadence-specific (no SPX DS counterpart). Kept violet. */
+  --ai:       #5B3FB8;
+  --ai-soft:  #E8E1F5;
 
-  /* Semantic */
-  --warn: #B45309;
-  --warn-soft: #F5E4CC;
-  --danger: #9B2C2C;
-  --danger-soft: #F0DDD9;
-  --info: #1E3A8A;
-  --info-soft: #DDE3F0;
-  --ok: #2F6B3F;
-  --ok-soft: #DCE8DC;
-  --neutral: #6B645A;
-  --neutral-soft: #E8E3D7;
+  /* Semantic state */
+  --warn:        var(--warning-600);
+  --warn-soft:   var(--warning-50);
+  --danger:      var(--danger-600);
+  --danger-soft: var(--danger-50);
+  --info:        var(--info-600);
+  --info-soft:   var(--info-50);
+  --ok:          var(--success-600);
+  --ok-soft:     var(--success-50);
+  --neutral:     var(--neutral-500);
+  --neutral-soft:var(--neutral-100);
 }
 
 * {
@@ -45,10 +133,11 @@
 html, body {
   background: var(--bg);
   color: var(--ink-2);
-  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
-  font-size: 15px;
-  line-height: 1.55;
+  font-family: var(--font-body), 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 22px;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'tnum';
 }
 
 ::selection {
@@ -56,11 +145,11 @@ html, body {
   color: var(--ink);
 }
 
-/* Focus rings */
+/* Focus rings — SPX DS focus token */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 input:focus-visible, textarea:focus-visible, select:focus-visible {
@@ -75,9 +164,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   left: -9999px;
   top: 0;
   background: var(--ink);
-  color: var(--bg);
+  color: var(--neutral-0);
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   font-family: var(--font-mono);
   font-size: 12px;
   z-index: 100;
@@ -87,20 +176,36 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   top: 16px;
 }
 
-/* Display italic helper — Instrument Serif is italic-only when we apply it */
+/* Display heading — Geist 700, NOT italic serif anymore.
+   The historical .display class kept its name for back-compat across the codebase. */
 .display {
-  font-family: var(--font-display), Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
+  font-family: var(--font-display), 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 /* Mono caption / eyebrow */
 .eyebrow {
   font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: 12px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+/* Numeric (KPI value) */
+.numeric {
+  font-family: var(--font-mono), monospace;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+}
+
+/* Topbar blur */
+.topbar-blur {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
 }
 
 /* Scrollbar */
@@ -112,18 +217,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--rule);
+  background: var(--neutral-200);
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ink-4);
-}
-
-/* Topbar blur */
-.topbar-blur {
-  background: rgba(246, 242, 235, 0.92);
-  backdrop-filter: saturate(140%) blur(10px);
-  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  background: var(--neutral-400);
 }
 
 @keyframes accentFlash {

@@ -1,18 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const display = Instrument_Serif({
-  weight: "400",
-  style: "italic",
+// SPX DS specifies Geist for display + body. Next 14.2 doesn't bundle Geist
+// in next/font/google, so we use Inter as the closest geometric-sans
+// substitute and let the CSS var fall back to 'Geist' for systems where it's
+// installed locally. To swap in real Geist, install the `geist` package.
+const display = Inter({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-display",
   display: "swap",
 });
 
-// Geist isn't bundled in Next 14's font module; Inter is the closest editorial-neutral sans.
 const body = Inter({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-body",
   display: "swap",
 });
@@ -87,8 +90,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   colorScheme: "light",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F6F2EB" },
-    { media: "(prefers-color-scheme: dark)", color: "#F6F2EB" },
+    { media: "(prefers-color-scheme: light)", color: "#FAFAFB" },
+    { media: "(prefers-color-scheme: dark)", color: "#FAFAFB" },
   ],
 };
 
