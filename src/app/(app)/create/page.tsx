@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bug, Compass, FileText, ImagePlus, Plus, Wrench } from "lucide-react";
+import { Bug, Compass, FileText, ImagePlus, Plus, Wrench, X } from "lucide-react";
 import { Markdown } from "@/components/Markdown";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
@@ -212,6 +212,48 @@ const SLASH_COMMANDS = [
   { trigger: "/quote", insert: "> " },
 ];
 
+/**
+ * MarkdownArea — Jira-style rich textarea.
+ *
+ * Source-of-truth invariant: the parent owns the full markdown string
+ * including any `![alt](data:image/...)` image markdown for attached
+ * images. We expose a single `value` / `onChange` so consumers stay
+ * dumb.
+ *
+ * Editor behaviour:
+ *  - The textarea never shows the long base64 data URL. On mount we
+ *    parse `value` and swap each `![alt](data:...)` for a compact
+ *    `![alt](#img-<id>)` placeholder; the data URL itself lives in
+ *    component state, keyed by id.
+ *  - Attached images render as a thumbnail strip above the textarea
+ *    so the author can see (and remove) what's attached. Removing a
+ *    thumbnail also removes its placeholder line from the text.
+ *  - On every internal change (typing, attach, remove) we recompose
+ *    the full markdown by re-substituting `#img-<id>` with the real
+ *    data URL and call `onChange` so the parent stays in sync.
+ *  - Preview mode renders the recomposed markdown via <Markdown> so
+ *    images appear in their authored positions.
+ */
+type Attachment = { id: string; filename: string; dataUrl: string };
+
+const newAttachmentId = () =>
+  `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+function parseInitialMarkdown(raw: string): { text: string; attachments: Attachment[] } {
+  const attachments: Attachment[] = [];
+  const text = raw.replace(/!\[([^\]]*)\]\((data:[^)]+)\)/g, (_, alt, dataUrl) => {
+    const id = newAttachmentId();
+    attachments.push({ id, filename: alt || "image", dataUrl });
+    return `![${alt || "image"}](#img-${id})`;
+  });
+  return { text, attachments };
+}
+
+function composeMarkdown(text: string, attachments: Attachment[]): string {
+  const map = new Map(attachments.map((a) => [a.id, a.dataUrl]));
+  return text.replace(/#img-([a-z0-9]+)/g, (full, id) => map.get(id) ?? full);
+}
+
 function MarkdownArea({
   value,
   onChange,
@@ -225,6 +267,12 @@ function MarkdownArea({
   minHeight?: number;
   className?: string;
 }) {
+  // Initial parse lifts data URLs out of the textarea and keeps them
+  // in component state. We don't re-sync after mount — the parent
+  // value only changes via our own onChange calls.
+  const initial = useState(() => parseInitialMarkdown(value))[0];
+  const [text, setText] = useState(initial.text);
+  const [attachments, setAttachments] = useState<Attachment[]>(initial.attachments);
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashAnchor, setSlashAnchor] = useState(0);
   const [mode, setMode] = useState<"edit" | "preview">("edit");
@@ -232,9 +280,16 @@ function MarkdownArea({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Single helper: whenever text or attachments changes, push the
+  // recomposed full markdown to the parent.
+  const pushUp = (nextText: string, nextAttachments: Attachment[]) => {
+    onChange(composeMarkdown(nextText, nextAttachments));
+  };
+
   const handle = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
-    onChange(v);
+    setText(v);
+    pushUp(v, attachments);
     const caret = e.target.selectionStart ?? v.length;
     setSlashAnchor(caret);
     const before = v.slice(0, caret);
@@ -243,10 +298,12 @@ function MarkdownArea({
   };
 
   const insert = (cmd: typeof SLASH_COMMANDS[number]) => {
-    const before = value.slice(0, slashAnchor);
-    const after = value.slice(slashAnchor);
+    const before = text.slice(0, slashAnchor);
+    const after = text.slice(slashAnchor);
     const cleared = before.replace(/\/[a-z]*$/, "");
-    onChange(cleared + cmd.insert + after);
+    const next = cleared + cmd.insert + after;
+    setText(next);
+    pushUp(next, attachments);
     setSlashOpen(false);
   };
 
@@ -264,23 +321,45 @@ function MarkdownArea({
       toast("Image larger than 5 MB; not attached.", { kind: "error" });
       return;
     }
-    const url = await fileToDataUrl(file);
+    const dataUrl = await fileToDataUrl(file);
+    const id = newAttachmentId();
+    const filename = file.name.replace(/\]/g, "") || "image";
+    const att: Attachment = { id, filename, dataUrl };
+
     const ta = textareaRef.current;
-    const start = ta?.selectionStart ?? value.length;
-    const end = ta?.selectionEnd ?? value.length;
-    const before = value.slice(0, start);
-    const after = value.slice(end);
+    const start = ta?.selectionStart ?? text.length;
+    const end = ta?.selectionEnd ?? text.length;
+    const before = text.slice(0, start);
+    const after = text.slice(end);
     const leading = before && !before.endsWith("\n") ? "\n" : "";
     const trailing = after && !after.startsWith("\n") ? "\n" : "";
-    const md = `${leading}![${file.name.replace(/\]/g, "")}](${url})${trailing}`;
-    onChange(before + md + after);
+    const placeholderMd = `${leading}![${filename}](#img-${id})${trailing}`;
+    const nextText = before + placeholderMd + after;
+    const nextAtts = [...attachments, att];
+
+    setText(nextText);
+    setAttachments(nextAtts);
+    pushUp(nextText, nextAtts);
+
     queueMicrotask(() => {
       const node = textareaRef.current;
       if (!node) return;
-      const pos = (before + md).length;
+      const pos = (before + placeholderMd).length;
       node.focus();
       node.setSelectionRange(pos, pos);
     });
+  };
+
+  const removeAttachment = (id: string) => {
+    const nextAtts = attachments.filter((a) => a.id !== id);
+    // Strip both the full image-line form and any bare `#img-<id>`
+    // references just in case the user typed around it.
+    const lineRe = new RegExp(`!\\[[^\\]]*\\]\\(#img-${id}\\)\\n?`, "g");
+    const tokenRe = new RegExp(`#img-${id}`, "g");
+    const nextText = text.replace(lineRe, "").replace(tokenRe, "");
+    setAttachments(nextAtts);
+    setText(nextText);
+    pushUp(nextText, nextAtts);
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -307,6 +386,10 @@ function MarkdownArea({
     if (file) void insertImage(file);
     e.target.value = "";
   };
+
+  // For the preview pane and below-textarea attachments strip we
+  // resolve placeholders to real data URLs so images render.
+  const composed = composeMarkdown(text, attachments);
 
   return (
     <div className="relative">
@@ -346,10 +429,42 @@ function MarkdownArea({
         />
       </div>
 
+      {/* Attachment thumbnails — visible in BOTH edit and preview, so
+          the author always sees what's attached even when typing. */}
+      {attachments.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {attachments.map((a) => (
+            <div
+              key={a.id}
+              className="group relative bg-bg-card border border-rule rounded-[6px] p-1.5 flex items-center gap-2 max-w-[240px]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={a.dataUrl}
+                alt={a.filename}
+                className="w-12 h-12 object-cover rounded-[4px] border border-rule-soft shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-[12px] text-ink truncate" title={a.filename}>{a.filename}</div>
+                <div className="font-mono text-[10px] text-ink-3">attachment</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeAttachment(a.id)}
+                aria-label={`Remove ${a.filename}`}
+                className="shrink-0 w-5 h-5 inline-flex items-center justify-center rounded-[4px] text-ink-3 hover:text-danger hover:bg-rule-soft"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {mode === "edit" ? (
         <textarea
           ref={textareaRef}
-          value={value}
+          value={text}
           onChange={handle}
           onPaste={handlePaste}
           onDrop={handleDrop}
@@ -371,8 +486,8 @@ function MarkdownArea({
             className
           )}
         >
-          {value.trim() ? (
-            <Markdown source={value} />
+          {composed.trim() ? (
+            <Markdown source={composed} />
           ) : (
             <p className="italic text-[13px] text-ink-3">Nothing to preview yet.</p>
           )}
