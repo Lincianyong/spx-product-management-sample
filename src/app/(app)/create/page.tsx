@@ -276,22 +276,32 @@ function MarkdownArea({
   );
 }
 
+// Sentinel value for the "no parent epic" option. Radix's SelectItem refuses
+// an empty string value at runtime (it throws), so the ad-hoc choice carries
+// an explicit non-empty token that's resolved back to "" / null in submit.
+const PARENT_NONE = "__none__";
+
 function ParentSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const projects = useAppStore((s) => s.epics);
+  const epics = useAppStore((s) => s.epics);
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent project</span>
-      <Select value={value} onValueChange={onChange}>
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
+        Parent Epic · optional
+      </span>
+      <Select value={value || PARENT_NONE} onValueChange={(v) => onChange(v === PARENT_NONE ? "" : v)}>
         <SelectTrigger>
-          <SelectValue placeholder="Ad-hoc (no parent)" />
+          <SelectValue placeholder="Ad-hoc — no parent Epic" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Ad-hoc (no parent)</SelectItem>
-          {projects.map((p) => (
-            <SelectItem key={p.id} value={p.key}>{p.key} · {p.title}</SelectItem>
+          <SelectItem value={PARENT_NONE}>Ad-hoc — no parent Epic</SelectItem>
+          {epics.map((e) => (
+            <SelectItem key={e.id} value={e.key}>{e.key} · {e.title}</SelectItem>
           ))}
         </SelectContent>
       </Select>
+      <span className="text-[11px] text-ink-3">
+        Tickets can stand alone. Attach an Epic only when this work clearly rolls up to one.
+      </span>
     </label>
   );
 }

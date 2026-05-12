@@ -117,13 +117,16 @@ export function QuickCreate({ open, onClose }: Props) {
         />
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent</span>
-            <Select value={parent} onValueChange={setParent}>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent Epic · optional</span>
+            <Select
+              value={parent || "__none__"}
+              onValueChange={(v) => setParent(v === "__none__" ? "" : v)}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Ad-hoc (no parent)" />
+                <SelectValue placeholder="Ad-hoc — no parent Epic" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Ad-hoc (no parent)</SelectItem>
+                <SelectItem value="__none__">Ad-hoc — no parent Epic</SelectItem>
                 {projects.map((p) => (
                   <SelectItem key={p.id} value={p.key}>{p.key} · {p.title}</SelectItem>
                 ))}
