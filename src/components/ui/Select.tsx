@@ -21,6 +21,7 @@ export const SelectTrigger = React.forwardRef<
       "focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent-soft",
       "disabled:cursor-not-allowed disabled:opacity-50",
       "data-[placeholder]:text-ink-4",
+      "[&>span]:truncate [&>span]:min-w-0 [&>span]:flex-1",
       size === "sm" ? "h-8 px-2.5 text-[12px]" : "h-10 px-3 text-[14px]",
       className
     )}

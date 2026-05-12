@@ -250,7 +250,7 @@ export default function FunnelPage() {
         actions={
           <div className="flex items-center gap-2">
             <Select value={sprintId} onValueChange={setSprintId}>
-              <SelectTrigger size="sm" className="w-44 font-mono uppercase tracking-[0.06em]">
+              <SelectTrigger size="sm" className="w-56 font-mono uppercase tracking-[0.06em]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -318,9 +318,9 @@ export default function FunnelPage() {
       )}
 
       {/* Two-column layout: main funnel + right rail */}
-      <div className="grid grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-6">
         {/* Main */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* 5 stage cards */}
           <div className="grid grid-cols-5 gap-3">
             {STAGES.map((s, idx) => {
@@ -642,7 +642,7 @@ function CTA({
 function PmRail({ counts, chokes }: { counts: Record<Stage, Ticket[]>; chokes: { pm: number; eng: number; joint: number } }) {
   const triageNotShown = useAppStore((s) => s.tickets).filter((t) => t.status === "triage" || t.status === "reproduced").length;
   return (
-    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start">
+    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start min-w-0 overflow-hidden">
       <RailHeader sub="What only you can unstick">PM lane</RailHeader>
       <div className="p-2 space-y-1">
         {triageNotShown > 0 && (
@@ -686,7 +686,7 @@ function EngRail({ counts, user }: { counts: Record<Stage, Ticket[]>; user: User
     : [];
   const sizedNeedsHelp = counts.sized;
   return (
-    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start">
+    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start min-w-0 overflow-hidden">
       <RailHeader sub="Where you fit in the funnel">Eng lane</RailHeader>
       <div className="p-2 space-y-1">
         {sizedNeedsHelp.length > 0 && (
@@ -751,7 +751,7 @@ function EmRail({ counts, chokes }: { counts: Record<Stage, Ticket[]>; chokes: {
     }
   }
   return (
-    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start">
+    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start min-w-0 overflow-hidden">
       <RailHeader sub="Will the pod commit cleanly?">EM lane</RailHeader>
       <div className="p-3 space-y-2">
         {engineers.map((u) => {
@@ -839,7 +839,7 @@ function LeadershipRail({ sprints, counts }: { sprints: Sprint[]; counts: Record
   };
 
   return (
-    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start">
+    <aside className="bg-bg-card border border-rule rounded-[8px] sticky top-16 self-start min-w-0 overflow-hidden">
       <RailHeader sub="Last 8 cycles · ritual health">Leadership lane</RailHeader>
       <div className="p-4 space-y-3">
         <div className="grid grid-cols-3 gap-2">

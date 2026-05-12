@@ -115,12 +115,12 @@ export function Sidebar() {
           // square favicon S-mark instead. The chevron is the only other
           // affordance.
           <div className="flex flex-col items-center gap-2">
-            <Link href="/" className="block w-9 h-9 rounded-md overflow-hidden border border-rule-soft" aria-label="Home">
+            <Link href="/" className="block w-[22px] h-[22px]" aria-label="Home">
               <Image
                 src="/icon.svg"
                 alt="SPX"
-                width={36}
-                height={36}
+                width={22}
+                height={22}
                 priority
               />
             </Link>

@@ -82,26 +82,7 @@ function EpicBoardInner() {
         }
         lede="Click any Epic to open a side panel with its projects + tickets. Click the key to navigate to the full page."
         actions={
-          <div className="flex items-center gap-2">
-            {canCreateEpic && (
-              <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> New Epic
-              </Button>
-            )}
-            {mine.length > 0 && (
-              <select
-                onChange={(e) => e.target.value && applyView(e.target.value)}
-                defaultValue=""
-                className="h-8 px-2 text-[12px] font-mono uppercase tracking-[0.06em] rounded-[6px] border border-rule bg-bg-card text-ink-2"
-                aria-label="Saved views"
-              >
-                <option value="">Saved views…</option>
-                {mine.map((v) => (
-                  <option key={v.id} value={v.id}>{v.name}</option>
-                ))}
-              </select>
-            )}
-            <Button variant="secondary" size="sm" onClick={() => setSaveOpen(true)}>Save view</Button>
+          <div className="flex items-center gap-1">
             {VIEWS.map((v) => (
               <button
                 key={v}
@@ -118,7 +99,31 @@ function EpicBoardInner() {
         }
       />
 
-      <GroupByPicker value={groupBy} onChange={setGroupBy} />
+      {/* Toolbar: GroupBy left · saved views switcher · New Epic + Save view right */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <GroupByPicker value={groupBy} onChange={setGroupBy} />
+        {mine.length > 0 && (
+          <select
+            onChange={(e) => e.target.value && applyView(e.target.value)}
+            defaultValue=""
+            className="h-8 px-2 text-[12px] font-mono uppercase tracking-[0.06em] rounded-[6px] border border-rule bg-bg-card text-ink-2"
+            aria-label="Saved views"
+          >
+            <option value="">Saved views…</option>
+            {mine.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setSaveOpen(true)}>Save view</Button>
+          {canCreateEpic && (
+            <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> New Epic
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Saved views chips */}
       {mine.length > 0 && (
