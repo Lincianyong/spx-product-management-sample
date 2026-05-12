@@ -68,8 +68,8 @@ export function Sidebar() {
     {
       title: "Plan",
       items: [
-        { label: "Sprint Board", href: "/sprint", icon: Columns3 },
         { label: "Planning", href: "/planning", icon: CheckSquare, prefix: "/planning" },
+        { label: "Sprint Board", href: "/sprint", icon: Columns3 },
         { label: "Sprint Close", href: "/sprint-close", icon: CheckCircle2 },
         { label: "Backlog", href: "/backlog", icon: List },
       ],
