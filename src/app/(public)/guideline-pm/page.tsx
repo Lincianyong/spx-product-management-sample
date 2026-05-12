@@ -226,18 +226,6 @@ export default function GuidelinePmPage() {
         ]}
       />
 
-      <SurfaceCard
-        eyebrow="AI assists you'll meet"
-        title="Suggestions, with confidence."
-        body="Cadence surfaces four kinds of AI hints. Every hint shows a confidence number and the reasoning; nothing is auto-applied."
-        bullets={[
-          "Parent suggestion — the most likely Epic when filing a ticket.",
-          "Story-point suggestion — based on similar past tickets.",
-          "Assignee fit — based on expertise tags + capacity.",
-          "Duplicate detection — if your filing looks like an existing ticket.",
-        ]}
-      />
-
       <div className="mt-6 flex items-center justify-between bg-bg-elevated border border-rule rounded-[8px] px-4 py-3">
         <span className="text-[13px] text-ink-3">Working alongside engineers?</span>
         <Link href="/guideline-eng" className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep">

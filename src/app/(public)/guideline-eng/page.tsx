@@ -35,7 +35,7 @@ export default function GuidelineEngPage() {
         title="Estimation — story points on Friday."
         body="Engineers + EM. ~45 min. The picklist from earlier shows up here for sizing. Add story points, flag concerns, hand back."
         bullets={[
-          "Add story points per ticket — the surface remembers AI-suggested values with confidence.",
+          "Add story points per ticket — the input is yours, free-typed.",
           "Concern flags ('needs decomposition', 'unclear scope') are visible to the PM at Joint.",
           "Tickets you flag get pulled out of the sprint slice if they can't be resolved by Joint.",
         ]}
@@ -44,20 +44,19 @@ export default function GuidelineEngPage() {
       <MockScreen
         title="Estimation · sizing rows"
         url="/planning/estimation"
-        caption="Each row is a ticket from the picklist. The AI hint sits next to your input — accept the suggested value or override."
+        caption="Each row is a ticket from the picklist. Type a story-point value, flag concerns inline, hand back to the PM."
         className="mb-8"
       >
         <div className="space-y-1.5">
           {[
-            { k: "CDN-3504", title: "Drift detection on retrain pipeline", ai: 5, mine: 5, flag: null as string | null },
-            { k: "CDN-3505", title: "Calibration layer after drift gate",   ai: 5, mine: 8, flag: "needs decomposition" },
-            { k: "BUG-4421", title: "Android 14 driver timestamps drift",   ai: 3, mine: 3, flag: null },
-            { k: "RTE-891",  title: "Ferry timetable static loader",        ai: 5, mine: 5, flag: null },
+            { k: "CDN-3504", title: "Drift detection on retrain pipeline", mine: 5, flag: null as string | null },
+            { k: "CDN-3505", title: "Calibration layer after drift gate",   mine: 8, flag: "needs decomposition" },
+            { k: "BUG-4421", title: "Android 14 driver timestamps drift",   mine: 3, flag: null },
+            { k: "RTE-891",  title: "Ferry timetable static loader",        mine: 5, flag: null },
           ].map((row) => (
             <div key={row.k} className="bg-bg-card border border-rule rounded-[5px] p-2 flex items-center gap-2">
               <span className="font-mono text-[10px] text-ink-3 w-16 shrink-0">{row.k}</span>
               <span className="text-[11px] text-ink truncate flex-1">{row.title}</span>
-              <MockChip tone="accent">AI · {row.ai}pt</MockChip>
               <div className="bg-bg-elevated border border-rule rounded-[4px] px-2 h-6 inline-flex items-center font-mono text-[10px] text-ink">
                 {row.mine} pt
               </div>
@@ -163,18 +162,6 @@ export default function GuidelineEngPage() {
           "Search hits key, title, description, tags.",
           "Type and state filters pinned to 180px each.",
           "Program multi-select on the second row filters by parent epic's programs.",
-        ]}
-      />
-
-      <SurfaceCard
-        eyebrow="AI you'll see while filing"
-        title="Suggestions, not decisions."
-        body="When you file a ticket, four hints surface with a confidence number. You accept or override."
-        bullets={[
-          "Parent epic — the most likely Epic for this ticket.",
-          "Story points — based on similar tickets you've shipped.",
-          "Assignee — engineers whose expertise tags match.",
-          "Duplicates — if a near-identical ticket already exists.",
         ]}
       />
 

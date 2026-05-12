@@ -7,7 +7,6 @@ import {
   MockSidebar,
   MockTopBar,
   MockCycleBar,
-  MockChip,
   MockTicketRow,
 } from "../MockScreen";
 
@@ -143,16 +142,17 @@ export default function GuidelineOverviewPage() {
 
       <Section
         eyebrow="Programs"
-        title="Six axes the portfolio rolls up."
-        body="Every Epic (and optionally each Ticket) is tagged with one or more programs. The Portfolio view bucket-sums epics by program so leadership can see allocation at a glance."
+        title="Configurable axes the portfolio rolls up."
+        body="Every Epic (and optionally each Ticket) is tagged with one or more programs. The Portfolio view bucket-sums epics by program so leadership can see allocation at a glance. The set below is the current sample configuration — programs are workspace-level and can be added, renamed, or retired without code changes."
       >
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-1">
           {["LM", "FM", "Expansion", "BPOM", "CCTV", "FINOPS"].map((p) => (
             <span key={p} className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-2 px-2.5 h-7 inline-flex items-center rounded-[4px] border border-rule bg-bg-card">
               {p}
             </span>
           ))}
         </div>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mb-4">Sample set · not a fixed enum</p>
 
         <MockScreen
           title="Portfolio · Allocation by program"
@@ -187,28 +187,11 @@ export default function GuidelineOverviewPage() {
       </Section>
 
       <Section
-        eyebrow="AI, as evidence"
-        title="Never the author."
-        body="Cadence surfaces AI hints — parent-epic suggestion, story-point suggestion, duplicate detection, assignee fit — with a confidence number and the reasoning. Humans accept or override; nothing is auto-applied."
-      >
-        <div className="bg-bg-elevated border border-rule rounded-[6px] p-3 flex items-start gap-3">
-          <MockChip tone="accent">AI · 0.78</MockChip>
-          <div className="flex-1">
-            <div className="text-[13px] text-ink mb-1">Suggested points: <span className="font-mono">5</span></div>
-            <div className="text-[12px] text-ink-3 leading-relaxed">
-              Similar tickets CDN-3201 and CDN-3380 (calibration work) shipped at 5 pts and 5 pts.
-              The added cross-region split is incremental.
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      <Section
         eyebrow="Where to read next"
         title="Pick the guide that matches your seat."
       >
         <Cards>
-          <Card title="PM guide" body="Picklist mechanics, joint planning, portfolio reading, sprint close, AI assists.">
+          <Card title="PM guide" body="Picklist mechanics, joint planning, portfolio reading, sprint close, capacity-aware commits.">
             <Link href="/guideline-pm" className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep">
               Open /guideline-pm →
             </Link>
