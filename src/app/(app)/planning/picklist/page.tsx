@@ -282,6 +282,12 @@ export default function PicklistPage() {
           )}
         </div>
         <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
+          <BacklogQuickFilters
+            typeFilter={typeFilter}
+            onTypeFilter={setTypeFilter}
+            carryOnly={carryOnly}
+            onCarryOnly={setCarryOnly}
+          />
           <BacklogSortHeader sortBy={sortBy} sortDir={sortDir} onSort={(k) => {
             if (sortBy === k) {
               setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -295,16 +301,12 @@ export default function PicklistPage() {
             onKeyQuery={setKeyQuery}
             titleQuery={titleQuery}
             onTitleQuery={setTitleQuery}
-            typeFilter={typeFilter}
-            onTypeFilter={setTypeFilter}
             projectFilter={projectFilter}
             onProjectFilter={setProjectFilter}
             authorFilter={authorFilter}
             onAuthorFilter={setAuthorFilter}
             priorityFilter={priorityFilter}
             onPriorityFilter={setPriorityFilter}
-            carryOnly={carryOnly}
-            onCarryOnly={setCarryOnly}
             projects={projects}
             authors={candidateAuthors}
           />
@@ -364,7 +366,7 @@ function BacklogSortHeader({
   );
 
   return (
-    <div className="grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-3 bg-bg-elevated border-b border-rule items-center">
+    <div className="grid grid-cols-[40px_40px_40px_100px_minmax(0,1fr)_140px_140px_100px_80px] gap-3 px-4 py-3 bg-bg-elevated border-b border-rule items-center">
       <span />
       <span />
       <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">#</span>
@@ -378,36 +380,77 @@ function BacklogSortHeader({
   );
 }
 
+// ─── Available backlog: quick filters strip (Type · Carry) ──────────
+// These two filters aren't column-scoped and were squeezing the Title cell.
+// Promoted to a slim strip just above the sortable header so the Title
+// column can be a clean full-width search input again.
+function BacklogQuickFilters({
+  typeFilter,
+  onTypeFilter,
+  carryOnly,
+  onCarryOnly,
+}: {
+  typeFilter: TicketType | "all";
+  onTypeFilter: (v: TicketType | "all") => void;
+  carryOnly: boolean;
+  onCarryOnly: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 bg-bg-elevated/30 border-b border-rule-soft">
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Quick</span>
+      <span className="font-mono text-[11px] text-ink-3">Type</span>
+      <Select value={typeFilter} onValueChange={(v) => onTypeFilter(v as TicketType | "all")}>
+        <SelectTrigger size="sm" className="h-7 px-2 w-[120px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All types</SelectItem>
+          <SelectItem value="bug">Bug</SelectItem>
+          <SelectItem value="engineering">Ticket</SelectItem>
+          <SelectItem value="tech_task">Tech task</SelectItem>
+        </SelectContent>
+      </Select>
+      <label
+        title="Show carry-over tickets only"
+        className={cn(
+          "inline-flex items-center justify-center px-2.5 h-7 rounded-[4px] border text-[11px] font-mono uppercase tracking-[0.06em] cursor-pointer select-none",
+          carryOnly ? "border-warn text-warn bg-warn-soft" : "border-rule text-ink-3 bg-bg-card hover:border-ink-4"
+        )}
+      >
+        <input
+          type="checkbox"
+          checked={carryOnly}
+          onChange={(e) => onCarryOnly(e.target.checked)}
+          className="sr-only"
+        />
+        Carry-over only
+      </label>
+    </div>
+  );
+}
+
 // ─── Available backlog: per-column filter row ───────────────────────
 function BacklogFilterRow({
   keyQuery, onKeyQuery,
   titleQuery, onTitleQuery,
-  typeFilter, onTypeFilter,
   projectFilter, onProjectFilter,
   authorFilter, onAuthorFilter,
   priorityFilter, onPriorityFilter,
-  carryOnly, onCarryOnly,
   projects, authors,
 }: {
   keyQuery: string;
   onKeyQuery: (v: string) => void;
   titleQuery: string;
   onTitleQuery: (v: string) => void;
-  typeFilter: TicketType | "all";
-  onTypeFilter: (v: TicketType | "all") => void;
   projectFilter: string;
   onProjectFilter: (v: string) => void;
   authorFilter: string;
   onAuthorFilter: (v: string) => void;
   priorityFilter: Priority | "all";
   onPriorityFilter: (v: Priority | "all") => void;
-  carryOnly: boolean;
-  onCarryOnly: (v: boolean) => void;
   projects: import("@/lib/types").Project[];
   authors: import("@/lib/types").User[];
 }) {
   return (
-    <div className="grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-2 bg-bg-elevated/30 border-b border-rule items-center">
+    <div className="grid grid-cols-[40px_40px_40px_100px_minmax(0,1fr)_140px_140px_100px_80px] gap-3 px-4 py-2 bg-bg-elevated/30 border-b border-rule items-center">
       <span className="col-span-3" />
       <input
         type="text"
@@ -417,40 +460,14 @@ function BacklogFilterRow({
         aria-label="Filter by key"
         className="h-7 px-2 text-[12px] font-mono rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 min-w-0 w-full"
       />
-      <div className="flex items-center gap-2 min-w-0">
-        <input
-          type="text"
-          value={titleQuery}
-          onChange={(e) => onTitleQuery(e.target.value)}
-          placeholder="search title, tags, description…"
-          aria-label="Search title"
-          className="h-7 px-2 text-[12px] rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 flex-1 min-w-0"
-        />
-        <Select value={typeFilter} onValueChange={(v) => onTypeFilter(v as TicketType | "all")}>
-          <SelectTrigger size="sm" className="h-7 px-2 w-[88px] shrink-0"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="bug">Bug</SelectItem>
-            <SelectItem value="engineering">Ticket</SelectItem>
-            <SelectItem value="tech_task">Tech task</SelectItem>
-          </SelectContent>
-        </Select>
-        <label
-          title="Show carry-over tickets only"
-          className={cn(
-            "inline-flex items-center justify-center px-2 h-7 rounded-[4px] border text-[11px] font-mono uppercase tracking-[0.06em] cursor-pointer select-none shrink-0",
-            carryOnly ? "border-warn text-warn bg-warn-soft" : "border-rule text-ink-3 bg-bg-card hover:border-ink-4"
-          )}
-        >
-          <input
-            type="checkbox"
-            checked={carryOnly}
-            onChange={(e) => onCarryOnly(e.target.checked)}
-            className="sr-only"
-          />
-          Carry
-        </label>
-      </div>
+      <input
+        type="text"
+        value={titleQuery}
+        onChange={(e) => onTitleQuery(e.target.value)}
+        placeholder="search title, tags, description…"
+        aria-label="Search title"
+        className="h-7 px-2 text-[12px] rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 min-w-0 w-full"
+      />
       <Select value={projectFilter} onValueChange={onProjectFilter}>
         <SelectTrigger size="sm" className="h-7 px-2 min-w-0 w-full"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -486,7 +503,7 @@ function BacklogFilterRow({
 
 function PickRowHeader({ rank }: { rank?: boolean } = {}) {
   return (
-    <div className="grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-3 bg-bg-elevated border-b border-rule font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
+    <div className="grid grid-cols-[40px_40px_40px_100px_minmax(0,1fr)_140px_140px_100px_80px] gap-3 px-4 py-3 bg-bg-elevated border-b border-rule font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
       <span></span>
       <span></span>
       <span>{rank ? "#" : ""}</span>
@@ -524,7 +541,7 @@ function PickRow({
   return (
     <div
       className={cn(
-        "grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-3 items-center border-b border-rule-soft",
+        "grid grid-cols-[40px_40px_40px_100px_minmax(0,1fr)_140px_140px_100px_80px] gap-3 px-4 py-3 items-center border-b border-rule-soft",
         picked ? "bg-accent-soft/40" : "bg-bg-card hover:bg-bg-elevated"
       )}
     >
