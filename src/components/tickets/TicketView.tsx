@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Avatar, Button, Checkbox, Pill, PriorityPill, TypePill, AiTag, toast } from "@/components/ui";
+import { Avatar, Button, Checkbox, Input, Modal, Pill, PriorityPill, TypePill, AiTag, Textarea, toast } from "@/components/ui";
 import { cn, statusLabel, relativeTime, formatDate } from "@/lib/utils";
+import { Ban, Lightbulb } from "lucide-react";
 import type { TicketStatus, Comment } from "@/lib/types";
 import { CommentThread } from "@/components/comments/CommentThread";
 import { CommentComposer } from "@/components/comments/CommentComposer";
@@ -36,6 +37,8 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
   const comments = useAppStore((s) => s.comments);
   const activity = useAppStore((s) => s.activity);
   const setTicketStatus = useAppStore((s) => s.setTicketStatus);
+  const setTicketBlocked = useAppStore((s) => s.setTicketBlocked);
+  const addStatusNote = useAppStore((s) => s.addStatusNote);
   const toggleAC = useAppStore((s) => s.toggleAcceptanceCriterion);
   const addComment = useAppStore((s) => s.addComment);
   const reactToComment = useAppStore((s) => s.reactToComment);
@@ -43,6 +46,10 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
 
   const [tab, setTab] = useState<"activity" | "comments" | "links">("comments");
   const [acCommentFor, setAcCommentFor] = useState<string | null>(null);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
+  const [blockerKey, setBlockerKey] = useState("");
+  const [noteDraft, setNoteDraft] = useState("");
 
   const ticket = tickets.find((t) => t.key === ticketKey);
 
@@ -151,13 +158,51 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
             )}
             <span className="text-ink">{ticket.key}</span>
           </div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <TypePill t={ticket.type} />
             <PriorityPill p={ticket.priority} />
             <Pill variant={ticket.status === "done" || ticket.status === "verified" ? "ok" : "default"}>
               {statusLabel[ticket.status]}
             </Pill>
-            {ticket.blocked && <Pill variant="danger">⏸ Blocked</Pill>}
+            {ticket.blocked ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Pill variant="danger">⏸ Blocked · {ticket.blocked.reason}</Pill>
+                {ticket.blocked.blockerKey && (
+                  <Link
+                    href={`/t/${ticket.blocked.blockerKey}`}
+                    className="font-mono text-[11px] text-ink-3 hover:text-accent underline-offset-2 hover:underline"
+                  >
+                    by {ticket.blocked.blockerKey}
+                  </Link>
+                )}
+                {user && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTicketBlocked(ticket.id, null, user.id);
+                      toast(`${ticket.key} unblocked`, { kind: "success" });
+                    }}
+                    className="font-mono text-[10px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep ml-0.5"
+                  >
+                    Unblock
+                  </button>
+                )}
+              </span>
+            ) : user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setBlockReason("");
+                  setBlockerKey("");
+                  setBlockOpen(true);
+                }}
+                className="inline-flex items-center gap-1 px-2 h-6 rounded-[4px] border border-rule text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-danger hover:border-danger transition-colors duration-100"
+                title="Mark this ticket as blocked"
+              >
+                <Ban className="h-3 w-3" />
+                Mark blocked
+              </button>
+            ) : null}
           </div>
           <h1 className="display text-display-m text-ink leading-tight">{ticket.title}</h1>
         </div>
@@ -306,31 +351,99 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
             )}
 
             {tab === "activity" && (
-              <ol className="space-y-2">
-                {ticketActivity.length === 0 && (
-                  <li className="text-[13px] text-ink-3 italic">No activity yet.</li>
+              <div>
+                {user && (
+                  <div className="bg-bg-elevated border border-rule rounded-[8px] p-3 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lightbulb className="h-3.5 w-3.5 text-accent" />
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+                        Post status update
+                      </span>
+                    </div>
+                    <Textarea
+                      value={noteDraft}
+                      onChange={(e) => setNoteDraft(e.target.value)}
+                      placeholder="What changed? e.g., Pairing with @kev tomorrow on the migration window."
+                      className="min-h-[64px] text-[13px]"
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-[11px] text-ink-3 font-mono">
+                        Visible to everyone watching this ticket. Logged with your name + timestamp.
+                      </p>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          if (!noteDraft.trim() || !user) return;
+                          addStatusNote(ticket.id, noteDraft, user.id);
+                          setNoteDraft("");
+                          toast("Status update posted");
+                        }}
+                        disabled={!noteDraft.trim()}
+                      >
+                        Post update
+                      </Button>
+                    </div>
+                  </div>
                 )}
-                {ticketActivity.map((a) => {
-                  const actor = users.find((u) => u.id === a.actorId);
-                  return (
-                    <li key={a.id} className={cn("flex items-start gap-3 py-2 border-b border-rule-soft", a.aiInfluenced && "bg-ai-soft/40 rounded-[6px] px-2")}>
-                      <Avatar user={actor} size="xs" />
-                      <div className="flex-1 text-[13px]">
-                        <span className="text-ink">{actor?.displayName}</span>{" "}
-                        <span className="text-ink-3">
-                          {a.action.replace("_", " ")}
-                          {a.field ? ` ${a.field}` : ""}
-                          {a.beforeValue && a.afterValue ? `: ${a.beforeValue} → ${a.afterValue}` : ""}
-                        </span>
-                        {a.aiInfluenced && (
-                          <span className="ml-2 font-mono text-[10px] text-ai uppercase tracking-[0.06em]">✦ AI-influenced</span>
+                <ol className="space-y-2">
+                  {ticketActivity.length === 0 && (
+                    <li className="text-[13px] text-ink-3 italic">No activity yet.</li>
+                  )}
+                  {ticketActivity.map((a) => {
+                    const actor = users.find((u) => u.id === a.actorId);
+                    const isNote = a.action === "status_note";
+                    const isBlock = a.action === "blocked" || a.action === "unblocked";
+                    return (
+                      <li
+                        key={a.id}
+                        className={cn(
+                          "flex items-start gap-3 py-2 border-b border-rule-soft",
+                          a.aiInfluenced && "bg-ai-soft/40 rounded-[6px] px-2",
+                          isNote && "bg-accent-soft/30 rounded-[6px] px-2",
+                          isBlock && "bg-danger-soft/30 rounded-[6px] px-2"
                         )}
-                      </div>
-                      <span className="text-[12px] text-ink-4 font-mono">{relativeTime(a.timestamp)}</span>
-                    </li>
-                  );
-                })}
-              </ol>
+                      >
+                        <Avatar user={actor} size="xs" />
+                        <div className="flex-1 text-[13px]">
+                          {isNote ? (
+                            <>
+                              <span className="text-ink font-medium">{actor?.displayName}</span>{" "}
+                              <span className="text-ink-3">posted a status update:</span>
+                              <p className="text-ink-2 mt-1 whitespace-pre-wrap">{a.afterValue}</p>
+                            </>
+                          ) : isBlock ? (
+                            <>
+                              <span className="text-ink font-medium">{actor?.displayName}</span>{" "}
+                              <span className="text-danger">
+                                {a.action === "blocked" ? "marked blocked" : "removed the block"}
+                              </span>
+                              {a.afterValue && (
+                                <span className="text-ink-2">: {a.afterValue}</span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-ink">{actor?.displayName}</span>{" "}
+                              <span className="text-ink-3">
+                                {a.action.replace("_", " ")}
+                                {a.field ? ` ${a.field}` : ""}
+                                {a.beforeValue && a.afterValue ? `: ${a.beforeValue} → ${a.afterValue}` : ""}
+                              </span>
+                            </>
+                          )}
+                          {a.aiInfluenced && (
+                            <span className="ml-2 font-mono text-[10px] text-ai uppercase tracking-[0.06em]">
+                              ✦ AI-influenced
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[12px] text-ink-4 font-mono">{relativeTime(a.timestamp)}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
             )}
 
             {tab === "links" && <LinkedWorkGraph ticketKey={ticket.key} />}
@@ -386,6 +499,46 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
           )}
         </aside>
       </div>
+
+      <Modal open={blockOpen} onClose={() => setBlockOpen(false)} title="Mark this ticket blocked" size="sm">
+        <div className="space-y-3">
+          <Textarea
+            label="Reason"
+            value={blockReason}
+            onChange={(e) => setBlockReason(e.target.value)}
+            placeholder="What's stopping it? (e.g., waiting on infra approval, upstream API not ready)"
+            autoFocus
+            className="min-h-[80px]"
+          />
+          <Input
+            label="Blocker ticket (optional)"
+            value={blockerKey}
+            onChange={(e) => setBlockerKey(e.target.value)}
+            placeholder="e.g., CDN-3504"
+            hint="If another ticket is the blocker, naming it adds a ‘blocked_by’ link so the dependency surfaces in /me."
+          />
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="secondary" size="sm" onClick={() => setBlockOpen(false)}>Cancel</Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => {
+              if (!user || !blockReason.trim()) return;
+              setTicketBlocked(
+                ticket.id,
+                { reason: blockReason.trim(), blockerKey: blockerKey.trim() || undefined },
+                user.id
+              );
+              setBlockOpen(false);
+              toast(`${ticket.key} marked blocked`, { kind: "info" });
+            }}
+            disabled={!blockReason.trim()}
+          >
+            Mark blocked
+          </Button>
+        </div>
+      </Modal>
     </article>
   );
 }

@@ -80,6 +80,14 @@ export interface AppState {
   isValidTransition: (ticketId: string, to: TicketStatus) => boolean;
   toggleAcceptanceCriterion: (ticketId: string, acId: string, actorId: string) => void;
   setTicketField: (ticketId: string, patch: Partial<Ticket>, actorId: string) => void;
+  /** Block / unblock a ticket with full audit. Pass null to unblock. */
+  setTicketBlocked: (
+    ticketId: string,
+    blocked: { reason: string; blockerKey?: string } | null,
+    actorId: string
+  ) => void;
+  /** Append a free-form status update from the actor to the activity log. */
+  addStatusNote: (ticketId: string, note: string, actorId: string) => void;
   addComment: (c: Omit<Comment, "id" | "createdAt" | "editedAt" | "reactions" | "resolvedById">) => void;
   editComment: (commentId: string, body: string, editorId: string) => void;
   deleteComment: (commentId: string, deleterId: string) => void;
@@ -266,6 +274,73 @@ export const useAppStore = create<AppState>()(
             },
           ],
         })),
+
+      setTicketBlocked: (ticketId, blocked, actorId) =>
+        set((s) => {
+          const prev = s.tickets.find((t) => t.id === ticketId);
+          if (!prev) return {};
+          // Mirror the change onto the linked-work graph so the /me lanes
+          // and any future blocker query don't have to read both
+          // representations. When a blocker key is named, we add a
+          // `blocked_by` edge; when unblocking, we strip whatever
+          // `blocked_by` edges were there.
+          let nextLinked = prev.linkedWork;
+          if (blocked && blocked.blockerKey) {
+            const key = blocked.blockerKey.trim().toUpperCase();
+            if (!prev.linkedWork.some((e) => e.type === "blocked_by" && e.ticketKey === key)) {
+              nextLinked = [...prev.linkedWork, { type: "blocked_by", ticketKey: key }];
+            }
+          } else if (!blocked) {
+            nextLinked = prev.linkedWork.filter((e) => e.type !== "blocked_by");
+          }
+          return {
+            tickets: s.tickets.map((t) =>
+              t.id === ticketId
+                ? { ...t, blocked: blocked ?? undefined, linkedWork: nextLinked }
+                : t
+            ),
+            activity: [
+              ...s.activity,
+              {
+                id: `a_${Date.now()}`,
+                entityType: "ticket",
+                entityId: ticketId,
+                actorId,
+                action: blocked ? "blocked" : "unblocked",
+                field: "blocked",
+                beforeValue: prev.blocked?.reason ?? undefined,
+                afterValue: blocked
+                  ? blocked.blockerKey
+                    ? `${blocked.reason} (by ${blocked.blockerKey.toUpperCase()})`
+                    : blocked.reason
+                  : undefined,
+                timestamp: new Date().toISOString(),
+                aiInfluenced: false,
+              },
+            ],
+          };
+        }),
+
+      addStatusNote: (ticketId, note, actorId) => {
+        const trimmed = note.trim();
+        if (!trimmed) return;
+        set((s) => ({
+          activity: [
+            ...s.activity,
+            {
+              id: `a_${Date.now()}`,
+              entityType: "ticket",
+              entityId: ticketId,
+              actorId,
+              action: "status_note",
+              field: "note",
+              afterValue: trimmed,
+              timestamp: new Date().toISOString(),
+              aiInfluenced: false,
+            },
+          ],
+        }));
+      },
 
       addComment: (c) =>
         set((s) => ({
