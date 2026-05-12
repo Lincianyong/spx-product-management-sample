@@ -9,7 +9,7 @@ import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
 import { SortableList, DragHandle } from "@/components/SortableList";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, Pill, PriorityPill, TypePill, toast } from "@/components/ui";
-import type { Ticket, Sprint, User, Comment, ActivityEntry } from "@/lib/types";
+import type { Ticket, Sprint, User, Comment, ActivityEntry, Epic, Role } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { cn, relativeTime, statusLabel } from "@/lib/utils";
 
@@ -20,6 +20,8 @@ export default function MyWorkPage() {
   const sprints = useAppStore((s) => s.sprints);
   const comments = useAppStore((s) => s.comments);
   const activity = useAppStore((s) => s.activity);
+  const users = useAppStore((s) => s.users);
+  const epics = useAppStore((s) => s.epics);
   const setPersonalRanks = useAppStore((s) => s.setPersonalRanks);
   const user = useCurrentUser();
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -156,7 +158,164 @@ export default function MyWorkPage() {
         lede={`${activeSprint?.key ?? "No active sprint"} · ${thisSprint.length} tickets in flight, ${upNext.length} waiting in your queue.`}
       />
 
-      {/* Stats strip */}
+      {/* Role-aware stats strip */}
+      <RoleStatsStrip
+        role={user.role}
+        user={user}
+        tickets={tickets}
+        users={users}
+        epics={epics}
+        sprints={sprints}
+        activeSprint={activeSprint ?? null}
+        daysRemaining={daysRemaining}
+        committedPts={committedPts}
+        shippedPts={shippedPts}
+        progressPct={progressPct}
+        loadPct={loadPct}
+        lastSprintShipped={lastSprintShipped}
+        authoredOpen={authoredOpen}
+      />
+
+      {/* Calendar strip */}
+      {sprintForCal && <PlanningCalendarMini sprint={sprintForCal} />}
+
+      {/* Inline alerts */}
+      {(unrepliedMentions.length > 0 || staleStatus.length > 0) && (
+        <div className="space-y-2 mb-6">
+          {unrepliedMentions.length > 0 && (
+            <MentionsAlert mentions={unrepliedMentions} />
+          )}
+          {staleStatus.length > 0 && (
+            <StatusAlert items={staleStatus} />
+          )}
+        </div>
+      )}
+
+      {/* Primary work row */}
+      <div className="grid grid-cols-2 gap-6 mb-6">
+        <Panel
+          eyebrow={thisSprint.length > 0 ? "On now · this sprint · drag (⠿) for personal order" : "On now · this sprint"}
+          count={thisSprint.length}
+        >
+          {thisSprint.length === 0 ? (
+            <EmptyEcho text="Nothing on your plate this sprint. Pick up an ad-hoc, or grab from the queue below." />
+          ) : (
+            <div className="flex flex-col gap-2">
+              <SortableList
+                items={thisSprint}
+                onReorder={onReorderThisSprint}
+                renderItem={(t, handle) => (
+                  <div className="flex items-start gap-2">
+                    <DragHandle handleProps={handle} className="mt-3.5 text-[16px]" />
+                    <div className="flex-1 min-w-0">
+                      <TicketCard ticket={t} onOpen={setOpenKey} />
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
+          )}
+        </Panel>
+
+        <Panel eyebrow="In queue · backlog" count={upNext.length}>
+          {upNext.length === 0 ? (
+            <EmptyEcho text="Nothing queued for you. Backlog is the next stop." />
+          ) : (
+            <div className="grid grid-cols-1 gap-2">
+              {upNext.map((t) => (
+                <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} />
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      {/* Dependencies: collapse to a single strip when both lanes are empty */}
+      {blockingThem.length === 0 && blockingMe.length === 0 ? (
+        <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-2.5 mb-6 flex items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+            Dependencies
+          </span>
+          <span className="text-[12px] text-ink-3">·</span>
+          <span className="text-[12px] text-ink-2">0 blocking · 0 blocked</span>
+          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.06em] text-ok">
+            clear
+          </span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <Panel eyebrow="Downstream waits" count={blockingThem.length} accent="warn">
+            {blockingThem.length === 0 ? (
+              <EmptyEcho text="No one is waiting on you." />
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                {blockingThem.map((t) => (
+                  <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} />
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel eyebrow="Upstream stuck" count={blockingMe.length} accent="danger">
+            {blockingMe.length === 0 ? (
+              <EmptyEcho text="Nothing waiting on others." />
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                {blockingMe.map((t) => (
+                  <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} />
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
+      )}
+
+      {/* Tickets I Filed + Recent activity */}
+      <div className="grid grid-cols-[1fr_360px] gap-6">
+        <FiledPanel tickets={authoredOpen} onOpen={setOpenKey} />
+        <ActivityPanel items={recentActivity} />
+      </div>
+
+      <TicketSlideOver ticketKey={openKey} onClose={() => setOpenKey(null)} />
+    </div>
+  );
+}
+
+// ─── Role-aware stats strip ─────────────────────────────────────
+function RoleStatsStrip({
+  role,
+  user,
+  tickets,
+  users,
+  epics,
+  sprints,
+  activeSprint,
+  daysRemaining,
+  committedPts,
+  shippedPts,
+  progressPct,
+  loadPct,
+  lastSprintShipped,
+  authoredOpen,
+}: {
+  role: Role;
+  user: User;
+  tickets: Ticket[];
+  users: User[];
+  epics: Epic[];
+  sprints: Sprint[];
+  activeSprint: Sprint | null;
+  daysRemaining: number;
+  committedPts: number;
+  shippedPts: number;
+  progressPct: number;
+  loadPct: number;
+  lastSprintShipped: number | null;
+  authoredOpen: Ticket[];
+}) {
+  // Engineer / Designer — original eng-centric strip
+  if (role === "engineer" || role === "designer") {
+    return (
       <div className="grid grid-cols-4 gap-3 mb-6">
         <StatCard
           label="Sprint load"
@@ -183,98 +342,176 @@ export default function MyWorkPage() {
           label="Last sprint"
           value={lastSprintShipped != null ? String(lastSprintShipped) : "—"}
           unit={lastSprintShipped != null ? "pt shipped" : ""}
-          caption={lastSprintShipped != null && committedPts > 0
-            ? lastSprintShipped >= committedPts
-              ? "↑ vs this sprint"
-              : "ahead of last"
-            : "no history"}
+          caption={
+            lastSprintShipped != null && committedPts > 0
+              ? lastSprintShipped >= committedPts
+                ? "↑ vs this sprint"
+                : "ahead of last"
+              : "no history"
+          }
         />
       </div>
+    );
+  }
 
-      {/* Calendar strip */}
-      {sprintForCal && <PlanningCalendarMini sprint={sprintForCal} />}
-
-      {/* Inline alerts */}
-      {(unrepliedMentions.length > 0 || staleStatus.length > 0) && (
-        <div className="space-y-2 mb-6">
-          {unrepliedMentions.length > 0 && (
-            <MentionsAlert mentions={unrepliedMentions} />
-          )}
-          {staleStatus.length > 0 && (
-            <StatusAlert items={staleStatus} />
-          )}
-        </div>
-      )}
-
-      {/* 2x2 panels */}
-      <div className="grid grid-cols-2 gap-6 mb-6">
-        <Panel title="This sprint" count={thisSprint.length} eyebrow="On now · drag (⠿) for personal order">
-          {thisSprint.length === 0 ? (
-            <EmptyEcho text="Nothing on your plate this sprint. Pick up an ad-hoc, or grab from the queue below." />
-          ) : (
-            <div className="flex flex-col gap-2">
-              <SortableList
-                items={thisSprint}
-                onReorder={onReorderThisSprint}
-                renderItem={(t, handle) => (
-                  <div className="flex items-start gap-2">
-                    <DragHandle handleProps={handle} className="mt-3.5 text-[16px]" />
-                    <div className="flex-1 min-w-0">
-                      <TicketCard ticket={t} onOpen={setOpenKey} />
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
-          )}
-        </Panel>
-
-        <Panel title="Up next" count={upNext.length} eyebrow="In queue">
-          {upNext.length === 0 ? (
-            <EmptyEcho text="Nothing queued for you. Backlog is the next stop." />
-          ) : (
-            <div className="grid grid-cols-1 gap-2">
-              {upNext.map((t) => (
-                <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} />
-              ))}
-            </div>
-          )}
-        </Panel>
-
-        <Panel title="You're blocking" count={blockingThem.length} eyebrow="Downstream waits" accent="warn">
-          {blockingThem.length === 0 ? (
-            <EmptyEcho text="No one is waiting on you. Quiet morning." />
-          ) : (
-            <div className="grid grid-cols-1 gap-2">
-              {blockingThem.map((t) => (
-                <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} />
-              ))}
-            </div>
-          )}
-        </Panel>
-
-        <Panel title="Blocking you" count={blockingMe.length} eyebrow="Upstream stuck" accent="danger">
-          {blockingMe.length === 0 ? (
-            <EmptyEcho text="Nothing right now. You're free to move." />
-          ) : (
-            <div className="grid grid-cols-1 gap-2">
-              {blockingMe.map((t) => (
-                <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} />
-              ))}
-            </div>
-          )}
-        </Panel>
+  // PM (and admin/guest fall back to this) — picks-driven view
+  if (role === "pm" || role === "admin" || role === "guest") {
+    const pmChoke = tickets.filter((t) => t.pickedForSprint && t.storyPoints == null).length;
+    const mineOpenAuthored = authoredOpen.length;
+    // Team progress = all tickets in active sprint
+    const teamCommitted = activeSprint?.committedPoints ?? 0;
+    const teamShipped = activeSprint
+      ? tickets
+          .filter((t) => t.sprintId === activeSprint.id && (t.status === "done" || t.status === "verified"))
+          .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0)
+      : 0;
+    const teamPct = teamCommitted > 0 ? Math.round((teamShipped / teamCommitted) * 100) : 0;
+    return (
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        <StatCard
+          label="PM choke"
+          value={String(pmChoke)}
+          unit={pmChoke === 1 ? "ticket" : "tickets"}
+          caption={pmChoke > 0 ? "picked · not sent to Eng" : "all picks handed off"}
+          tint={pmChoke > 0 ? "warn" : "ok"}
+        />
+        <StatCard
+          label="My open tickets"
+          value={String(mineOpenAuthored)}
+          unit={mineOpenAuthored === 1 ? "open" : "open"}
+          caption="authored, not yet shipped"
+        />
+        <StatCard
+          label="Days remaining"
+          value={String(daysRemaining)}
+          unit={daysRemaining === 1 ? "day" : "days"}
+          caption={activeSprint?.key ?? "—"}
+        />
+        <StatCard
+          label="Team progress"
+          value={`${teamShipped}/${teamCommitted}`}
+          unit="pt"
+          progress={teamPct}
+          caption={`${teamPct}% shipped`}
+        />
       </div>
+    );
+  }
 
-      {/* Tickets I Filed + Recent activity */}
-      <div className="grid grid-cols-[1fr_360px] gap-6">
-        <FiledPanel tickets={authoredOpen} onOpen={setOpenKey} />
-        <ActivityPanel items={recentActivity} />
+  // EM — pod aggregate
+  if (role === "em") {
+    const pod = user.pod;
+    const podMembers = pod
+      ? users.filter((u) => u.pod === pod && u.capacityPoints > 0 && (u.role === "engineer" || u.role === "designer"))
+      : [];
+    const podCap = podMembers.reduce((acc, u) => acc + u.capacityPoints, 0);
+    const podTickets = activeSprint
+      ? tickets.filter((t) =>
+          t.sprintId === activeSprint.id &&
+          podMembers.some((m) => m.id === t.assigneeId)
+        )
+      : [];
+    const podCommit = podTickets.reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
+    const podShipped = podTickets
+      .filter((t) => t.status === "done" || t.status === "verified")
+      .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
+    const podLoadPct = podCap > 0 ? Math.round((podCommit / podCap) * 100) : 0;
+    const podShipPct = podCommit > 0 ? Math.round((podShipped / podCommit) * 100) : 0;
+    const overloaded = podMembers.filter((u) => {
+      const userCommit = tickets
+        .filter((t) => t.sprintId === activeSprint?.id && t.assigneeId === u.id)
+        .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
+      return u.capacityPoints > 0 && userCommit > u.capacityPoints;
+    }).length;
+    return (
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        <StatCard
+          label="Pod load"
+          value={`${podCommit}/${podCap}`}
+          unit="pt"
+          tint={podLoadPct > 100 ? "danger" : podLoadPct > 90 ? "warn" : "ok"}
+          progress={Math.min(podLoadPct, 130)}
+          caption={`${podLoadPct}% · ${podMembers.length} ICs`}
+        />
+        <StatCard
+          label="Pod progress"
+          value={`${podShipped}/${podCommit}`}
+          unit="pt"
+          progress={podShipPct}
+          caption={`${podShipPct}% shipped`}
+        />
+        <StatCard
+          label="Days remaining"
+          value={String(daysRemaining)}
+          unit={daysRemaining === 1 ? "day" : "days"}
+          caption={activeSprint?.key ?? "—"}
+        />
+        <StatCard
+          label="Overloaded"
+          value={String(overloaded)}
+          unit={overloaded === 1 ? "IC" : "ICs"}
+          tint={overloaded > 0 ? "warn" : "ok"}
+          caption={overloaded > 0 ? "above capacity" : "all within capacity"}
+        />
       </div>
+    );
+  }
 
-      <TicketSlideOver ticketKey={openKey} onClose={() => setOpenKey(null)} />
-    </div>
-  );
+  // Leadership — portfolio health
+  if (role === "leadership") {
+    const onTrack = epics.filter((e) => e.health === "on_track").length;
+    const atRisk = epics.filter((e) => e.health === "at_risk").length;
+    const blocked = epics.filter((e) => e.health === "blocked").length;
+    const totalEpics = epics.length;
+    const onTrackPct = totalEpics > 0 ? Math.round((onTrack / totalEpics) * 100) : 0;
+    // Cycle on-time = avg of (shipped / committed) across last 4 closed sprints
+    const closed = sprints
+      .filter((s) => s.state === "closed" && s.committedPoints > 0)
+      .slice(-4);
+    const avgOnTime =
+      closed.length > 0
+        ? Math.round(
+            (closed.reduce((acc, s) => acc + s.shippedPoints / s.committedPoints, 0) / closed.length) * 100
+          )
+        : 0;
+    return (
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        <StatCard
+          label="Epics on track"
+          value={`${onTrack}/${totalEpics}`}
+          unit="epics"
+          tint={onTrackPct >= 70 ? "ok" : onTrackPct >= 50 ? "warn" : "danger"}
+          progress={onTrackPct}
+          caption={`${onTrackPct}% green`}
+        />
+        <StatCard
+          label="At risk"
+          value={String(atRisk)}
+          unit={atRisk === 1 ? "epic" : "epics"}
+          tint={atRisk > 0 ? "warn" : "ok"}
+          caption={atRisk > 0 ? "watch this week" : "none flagged"}
+        />
+        <StatCard
+          label="Blocked"
+          value={String(blocked)}
+          unit={blocked === 1 ? "epic" : "epics"}
+          tint={blocked > 0 ? "danger" : "ok"}
+          caption={blocked > 0 ? "needs unblock" : "none blocked"}
+        />
+        <StatCard
+          label="Cycle on-time"
+          value={`${avgOnTime}%`}
+          unit=""
+          tint={avgOnTime >= 90 ? "ok" : avgOnTime >= 75 ? "warn" : "danger"}
+          progress={Math.min(avgOnTime, 100)}
+          caption={`last ${closed.length || 4} sprints`}
+        />
+      </div>
+    );
+  }
+
+  // Fallback (shouldn't hit)
+  return null;
 }
 
 // ─── Stats strip ─────────────────────────────────────────────────
@@ -520,19 +757,32 @@ function ActivityPanel({ items }: { items: ActivityEntry[] }) {
 }
 
 // ─── Existing helpers ───────────────────────────────────────────
-function Panel({ title, eyebrow, count, accent, children }: { title: string; eyebrow: string; count: number; accent?: "warn" | "danger"; children: React.ReactNode }) {
+function Panel({
+  eyebrow,
+  count,
+  accent,
+  children,
+}: {
+  eyebrow: string;
+  count: number;
+  accent?: "warn" | "danger";
+  children: React.ReactNode;
+}) {
   return (
-    <section className={cn(
-      "bg-bg-card border border-rule rounded-[8px] p-5",
-      accent === "warn" && "border-l-4 border-l-warn",
-      accent === "danger" && "border-l-4 border-l-danger"
-    )}>
-      <div className="flex items-end justify-between mb-4">
-        <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{eyebrow}</div>
-          <h3 className="display text-display-s text-ink mt-1">{title}</h3>
+    <section
+      className={cn(
+        "bg-bg-card border border-rule rounded-[8px] p-5",
+        accent === "warn" && "border-l-4 border-l-warn",
+        accent === "danger" && "border-l-4 border-l-danger"
+      )}
+    >
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 min-w-0 truncate">
+          {eyebrow}
         </div>
-        <span className="font-mono text-[12px] text-ink-3">{count} {count === 1 ? "ticket" : "tickets"}</span>
+        <span className="font-mono text-[12px] text-ink-3 shrink-0">
+          {count} {count === 1 ? "ticket" : "tickets"}
+        </span>
       </div>
       {children}
     </section>
