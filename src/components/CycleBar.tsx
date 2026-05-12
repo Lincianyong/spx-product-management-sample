@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppStore } from "@/lib/store";
@@ -62,10 +63,10 @@ export function CycleBar() {
           const isNow = i === activeIdx;
           const isCurrentRoute = pathname.startsWith(s.matchPath);
           return (
-            <div key={s.key} className="flex items-center gap-2 flex-1">
+            <Fragment key={s.key}>
               <Link
                 href={s.href}
-                className="flex flex-col items-center min-w-0 group"
+                className="flex flex-col items-center min-w-0 group shrink-0"
                 title={s.label}
               >
                 <span
@@ -93,13 +94,14 @@ export function CycleBar() {
               </Link>
               {i < STAGES.length - 1 && (
                 <span
+                  aria-hidden
                   className={cn(
                     "flex-1 h-px",
                     isPast ? "bg-ok" : "bg-rule"
                   )}
                 />
               )}
-            </div>
+            </Fragment>
           );
         })}
       </div>
