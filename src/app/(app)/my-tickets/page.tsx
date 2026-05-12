@@ -125,8 +125,8 @@ export default function MyTicketsPage() {
 
       {/* Filter strip */}
       <div className="bg-bg-card border border-rule rounded-[8px] p-3 mb-4 space-y-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[220px] max-w-md">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-4 pointer-events-none" />
             <input
               type="text"
