@@ -22,7 +22,7 @@ import type { Epic, Project, Sprint, User } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { EpicSlideOver } from "@/components/epics/EpicSlideOver";
 
-type Mode = "gantt" | "month" | "agenda" | "swimlane";
+type Mode = "gantt" | "month" | "swimlane";
 
 const DAY_MS = 86400000;
 const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
@@ -70,7 +70,6 @@ function TimelineInner() {
 
       {mode === "gantt" && <GanttView epics={epics} projects={projects} onOpenEpic={setOpenEpicKey} />}
       {mode === "month" && <MonthView epics={epics} projects={projects} sprints={sprints} onOpenEpic={setOpenEpicKey} />}
-      {mode === "agenda" && <AgendaView epics={epics} projects={projects} sprints={sprints} onOpenEpic={setOpenEpicKey} />}
       {mode === "swimlane" && <SwimlaneView epics={epics} projects={projects} users={users} onOpenEpic={setOpenEpicKey} />}
 
       <EpicSlideOver epicKey={openEpicKey} onClose={() => setOpenEpicKey(null)} />
@@ -82,7 +81,6 @@ function ModeStrip({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void
   const modes: { id: Mode; label: string }[] = [
     { id: "gantt", label: "Gantt" },
     { id: "month", label: "Month" },
-    { id: "agenda", label: "Agenda" },
     { id: "swimlane", label: "Swimlane" },
   ];
   return (
@@ -533,214 +531,6 @@ function MonthView({
 }
 
 // ─── Agenda view ─────────────────────────────────────────────────
-type AgendaRange = "this_week" | "next_4" | "next_12" | "custom";
-
-function AgendaView({
-  epics,
-  projects,
-  sprints,
-  onOpenEpic,
-}: {
-  epics: Epic[];
-  projects: Project[];
-  sprints: Sprint[];
-  onOpenEpic: (k: string) => void;
-}) {
-  const [range, setRange] = useState<AgendaRange>("next_4");
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const weekStart = startOfWeek(today);
-  const { start, end } = useMemo(() => {
-    if (range === "this_week") return { start: weekStart, end: addDays(weekStart, 7) };
-    if (range === "next_4") return { start: weekStart, end: addDays(weekStart, 28) };
-    return { start: weekStart, end: addDays(weekStart, 84) };
-  }, [range, weekStart]);
-
-  type Event = {
-    date: Date;
-    kind: "epic_start" | "epic_end" | "project_start" | "project_end" | "sprint_commit" | "planning_picklist" | "planning_estimation" | "planning_joint";
-    label: React.ReactNode;
-    href?: string;
-    onClick?: () => void;
-  };
-
-  const events: Event[] = useMemo(() => {
-    const out: Event[] = [];
-    for (const e of epics) {
-      const es = new Date(e.startDate);
-      const ee = new Date(e.targetEndDate);
-      if (es >= start && es < end) out.push({
-        date: es,
-        kind: "epic_start",
-        label: <span><span className="font-mono text-[11px] text-ink-3">{e.key}</span> {e.title} <span className="text-ink-3">— STARTS</span></span>,
-        onClick: () => onOpenEpic(e.key),
-      });
-      if (ee >= start && ee < end) out.push({
-        date: ee,
-        kind: "epic_end",
-        label: <span><span className="font-mono text-[11px] text-ink-3">{e.key}</span> {e.title} <span className="text-ink-3">— TARGET END</span></span>,
-        onClick: () => onOpenEpic(e.key),
-      });
-    }
-    for (const p of projects) {
-      const ps = new Date(p.startDate);
-      const pe = new Date(p.targetEndDate);
-      if (ps >= start && ps < end) out.push({
-        date: ps,
-        kind: "project_start",
-        label: <span><span className="font-mono text-[11px] text-ink-3">{p.key}</span> {p.title} <span className="text-ink-3">— project starts</span></span>,
-        href: `/p/${p.key}`,
-      });
-      if (pe >= start && pe < end) out.push({
-        date: pe,
-        kind: "project_end",
-        label: <span><span className="font-mono text-[11px] text-ink-3">{p.key}</span> {p.title} <span className="text-ink-3">— project target end</span></span>,
-        href: `/p/${p.key}`,
-      });
-    }
-    for (const s of sprints) {
-      const sd = new Date(s.startDate);
-      const commit = setTime(sd, 10, 30);
-      if (commit >= start && commit < end) {
-        out.push({
-          date: commit,
-          kind: "sprint_commit",
-          label: <span><span className="font-mono text-[11px] text-ink-3">{s.key}</span> Sprint commits <span className="text-ink-3">— 10:30</span></span>,
-          href: "/planning/joint",
-        });
-      }
-    }
-    // Planning ritual milestones across the range
-    const cursor = new Date(start);
-    while (cursor < end) {
-      if (cursor.getDay() === 1) {
-        out.push({ date: setTime(cursor, 9, 0), kind: "planning_picklist", label: <span>Picklist starts <span className="text-ink-3">— 09:00 (PM)</span></span>, href: "/planning/picklist" });
-        out.push({ date: setTime(cursor, 14, 0), kind: "planning_estimation", label: <span>Estimation starts <span className="text-ink-3">— 14:00 (Eng)</span></span>, href: "/planning/estimation" });
-      }
-      if (cursor.getDay() === 2) {
-        out.push({ date: setTime(cursor, 10, 0), kind: "planning_joint", label: <span>Joint Planning starts <span className="text-ink-3">— 10:00 (All)</span></span>, href: "/planning/joint" });
-      }
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    return out.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [start, end, epics, projects, sprints, onOpenEpic]);
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, Event[]>();
-    for (const ev of events) {
-      const wkStart = startOfWeek(ev.date);
-      const key = isoDate(wkStart.getTime());
-      const arr = map.get(key) ?? [];
-      arr.push(ev);
-      map.set(key, arr);
-    }
-    return Array.from(map.entries()).map(([key, evs]) => ({
-      weekStart: new Date(key),
-      events: evs,
-    }));
-  }, [events]);
-
-  return (
-    <div>
-      <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-4 flex items-center gap-3 flex-wrap">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Range</span>
-        <div className="flex items-center gap-1">
-          {([
-            { v: "this_week" as const, label: "This week" },
-            { v: "next_4" as const, label: "Next 4 weeks" },
-            { v: "next_12" as const, label: "Next 12 weeks" },
-          ]).map((o) => (
-            <button
-              key={o.v}
-              onClick={() => setRange(o.v)}
-              className={cn(
-                "px-2.5 h-7 text-[11px] font-mono uppercase rounded-[4px] border",
-                range === o.v ? "bg-ink text-bg-card border-ink" : "bg-bg-card text-ink-2 border-rule hover:border-ink-4"
-              )}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-        <span className="ml-auto font-mono text-[11px] text-ink-3">
-          {formatDate(isoDate(start.getTime()))} – {formatDate(isoDate(end.getTime() - 1))} · {events.length} events
-        </span>
-      </div>
-
-      {grouped.length === 0 ? (
-        <p className="text-[13px] italic text-ink-3 py-12 text-center bg-bg-card border border-rule rounded-[8px]">
-          Nothing scheduled in this range.
-        </p>
-      ) : (
-        <div className="space-y-6">
-          {grouped.map((g, gi) => {
-            const wEnd = addDays(g.weekStart, 6);
-            const isThisWeek = sameDay(g.weekStart, weekStart);
-            return (
-              <section key={gi}>
-                <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3 flex items-center gap-3">
-                  <span className="block w-8 h-px bg-rule" />
-                  <span>{isThisWeek ? "This week" : `Week of`} · {formatDate(isoDate(g.weekStart.getTime()))} – {formatDate(isoDate(wEnd.getTime()))}</span>
-                  <span className="text-ink-4">· {g.events.length} events</span>
-                </div>
-                <ul className="bg-bg-card border border-rule rounded-[8px] divide-y divide-rule-soft">
-                  {g.events.map((ev, i) => <AgendaRow key={i} ev={ev} />)}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AgendaRow({ ev }: { ev: { date: Date; kind: string; label: React.ReactNode; href?: string; onClick?: () => void } }) {
-  const dayShort = ev.date.toLocaleDateString("en-US", { weekday: "short" });
-  const day = ev.date.getDate();
-  const time = ev.date.getHours() || ev.date.getMinutes()
-    ? ev.date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
-    : null;
-
-  const icon =
-    ev.kind === "epic_start" ? "●─" :
-    ev.kind === "epic_end" ? "─●" :
-    ev.kind === "project_start" ? "▸" :
-    ev.kind === "project_end" ? "◂" :
-    ev.kind === "sprint_commit" ? "◆" :
-    ev.kind.startsWith("planning_") ? "✦" : "·";
-
-  const iconTint =
-    ev.kind === "sprint_commit" ? "text-warn" :
-    ev.kind.startsWith("planning_") ? "text-accent" :
-    ev.kind.startsWith("epic_") ? "text-ink-2" :
-    "text-ink-3";
-
-  const content = (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-bg-elevated">
-      <div className="flex flex-col items-center w-12 shrink-0">
-        <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3">{dayShort}</span>
-        <span className="font-mono text-[16px] text-ink leading-none">{day}</span>
-        {time && <span className="font-mono text-[9px] text-ink-4 mt-0.5">{time}</span>}
-      </div>
-      <span className={cn("font-mono text-[12px] w-6 text-center", iconTint)}>{icon}</span>
-      <div className="flex-1 text-[13px] text-ink min-w-0 truncate">{ev.label}</div>
-    </div>
-  );
-
-  if (ev.onClick) {
-    return (
-      <li>
-        <button type="button" onClick={ev.onClick} className="w-full text-left">{content}</button>
-      </li>
-    );
-  }
-  if (ev.href) {
-    return <li><Link href={ev.href}>{content}</Link></li>;
-  }
-  return <li>{content}</li>;
-}
 
 // ─── Swimlane view ──────────────────────────────────────────────
 type SwimGroup = "pm" | "pod" | "health" | "quarter";

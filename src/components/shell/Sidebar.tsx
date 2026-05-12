@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   CheckSquare,
+  ChevronsLeft,
+  ChevronsRight,
   Columns3,
   FileText,
   Filter,
@@ -46,6 +48,8 @@ export function Sidebar() {
   const user = useCurrentUser();
   const tickets = useAppStore((s) => s.tickets);
   const notifications = useAppStore((s) => s.notifications);
+  const collapsed = useAppStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useAppStore((s) => s.toggleSidebar);
 
   if (!user) return null;
 
@@ -97,29 +101,55 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-[240px] bg-bg-elevated border-r border-rule flex flex-col z-30">
+    <aside
+      className={cn(
+        "fixed left-0 top-0 bottom-0 bg-bg-elevated border-r border-rule flex flex-col z-30 transition-[width] duration-200",
+        collapsed ? "w-[64px]" : "w-[240px]"
+      )}
+    >
       {/* Brand */}
-      <div className="px-5 pt-6 pb-5 border-b border-rule-soft">
+      <div className={cn("border-b border-rule-soft relative", collapsed ? "px-3 pt-5 pb-3" : "px-5 pt-6 pb-5")}>
         <Link href="/" className="block">
-          <SpxLogo size="sm" showExpress />
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-2 flex items-center gap-2">
-            <span className="block w-4 h-px bg-rule" />
-            <span className="display italic text-ink text-[14px] leading-none normal-case tracking-normal">Cadence</span>
-            <span>· {roleLabel[user.role]}</span>
-          </div>
+          {collapsed ? (
+            <div className="flex justify-center">
+              <SpxLogo size="sm" />
+            </div>
+          ) : (
+            <>
+              <SpxLogo size="sm" showExpress />
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-2 flex items-center gap-2">
+                <span className="block w-4 h-px bg-rule" />
+                <span className="display italic text-ink text-[14px] leading-none normal-case tracking-normal">Cadence</span>
+                <span>· {roleLabel[user.role]}</span>
+              </div>
+            </>
+          )}
         </Link>
+        <button
+          onClick={toggleSidebar}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar (⌘\\)" : "Collapse sidebar (⌘\\)"}
+          className="absolute top-3 right-2 w-6 h-6 inline-flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-rule-soft transition-colors duration-100"
+        >
+          {collapsed ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />}
+        </button>
       </div>
 
       {/* Scrollable nav body */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className={cn("flex-1 overflow-y-auto py-4 space-y-5", collapsed ? "px-2" : "px-3")}>
         {groups.map((g) => {
           const visibleItems = g.items.filter((item) => !item.requires || can(user.role, item.requires));
           if (visibleItems.length === 0) return null;
           return (
           <div key={g.title}>
-            <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
-              {g.title}
-            </div>
+            {!collapsed && (
+              <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
+                {g.title}
+              </div>
+            )}
+            {collapsed && (
+              <div className="mx-2 mb-1.5 h-px bg-rule-soft first:hidden" aria-hidden />
+            )}
             <ul className="space-y-0.5">
               {visibleItems.map((item) => {
                 const matchPath = item.prefix ?? item.href.split("?")[0];
@@ -132,8 +162,10 @@ export function Sidebar() {
                   <li key={item.label}>
                     <Link
                       href={item.href}
+                      title={collapsed ? `${item.label}${item.hint ? ` · ${item.hint}` : ""}${count > 0 ? ` (${count})` : ""}` : undefined}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-[6px] text-[13px] transition-colors duration-100 relative",
+                        "flex items-center rounded-[6px] text-[13px] transition-colors duration-100 relative",
+                        collapsed ? "h-9 justify-center px-0" : "gap-2 px-3 py-1.5",
                         isActive
                           ? "bg-accent-soft text-ink font-medium"
                           : "text-ink-2 hover:text-ink hover:bg-rule-soft"
@@ -142,18 +174,29 @@ export function Sidebar() {
                       {isActive && (
                         <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full bg-accent" aria-hidden />
                       )}
-                      <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-accent" : "text-ink-3")} />
-                      <span className="truncate flex-1">{item.label}</span>
-                      <span className="flex items-center gap-1.5 shrink-0">
-                        {item.hint && (
-                          <span className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.06em]">
-                            · {item.hint}
+                      <span className="relative">
+                        <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-accent" : "text-ink-3")} />
+                        {collapsed && count > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 rounded-full bg-warn text-bg-card font-mono text-[8px] flex items-center justify-center">
+                            {count > 99 ? "99+" : count}
                           </span>
                         )}
-                        {count > 0 && (
-                          <span className="font-mono text-[11px] text-ink-3 tabular-nums">{count}</span>
-                        )}
                       </span>
+                      {!collapsed && (
+                        <>
+                          <span className="truncate flex-1">{item.label}</span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            {item.hint && (
+                              <span className="font-mono text-[10px] text-ink-3 uppercase tracking-[0.06em]">
+                                · {item.hint}
+                              </span>
+                            )}
+                            {count > 0 && (
+                              <span className="font-mono text-[11px] text-ink-3 tabular-nums">{count}</span>
+                            )}
+                          </span>
+                        </>
+                      )}
                     </Link>
                   </li>
                 );
@@ -165,8 +208,8 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom utility */}
-      <div className="border-t border-rule-soft px-3 py-3">
-        <RealtimeSimToggle />
+      <div className={cn("border-t border-rule-soft py-3", collapsed ? "px-2" : "px-3")}>
+        <RealtimeSimToggle compact={collapsed} />
       </div>
     </aside>
   );

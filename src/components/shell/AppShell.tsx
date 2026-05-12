@@ -24,6 +24,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const signOut = useAppStore((s) => s.signOut);
   const resetMockData = useAppStore((s) => s.resetMockData);
   const notifications = useAppStore((s) => s.notifications);
+  const collapsed = useAppStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useAppStore((s) => s.toggleSidebar);
+  const sidebarW = collapsed ? 64 : 240;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [quickCreate, setQuickCreate] = useState(false);
@@ -55,6 +58,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         e.preventDefault();
         navigator.clipboard?.writeText(window.location.href);
         toast("Link copied — current page");
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+        e.preventDefault();
+        toggleSidebar();
         return;
       }
 
@@ -103,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("keydown", onKey);
       if (gTimer) window.clearTimeout(gTimer);
     };
-  }, [router]);
+  }, [router, toggleSidebar]);
 
   if (!hydrated) return null;
   if (!user) return null;
@@ -126,7 +134,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
 
       {/* Slim topbar */}
-      <header className="fixed top-0 left-[240px] right-0 z-20 topbar-blur border-b border-rule h-12">
+      <header
+        className="fixed top-0 right-0 z-20 topbar-blur border-b border-rule h-12 transition-[left] duration-200"
+        style={{ left: sidebarW }}
+      >
         <div className="h-full px-6 flex items-center gap-4">
           <button
             type="button"
@@ -207,7 +218,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main content */}
-      <main id="main" className="ml-[240px] pt-12 min-h-screen">
+      <main
+        id="main"
+        className="pt-12 min-h-screen transition-[margin-left] duration-200"
+        style={{ marginLeft: sidebarW }}
+      >
         <div className="max-w-[1440px] mx-auto px-8 pt-8 pb-16">
           <RouteGuard pathname={pathname} role={user.role}>
             {children}

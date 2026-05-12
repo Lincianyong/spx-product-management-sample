@@ -15,6 +15,7 @@ const GROUPS = [
       ["⌘N", "Quick Create ticket"],
       ["/", "Focus search (Cmd-K)"],
       ["⌘⇧,", "Copy link to current entity"],
+      ["⌘\\", "Collapse / expand sidebar"],
       ["?", "Open this shortcuts help"],
       ["Esc", "Close any overlay"],
     ],

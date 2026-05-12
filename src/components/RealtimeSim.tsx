@@ -56,8 +56,19 @@ function useRealtimeSim() {
 }
 
 /** Sidebar-bottom variant — full-width row with label + dot indicator. */
-export function RealtimeSimToggle() {
+export function RealtimeSimToggle({ compact = false }: { compact?: boolean }) {
   const { enabled, toggle } = useRealtimeSim();
+  if (compact) {
+    return (
+      <button
+        onClick={toggle}
+        title={`Realtime sim ${enabled ? "on" : "off"} — toggle simulated other-user activity`}
+        className="w-full h-9 flex items-center justify-center rounded-[6px] hover:bg-rule-soft transition-colors duration-100"
+      >
+        <span className={`w-2 h-2 rounded-full ${enabled ? "bg-ok animate-pulse" : "bg-rule"}`} />
+      </button>
+    );
+  }
   return (
     <button
       onClick={toggle}

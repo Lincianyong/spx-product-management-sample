@@ -5,11 +5,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Avatar, HealthPill, Pill, Button, Modal, Input, toast } from "@/components/ui";
+import { Avatar, HealthPill, Pill, Button, Modal, Input, toast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { cn, healthLabel, formatDate } from "@/lib/utils";
 import type { Epic, Health } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { EpicSlideOver } from "@/components/epics/EpicSlideOver";
+import { Markdown } from "@/components/Markdown";
+import { can } from "@/lib/permissions";
+import { Plus } from "lucide-react";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
@@ -40,6 +43,8 @@ function EpicBoardInner() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const canCreateEpic = can(user?.role, "create_epic");
 
   // Reflect state to URL
   useEffect(() => {
@@ -78,6 +83,11 @@ function EpicBoardInner() {
         lede="Click any Epic to open a side panel with its projects + tickets. Click the key to navigate to the full page."
         actions={
           <div className="flex items-center gap-2">
+            {canCreateEpic && (
+              <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> New Epic
+              </Button>
+            )}
             {mine.length > 0 && (
               <select
                 onChange={(e) => e.target.value && applyView(e.target.value)}
@@ -140,6 +150,8 @@ function EpicBoardInner() {
       {view === "backlog" && <BacklogView epics={epics} onOpen={setOpenKey} />}
 
       <EpicSlideOver epicKey={openKey} onClose={() => setOpenKey(null)} />
+
+      <CreateEpicModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={(key) => setOpenKey(key)} />
 
       <Modal open={saveOpen} onClose={() => setSaveOpen(false)} title="Save this view" size="sm">
         <Input
@@ -401,5 +413,190 @@ function BacklogView({ epics, onOpen }: { epics: Epic[]; onOpen: (k: string) => 
         <EpicCard key={e.id} epic={e} onOpen={onOpen} />
       ))}
     </div>
+  );
+}
+
+function CreateEpicModal({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: (key: string) => void;
+}) {
+  const epics = useAppStore((s) => s.epics);
+  const users = useAppStore((s) => s.users);
+  const user = useCurrentUser();
+
+  const [title, setTitle] = useState("");
+  const [thesis, setThesis] = useState("");
+  const [quarter, setQuarter] = useState("Q2 2026");
+  const [pmPicId, setPmPicId] = useState(user?.id ?? "");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagDraft, setTagDraft] = useState("");
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [targetEndDate, setTargetEndDate] = useState(
+    new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
+  );
+  const [showPreview, setShowPreview] = useState(false);
+
+  const pmCandidates = users.filter((u) => u.role === "pm" || u.role === "leadership" || u.role === "admin");
+  const canSubmit = title.trim().length >= 8 && thesis.trim().length >= 20 && pmPicId;
+
+  const reset = () => {
+    setTitle("");
+    setThesis("");
+    setQuarter("Q2 2026");
+    setPmPicId(user?.id ?? "");
+    setTags([]);
+    setTagDraft("");
+    setShowPreview(false);
+  };
+
+  const close = () => {
+    reset();
+    onClose();
+  };
+
+  const addTag = () => {
+    const t = tagDraft.trim().toLowerCase();
+    if (!t || tags.includes(t)) return;
+    setTags([...tags, t]);
+    setTagDraft("");
+  };
+
+  const submit = () => {
+    if (!canSubmit || !user) return;
+    const seq = epics.length + 100;
+    const newEpic: Epic = {
+      id: `ep_${Date.now()}`,
+      key: `EPC-${seq.toString().padStart(3, "0")}`,
+      title: title.trim(),
+      thesis: thesis.trim(),
+      quarter,
+      status: "backlog",
+      health: "not_started",
+      pmPicId,
+      startDate,
+      targetEndDate,
+      tags,
+      position: epics.length,
+    };
+    useAppStore.setState((s) => ({ epics: [...s.epics, newEpic] }));
+    toast(`Created ${newEpic.key} · ${newEpic.title}`, { kind: "success" });
+    onCreated(newEpic.key);
+    close();
+  };
+
+  return (
+    <Modal open={open} onClose={close} title="New Epic" size="lg">
+      <div className="space-y-4">
+        <Input
+          label="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g., Forecasting v2"
+          hint={title.length > 0 && title.length < 8 ? "8 characters minimum" : undefined}
+          error={title.length > 0 && title.length < 8 ? "Too short" : undefined}
+        />
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
+              Thesis (markdown · the conviction)
+            </span>
+            <button
+              onClick={() => setShowPreview((s) => !s)}
+              className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep"
+            >
+              {showPreview ? "Edit" : "Preview"}
+            </button>
+          </div>
+          {showPreview ? (
+            <div className="min-h-[140px] px-3 py-2 rounded-[6px] border border-rule bg-bg-card">
+              {thesis ? <Markdown source={thesis} /> : <p className="italic text-[13px] text-ink-3">Nothing to preview yet.</p>}
+            </div>
+          ) : (
+            <textarea
+              value={thesis}
+              onChange={(e) => setThesis(e.target.value)}
+              placeholder="Why this Epic, why now. What changes for the user. The conviction in 2-4 sentences."
+              className="w-full min-h-[140px] px-3 py-2 rounded-[6px] border border-rule bg-bg-card text-ink text-[14px] font-mono"
+            />
+          )}
+          {thesis.length > 0 && thesis.length < 20 && (
+            <p className="text-[12px] text-danger mt-1">20 characters minimum.</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">PM owner</span>
+            <Select value={pmPicId} onValueChange={setPmPicId}>
+              <SelectTrigger><SelectValue placeholder="Pick a PM…" /></SelectTrigger>
+              <SelectContent>
+                {pmCandidates.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.displayName} · {u.role.toUpperCase()}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Quarter</span>
+            <Select value={quarter} onValueChange={setQuarter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["Q2 2026", "Q3 2026", "Q4 2026", "Q1 2027"].map((q) => (
+                  <SelectItem key={q} value={q}>{q}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Start</span>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]" />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Target end</span>
+              <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]" />
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Tags</span>
+          <div className="flex flex-wrap gap-1.5 my-2">
+            {tags.map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 px-2 h-6 rounded-[12px] border border-rule bg-bg-elevated text-[12px]">
+                {t}
+                <button onClick={() => setTags(tags.filter((x) => x !== t))} className="text-ink-4 hover:text-danger">×</button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={tagDraft}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+              placeholder="add tag, press Enter"
+              className="h-9 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px] flex-1"
+            />
+            <Button variant="secondary" size="sm" onClick={addTag} disabled={!tagDraft.trim()}>Add</Button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-3 border-t border-rule-soft">
+          <span className="font-mono text-[11px] text-ink-3">
+            Creates with status <Pill variant="neutral">backlog</Pill> · health <Pill variant="neutral">not started</Pill>
+          </span>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={close}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={submit} disabled={!canSubmit}>Create Epic →</Button>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }

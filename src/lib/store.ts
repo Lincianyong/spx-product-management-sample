@@ -47,6 +47,10 @@ export interface AppState {
   selectedSprintId: string | null;
   selectSprint: (sprintId: string | null) => void;
 
+  sidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (v: boolean) => void;
+
   currentUserId: string | null;
   signIn: (userId: string) => void;
   signOut: () => void;
@@ -121,6 +125,10 @@ export const useAppStore = create<AppState>()(
 
       selectedSprintId: null,
       selectSprint: (sprintId) => set({ selectedSprintId: sprintId }),
+
+      sidebarCollapsed: false,
+      toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
 
       currentUserId: null,
       signIn: (userId) => set({ currentUserId: userId }),
@@ -415,6 +423,7 @@ export const useAppStore = create<AppState>()(
         activity: s.activity,
         savedViews: s.savedViews,
         channelPrefs: s.channelPrefs,
+        sidebarCollapsed: s.sidebarCollapsed,
       }),
     }
   )
