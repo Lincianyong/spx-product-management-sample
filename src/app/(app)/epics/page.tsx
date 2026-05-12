@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
@@ -13,6 +13,13 @@ import { EpicSlideOver } from "@/components/epics/EpicSlideOver";
 import { Markdown } from "@/components/Markdown";
 import { can } from "@/lib/permissions";
 import { Plus } from "lucide-react";
+import {
+  GanttView,
+  MonthView,
+  SwimlaneView,
+  TimelineModeStrip,
+  type TimelineMode,
+} from "@/components/epics/TimelineViews";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
@@ -31,6 +38,9 @@ function EpicBoardInner() {
   const router = useRouter();
   const params = useSearchParams();
   const epics = useAppStore((s) => s.epics);
+  const projects = useAppStore((s) => s.projects);
+  const sprints = useAppStore((s) => s.sprints);
+  const users = useAppStore((s) => s.users);
   const savedViews = useAppStore((s) => s.savedViews);
   const saveView = useAppStore((s) => s.saveView);
   const deleteView = useAppStore((s) => s.deleteView);
@@ -38,8 +48,10 @@ function EpicBoardInner() {
 
   const initialView = (params.get("view") as View) ?? "kanban";
   const initialGroup = (params.get("groupBy") as GroupBy) ?? "health";
+  const initialTimelineMode = (params.get("tl") as TimelineMode) ?? "gantt";
   const [view, setView] = useState<View>(initialView);
   const [groupBy, setGroupBy] = useState<GroupBy>(initialGroup);
+  const [timelineMode, setTimelineMode] = useState<TimelineMode>(initialTimelineMode);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -51,8 +63,9 @@ function EpicBoardInner() {
     const q = new URLSearchParams();
     q.set("view", view);
     q.set("groupBy", groupBy);
+    if (view === "timeline") q.set("tl", timelineMode);
     router.replace(`/epics?${q.toString()}`, { scroll: false });
-  }, [view, groupBy, router]);
+  }, [view, groupBy, timelineMode, router]);
 
   const mine = user ? savedViews.filter((v) => v.ownerId === user.id && v.surface === "epics") : [];
 
@@ -99,9 +112,16 @@ function EpicBoardInner() {
         }
       />
 
-      {/* Toolbar: GroupBy left · saved views switcher · New Epic + Save view right */}
+      {/* Toolbar: GroupBy / Timeline-mode left · saved views switcher · New Epic + Save view right */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <GroupByPicker value={groupBy} onChange={setGroupBy} />
+        {view === "timeline" ? (
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Timeline</span>
+            <TimelineModeStrip mode={timelineMode} onChange={setTimelineMode} />
+          </div>
+        ) : (
+          <GroupByPicker value={groupBy} onChange={setGroupBy} />
+        )}
         {mine.length > 0 && (
           <select
             onChange={(e) => e.target.value && applyView(e.target.value)}
@@ -151,7 +171,15 @@ function EpicBoardInner() {
       {view === "kanban" && <KanbanView epics={epics} groupBy={groupBy} onOpen={setOpenKey} />}
       {view === "list" && <ListView epics={epics} groupBy={groupBy} onOpen={setOpenKey} />}
       {view === "table" && <TableView epics={epics} groupBy={groupBy} onOpen={setOpenKey} />}
-      {view === "timeline" && <TimelineView epics={epics} groupBy={groupBy} />}
+      {view === "timeline" && timelineMode === "gantt" && (
+        <GanttView epics={epics} onOpenEpic={setOpenKey} />
+      )}
+      {view === "timeline" && timelineMode === "month" && (
+        <MonthView epics={epics} projects={projects} sprints={sprints} onOpenEpic={setOpenKey} />
+      )}
+      {view === "timeline" && timelineMode === "swimlane" && (
+        <SwimlaneView epics={epics} projects={projects} users={users} onOpenEpic={setOpenKey} />
+      )}
       {view === "backlog" && <BacklogView epics={epics} onOpen={setOpenKey} />}
 
       <EpicSlideOver epicKey={openKey} onClose={() => setOpenKey(null)} />
@@ -355,49 +383,6 @@ function TableView({ epics, groupBy, onOpen }: ViewProps) {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function TimelineView({ epics, groupBy }: { epics: Epic[]; groupBy: GroupBy }) {
-  const start = new Date(Math.min(...epics.map((e) => new Date(e.startDate).getTime()))).getTime();
-  const end = new Date(Math.max(...epics.map((e) => new Date(e.targetEndDate).getTime()))).getTime();
-  const range = end - start;
-  const groups = useGroups(epics, groupBy);
-  return (
-    <div className="bg-bg-card border border-rule rounded-[8px] p-5 space-y-6">
-      {groups.map((g) => (
-        <div key={g.key}>
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">
-            {g.label} <span className="text-ink-4">· {g.items.length}</span>
-          </div>
-          <div className="space-y-2">
-            {g.items.map((e) => {
-              const left = ((new Date(e.startDate).getTime() - start) / range) * 100;
-              const width = ((new Date(e.targetEndDate).getTime() - new Date(e.startDate).getTime()) / range) * 100;
-              const accent = e.health === "on_track" ? "bg-ok" : e.health === "at_risk" ? "bg-warn" : e.health === "blocked" ? "bg-danger" : "bg-neutral";
-              return (
-                <div key={e.id} className="grid grid-cols-[240px_1fr] gap-4 items-center">
-                  <Link href={`/e/${e.key}`} className="text-[13px] text-ink hover:text-accent underline-offset-2 hover:underline truncate">
-                    <span className="font-mono text-[11px] text-ink-3 mr-2">{e.key}</span>
-                    {e.title}
-                  </Link>
-                  <div className="relative h-6 bg-rule-soft rounded-[4px]">
-                    <div
-                      className={cn("absolute top-0 bottom-0 rounded-[4px] opacity-80", accent)}
-                      style={{ left: `${left}%`, width: `${width}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-      <div className="mt-2 font-mono text-[11px] text-ink-3 flex justify-between">
-        <span>{formatDate(new Date(start).toISOString())}</span>
-        <span>{formatDate(new Date(end).toISOString())}</span>
-      </div>
     </div>
   );
 }

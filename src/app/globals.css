@@ -127,49 +127,68 @@
 }
 
 /* ===========================================================
- * DARK MODE — flip the alias layer; SPX brand orange stays.
+ * DARK MODE — "Newsprint Dark"
+ *
+ * Reference: warm-paper editorial dark (Stripe Press dark, Are.na's
+ * studio mode, classic linotype night reading). The default "AI"
+ * dark mode is dead-cold neutral gray; here we lean warm so the
+ * SPX brand orange reads like a printer's accent against newsprint
+ * stock, not a notification badge against a generic OS chrome.
+ *
+ * Hue: brown-8°, low saturation 4–9%. Ink is a parchment cream so
+ * long-form text feels printed, not LCD-glow. Semantic colors are
+ * desaturated so they don't shout.
+ *
  * Activated by data-theme="dark" on <html>.
  * =========================================================== */
 [data-theme="dark"] {
-  --bg:           var(--neutral-1000);
-  --bg-elevated:  var(--neutral-900);
-  --bg-card:      var(--neutral-800);
-  --rule:         var(--neutral-700);
-  --rule-soft:    var(--neutral-800);
+  --bg:           #16110D;   /* coffee black — page canvas */
+  --bg-elevated:  #1F1813;   /* warmed surface — striped rows, toolbars */
+  --bg-card:      #281F19;   /* card surface — slide-overs, cards */
+  --rule:         #3A2D24;   /* warm divider */
+  --rule-soft:    #2B221B;
 
-  --ink:    var(--neutral-0);
-  --ink-2:  var(--neutral-100);
-  --ink-3:  var(--neutral-400);
-  --ink-4:  var(--neutral-500);
+  --ink:    #F5ECDF;         /* warm cream — titles, big numbers */
+  --ink-2:  #E0D4C2;         /* parchment — body text */
+  --ink-3:  #A0917D;         /* muted clay — helper / metadata */
+  --ink-4:  #6B5F4F;         /* dim sepia — placeholder / disabled */
 
-  --accent:       var(--brand-500);
-  --accent-soft:  rgba(238, 77, 45, 0.18);
-  --accent-deep:  var(--brand-300);
+  --accent:       #FF6B45;   /* brand orange, warmed for dark surfaces */
+  --accent-soft:  rgba(238, 77, 45, 0.16);
+  --accent-deep:  #FFB199;
 
-  --ai:       #B49DFF;
-  --ai-soft:  rgba(91, 63, 184, 0.25);
+  /* AI lane — warm amber instead of violet; reads like marginalia
+     ink, not a chatbot bubble. */
+  --ai:       #D9B26A;
+  --ai-soft:  rgba(217, 178, 106, 0.16);
 
-  --warn:        var(--warning-500);
-  --warn-soft:   rgba(247, 144, 9, 0.18);
-  --danger:      var(--danger-500);
-  --danger-soft: rgba(240, 68, 56, 0.18);
-  --info:        var(--info-500);
-  --info-soft:   rgba(46, 144, 250, 0.18);
-  --ok:          var(--success-500);
-  --ok-soft:     rgba(18, 183, 106, 0.18);
-  --neutral:     var(--neutral-400);
-  --neutral-soft:var(--neutral-700);
+  /* Semantic — pulled toward the warm palette (no neon greens / blues) */
+  --warn:        #E8A24E;
+  --warn-soft:   rgba(232, 162, 78, 0.16);
+  --danger:      #E66A5C;
+  --danger-soft: rgba(230, 106, 92, 0.16);
+  --info:        #7AAEE6;
+  --info-soft:   rgba(122, 174, 230, 0.14);
+  --ok:          #6FB585;
+  --ok-soft:     rgba(111, 181, 133, 0.14);
+  --neutral:     #A0917D;
+  --neutral-soft:#3A2D24;
 }
 
 [data-theme="dark"] .topbar-blur {
-  background: rgba(17, 20, 26, 0.85);
+  background: rgba(22, 17, 13, 0.85);
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: var(--neutral-700);
+  background: #3A2D24;
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: var(--neutral-500);
+  background: #5A4737;
+}
+
+[data-theme="dark"] ::selection {
+  background: rgba(255, 107, 69, 0.30);
+  color: var(--ink);
 }
 
 * {
