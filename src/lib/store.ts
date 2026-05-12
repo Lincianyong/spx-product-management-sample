@@ -490,8 +490,9 @@ export const useAppStore = create<AppState>()(
     {
       name: "cadence-v1",
       // Bumped when the persisted shape grew (theme + sidebarCollapsed
-      // were added). Old payloads are simply ignored — we keep defaults.
-      version: 6,
+      // were added). Bumped again to v7 to re-seed Epic.programs so the
+      // portfolio allocation chart shows variety on existing installs.
+      version: 7,
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage))),
       // Defensive merge: if the persisted blob is malformed (different shape
       // from a previous build), fall back to current defaults instead of
@@ -504,7 +505,19 @@ export const useAppStore = create<AppState>()(
           return current;
         }
       },
-      migrate: (persisted) => persisted as Partial<AppState>,
+      migrate: (persisted) => {
+        // Older payloads predate Epic.programs (and other data refreshes),
+        // so drop persisted data fields and keep only UI prefs. The store
+        // will fall back to the current seed for everything else.
+        if (!persisted || typeof persisted !== "object") return persisted as Partial<AppState>;
+        const p = persisted as Partial<AppState>;
+        return {
+          currentUserId: p.currentUserId,
+          sidebarCollapsed: p.sidebarCollapsed,
+          theme: p.theme,
+          channelPrefs: p.channelPrefs,
+        };
+      },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
       },
