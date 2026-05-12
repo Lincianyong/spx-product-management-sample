@@ -144,7 +144,7 @@ function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: Crea
           Your role doesn't have a creation lane assigned.
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3 max-w-4xl">
+        <div className="grid grid-cols-3 gap-3">
           {allowed.map((t) => {
             const Icon = t.icon;
             return (
@@ -168,7 +168,7 @@ function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: Crea
         </div>
       )}
 
-      <div className="mt-8 max-w-3xl bg-bg-elevated border border-rule rounded-[8px] p-4">
+      <div className="mt-8 bg-bg-elevated border border-rule rounded-[8px] p-4">
         <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-1.5">Where it lands</div>
         <p className="text-[12px] text-ink-3 leading-relaxed">
           {laneFooter(allowed)}
