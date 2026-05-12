@@ -16,7 +16,6 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, HealthPill, Pill, Button, DatePicker, Modal, Input, toast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
@@ -253,67 +252,42 @@ function useGroups(epics: Epic[], groupBy: GroupBy) {
   });
 }
 
-function EpicCard({
-  epic,
-  onOpen,
-  dragHandle,
-}: {
-  epic: Epic;
-  onOpen: (k: string) => void;
-  /** Drag-handle listeners spread onto the grip icon (sortable contexts). */
-  dragHandle?: Record<string, unknown>;
-}) {
+function EpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) => void }) {
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const pm = users.find((u) => u.id === epic.pmPicId);
   const childTickets = tickets.filter((t) => t.epicId === epic.id);
 
+  // Native <button> mirrors TicketCard so clicks reliably register inside a
+  // dnd-kit listener'd parent — the browser fires `click` on pointerup with
+  // no movement, even when the parent preventDefaults the pointerdown.
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => onOpen(epic.key)}
       className={cn(
-        "group relative bg-bg-card border border-rule rounded-[8px] shadow-sm border-l-4 border-l-accent",
+        "relative block w-full text-left bg-bg-card border border-rule rounded-[8px] shadow-sm border-l-4 border-l-accent p-4",
         "transition-all duration-150 hover:border-accent hover:-translate-y-px"
       )}
     >
-      {dragHandle && (
-        <button
-          {...dragHandle}
-          type="button"
-          aria-label="Drag epic to reorder"
-          className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-[4px] text-ink-4 hover:text-ink-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => onOpen(epic.key)}
-        className="block w-full text-left p-4"
-      >
-        <div className="flex items-center justify-between mb-2 pr-7">
-          <Link
-            href={`/e/${epic.key}`}
-            onClick={(e) => e.stopPropagation()}
-            className="font-mono text-[11px] text-ink-3 hover:text-accent underline-offset-2 hover:underline"
-          >
-            {epic.key}
-          </Link>
-          <HealthPill h={epic.health} />
-        </div>
-        <h3 className="display text-display-s text-ink leading-tight mb-2">{epic.title}</h3>
-        <p className="text-[13px] text-ink-2 line-clamp-3 mb-3">{epic.thesis}</p>
-        <div className="flex items-center justify-between text-[11px] font-mono text-ink-3">
-          <span>{childTickets.length} ticket{childTickets.length === 1 ? "" : "s"} · {epic.quarter}</span>
-          <Avatar user={pm} size="xs" />
-        </div>
-      </button>
-    </div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-mono text-[11px] text-ink-3">{epic.key}</span>
+        <HealthPill h={epic.health} />
+      </div>
+      <h3 className="display text-display-s text-ink leading-tight mb-2">{epic.title}</h3>
+      <p className="text-[13px] text-ink-2 line-clamp-3 mb-3">{epic.thesis}</p>
+      <div className="flex items-center justify-between text-[11px] font-mono text-ink-3">
+        <span>{childTickets.length} ticket{childTickets.length === 1 ? "" : "s"} · {epic.quarter}</span>
+        <Avatar user={pm} size="xs" />
+      </div>
+    </button>
   );
 }
 
-// Sortable wrapper used by Kanban/List views. The grip icon receives drag
-// listeners so the body of the card stays clickable for the slide-over.
+// Sortable wrapper used by Kanban/List views. Mirrors the Sprint Board:
+// the whole card is the drag handle (no grip icon). dnd-kit's pointer-sensor
+// activationConstraint of 4px lets pointerdown-then-click still register as
+// a click that opens the slide-over.
 function SortableEpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: epic.id });
   const style = {
@@ -323,7 +297,9 @@ function SortableEpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) =>
   };
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <EpicCard epic={epic} onOpen={onOpen} dragHandle={listeners} />
+      <div {...listeners} className="cursor-grab active:cursor-grabbing">
+        <EpicCard epic={epic} onOpen={onOpen} />
+      </div>
     </div>
   );
 }
