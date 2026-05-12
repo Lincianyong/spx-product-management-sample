@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Avatar, Button, Pill, toast } from "@/components/ui";
+import {
+  Avatar,
+  Button,
+  Pill,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  toast,
+} from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function SprintClosePage() {
@@ -18,10 +28,19 @@ export default function SprintClosePage() {
   const [whatWorked, setWhatWorked] = useState("");
   const [whatBroke, setWhatBroke] = useState("");
   const [whatNext, setWhatNext] = useState("");
+  const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null);
 
-  const lastClosed = sprints.find((s) => s.state === "closed");
-  const active = sprints.find((s) => s.state === "active");
-  const sprint = lastClosed ?? active;
+  // Closed sprints first (newest end-date wins), then the active sprint so a
+  // PM can preview an in-flight retro without leaving the page.
+  const selectable = useMemo(() => {
+    const closed = sprints
+      .filter((s) => s.state === "closed")
+      .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+    const active = sprints.find((s) => s.state === "active");
+    return active ? [...closed, active] : closed;
+  }, [sprints]);
+
+  const sprint = selectable.find((s) => s.id === selectedSprintId) ?? selectable[0] ?? null;
 
   if (!sprint) return null;
 
@@ -44,6 +63,22 @@ export default function SprintClosePage() {
           </>
         }
         lede="15 minutes Monday morning. What worked, what broke, what carries over. Velocity gets recorded automatically."
+        actions={
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 shrink-0">Sprint</span>
+            <Select value={sprint.id} onValueChange={setSelectedSprintId}>
+              <SelectTrigger size="sm" className="w-56"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {selectable.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <span className="font-mono">{s.key}</span>
+                    <span className="text-ink-3"> · {s.state === "active" ? "in-flight" : `closed ${formatDate(s.endDate)}`}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-4 gap-3 mb-8">

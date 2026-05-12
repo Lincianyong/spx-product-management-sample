@@ -2,6 +2,9 @@ import type {
   User,
   Epic,
   Ticket,
+  TicketType,
+  TicketStatus,
+  Priority,
   Sprint,
   Comment,
   Notification,
@@ -122,6 +125,26 @@ const addDays = (d: Date, n: number) => {
 };
 
 export const seedSprints: Sprint[] = [
+  {
+    id: "sp_w17",
+    key: "W17-2026",
+    startDate: isoDate(addDays(today, -21)),
+    endDate: isoDate(addDays(today, -15)),
+    state: "closed",
+    committedPoints: 28,
+    shippedPoints: 26,
+    committedAt: isoDate(addDays(today, -22)),
+  },
+  {
+    id: "sp_w18",
+    key: "W18-2026",
+    startDate: isoDate(addDays(today, -14)),
+    endDate: isoDate(addDays(today, -8)),
+    state: "closed",
+    committedPoints: 30,
+    shippedPoints: 29,
+    committedAt: isoDate(addDays(today, -15)),
+  },
   {
     id: "sp_w19",
     key: "W19-2026",
@@ -276,6 +299,57 @@ const ac = (text: string, done = false) => ({
   text,
   done,
 });
+
+/**
+ * Compact factory for tickets that belong to a prior, already-closed
+ * sprint. Used only by /sprint-close to give the retro view a real
+ * shipped + carry-over corpus. Defaults to status="done" / not carried.
+ */
+const closedTicket = (opts: {
+  id: string;
+  key: string;
+  type: TicketType;
+  title: string;
+  epicId: string | null;
+  sprintId: string;
+  authorId: string;
+  assigneeId: string;
+  storyPoints: number;
+  closedDaysAgo: number;
+  status?: TicketStatus;
+  carryOver?: boolean;
+  priority?: Priority;
+  tags?: string[];
+  severity?: "S1" | "S2" | "S3";
+}): Ticket => {
+  const status = opts.status ?? "done";
+  const isShipped = status === "done" || status === "verified";
+  return {
+    id: opts.id,
+    key: opts.key,
+    type: opts.type,
+    title: opts.title,
+    description: `Carried in sprint ${opts.sprintId.replace(/^sp_/, "").toUpperCase()}.`,
+    acceptanceCriteria: [],
+    epicId: opts.epicId,
+    priority: opts.priority ?? "P2",
+    status,
+    authorId: opts.authorId,
+    tags: opts.tags ?? [],
+    pickedForSprint: true,
+    picklistRank: null,
+    storyPoints: opts.storyPoints,
+    concernFlags: [],
+    assigneeId: opts.assigneeId,
+    sprintId: opts.sprintId,
+    startedAt: isoDate(addDays(today, -(opts.closedDaysAgo + 4))),
+    closedAt: isShipped ? isoDate(addDays(today, -opts.closedDaysAgo)) : null,
+    linkedWork: [],
+    carryOver: opts.carryOver ?? false,
+    createdAt: isoDate(addDays(today, -(opts.closedDaysAgo + 7))),
+    ...(opts.severity ? { severity: opts.severity } : {}),
+  };
+};
 
 export const seedTickets: Ticket[] = [
   {
@@ -740,6 +814,34 @@ export const seedTickets: Ticket[] = [
     rollbackPlan: "Pin to 1.22 image, reboot pods",
     aiSuggestedPoints: { value: 3, confidence: 0.88, reasoning: "Past Go minor upgrades have been 2–3 pts." },
   },
+
+  // ─── Closed-sprint corpus (W17 · W18 · W19) ───
+  // Feeds /sprint-close so the retro page has real shipped tickets to
+  // tally and a couple of carry-overs to surface. Numbers line up with
+  // the matching Sprint.committedPoints / shippedPoints in seedSprints.
+
+  // W19 — 6 shipped (27 pts), 2 carry-over (4 pts); committed = 31
+  closedTicket({ id: "t_w19_1", key: "RTE-852",  type: "engineering", title: "Ferry timetable v1 loader",         epicId: "ep_rte", sprintId: "sp_w19", authorId: "u_albert",  assigneeId: "u_devi",   storyPoints: 8, closedDaysAgo: 2, priority: "P1", tags: ["routing", "4pl"] }),
+  closedTicket({ id: "t_w19_2", key: "MAD-310",  type: "engineering", title: "Madura cutoff alert v1",            epicId: "ep_mad", sprintId: "sp_w19", authorId: "u_albert",  assigneeId: "u_sari",   storyPoints: 5, closedDaysAgo: 2, tags: ["4pl", "alerts"] }),
+  closedTicket({ id: "t_w19_3", key: "HUB-104",  type: "engineering", title: "Hourly throughput ingest",          epicId: "ep_hub", sprintId: "sp_w19", authorId: "u_diana",   assigneeId: "u_mira",   storyPoints: 5, closedDaysAgo: 3, tags: ["sorting"] }),
+  closedTicket({ id: "t_w19_4", key: "CDN-3490", type: "engineering", title: "Drift dashboard surface",           epicId: "ep_cdn", sprintId: "sp_w19", authorId: "u_albert",  assigneeId: "u_andre",  storyPoints: 3, closedDaysAgo: 1, tags: ["ml", "dashboards"], status: "verified" }),
+  closedTicket({ id: "t_w19_5", key: "BUG-4400", type: "bug",         title: "Driver app cold-start crash (A14)", epicId: "ep_drv", sprintId: "sp_w19", authorId: "u_ronaldo", assigneeId: "u_devi",   storyPoints: 3, closedDaysAgo: 4, priority: "P0", tags: ["mobile", "android"], status: "verified", severity: "S1" }),
+  closedTicket({ id: "t_w19_6", key: "DRV-200",  type: "engineering", title: "Reduce taps per delivery (phase 1)", epicId: "ep_drv", sprintId: "sp_w19", authorId: "u_diana",   assigneeId: "u_devi",   storyPoints: 3, closedDaysAgo: 2, tags: ["mobile"] }),
+  closedTicket({ id: "t_w19_7", key: "RTE-855",  type: "engineering", title: "Reroute scoring (pre-cutoff)",      epicId: "ep_rte", sprintId: "sp_w19", authorId: "u_albert",  assigneeId: "u_mira",   storyPoints: 2, closedDaysAgo: 0, priority: "P1", tags: ["routing"], status: "in_progress", carryOver: true }),
+  closedTicket({ id: "t_w19_8", key: "BUG-4402", type: "bug",         title: "Stuck 'delivered' sync state",       epicId: "ep_drv", sprintId: "sp_w19", authorId: "u_ronaldo", assigneeId: "u_devi",   storyPoints: 2, closedDaysAgo: 0, priority: "P1", tags: ["mobile"], status: "review", carryOver: true, severity: "S2" }),
+
+  // W18 — 5 shipped (29 pts); committed = 30 (1 pt slipped silently)
+  closedTicket({ id: "t_w18_1", key: "CDN-3475", type: "engineering", title: "Daily MAPE baseline calc",          epicId: "ep_cdn", sprintId: "sp_w18", authorId: "u_albert",  assigneeId: "u_andre",  storyPoints: 5, closedDaysAgo: 9, tags: ["ml"] }),
+  closedTicket({ id: "t_w18_2", key: "HUB-090",  type: "engineering", title: "Sortation-line API integration",    epicId: "ep_hub", sprintId: "sp_w18", authorId: "u_diana",   assigneeId: "u_mira",   storyPoints: 8, closedDaysAgo: 9, tags: ["sorting", "platform"] }),
+  closedTicket({ id: "t_w18_3", key: "BUG-4385", type: "bug",         title: "Map tile failure when offline",     epicId: "ep_drv", sprintId: "sp_w18", authorId: "u_ronaldo", assigneeId: "u_devi",   storyPoints: 5, closedDaysAgo: 10, priority: "P1", tags: ["mobile"], status: "verified", severity: "S2" }),
+  closedTicket({ id: "t_w18_4", key: "RTE-840",  type: "engineering", title: "Static feed schema spike",          epicId: "ep_rte", sprintId: "sp_w18", authorId: "u_albert",  assigneeId: "u_sari",   storyPoints: 8, closedDaysAgo: 11, tags: ["routing"] }),
+  closedTicket({ id: "t_w18_5", key: "CDN-3478", type: "tech_task",   title: "Promotion rollback hook",           epicId: "ep_cdn", sprintId: "sp_w18", authorId: "u_andre",   assigneeId: "u_andre",  storyPoints: 3, closedDaysAgo: 8, tags: ["ml", "platform"] }),
+
+  // W17 — 4 shipped (26 pts); committed = 28 (2 pt slip)
+  closedTicket({ id: "t_w17_1", key: "MAD-300",  type: "engineering", title: "Madura station onboarding API",     epicId: "ep_mad", sprintId: "sp_w17", authorId: "u_albert",  assigneeId: "u_sari",   storyPoints: 8, closedDaysAgo: 16, priority: "P1", tags: ["4pl"] }),
+  closedTicket({ id: "t_w17_2", key: "HUB-080",  type: "engineering", title: "Capacity signal contract",          epicId: "ep_hub", sprintId: "sp_w17", authorId: "u_diana",   assigneeId: "u_mira",   storyPoints: 5, closedDaysAgo: 17, tags: ["sorting"] }),
+  closedTicket({ id: "t_w17_3", key: "BUG-4368", type: "bug",         title: "Auth refresh race on token rotate", epicId: null,     sprintId: "sp_w17", authorId: "u_ronaldo", assigneeId: "u_andre",  storyPoints: 5, closedDaysAgo: 18, priority: "P0", tags: ["auth"], status: "verified", severity: "S1" }),
+  closedTicket({ id: "t_w17_4", key: "CDN-3450", type: "engineering", title: "Forecast staging dataset",          epicId: "ep_cdn", sprintId: "sp_w17", authorId: "u_albert",  assigneeId: "u_andre",  storyPoints: 8, closedDaysAgo: 16, tags: ["ml"] }),
 ];
 
 // ─── Comments ───────────────────────────────────────────────────────
