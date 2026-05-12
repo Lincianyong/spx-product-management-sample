@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
-import { MockScreen, MockChip } from "../MockScreen";
+import { MockScreen, MockChip, EpicBoardMock, TimelineMock } from "../MockScreen";
 
 export default function GuidelineEngPage() {
   useDocumentTitle("Guideline · Engineer");
@@ -164,6 +164,57 @@ export default function GuidelineEngPage() {
           "Program multi-select on the second row filters by parent epic's programs.",
         ]}
       />
+
+      <SurfaceCard
+        eyebrow="Plan · /backlog"
+        title="Backlog — what's queued, next sprint and beyond."
+        body="A flat table of every ticket that isn't yet in a sprint. As an engineer, this is your read-ahead — what's likely to land on your plate at the next Picklist, and which bugs are stacking up."
+        bullets={[
+          "Use when: you want a heads-up on what's getting picked Friday — read it earlier in the week so estimation isn't cold.",
+          "Reads at a glance: which epics are queueing tickets, how many P0/P1 bugs are unscheduled, what's been sitting longest.",
+          "Filters: type · status · program · author. Search hits key, title, tags.",
+        ]}
+      />
+
+      <SurfaceCard
+        eyebrow="Portfolio · /epics"
+        title="Epic Board — the parent context for your tickets."
+        body="The kanban view of every Epic in the workspace. Engineers use it to find the parent of the ticket you're working on, read its thesis, and see sibling tickets under the same bet."
+        bullets={[
+          "Use when: you want a one-line answer to 'why are we doing this?' — open the Epic, read the thesis.",
+          "Reads at a glance: which epics are at-risk or blocked (health pill) — useful if you're about to commit to a ticket under one.",
+          "Click any card to drop into /e/CDN for thesis · linked tickets · timeline.",
+        ]}
+      />
+
+      <MockScreen
+        title="Epic Board · find the parent context"
+        url="/epics"
+        caption="Engineers usually open this from a ticket detail page via the parent epic chip — then read the thesis and the sibling tickets."
+        className="mb-8"
+      >
+        <EpicBoardMock />
+      </MockScreen>
+
+      <SurfaceCard
+        eyebrow="Portfolio · /timeline"
+        title="Timeline — when does this epic ship?"
+        body="A horizontal Gantt of epics across the quarter. As an engineer, the timeline tells you whether your parent epic has slack or is already running long — and whether dependent epics will be ready when you need them."
+        bullets={[
+          "Use when: your ticket depends on another epic's output — read its bar to know if it'll land before your sprint slot.",
+          "Use when: you want to argue for a tech task — show that the epic timeline has slack to absorb a refactor.",
+          "Reads at a glance: 'today' tick, epic health colour on the bar (green / amber / red), overlap density per week.",
+        ]}
+      />
+
+      <MockScreen
+        title="Timeline · the quarter at a glance"
+        url="/timeline"
+        caption="Bars run startDate → targetEndDate. The vertical accent line marks today; bars left of today should be in flight."
+        className="mb-8"
+      >
+        <TimelineMock />
+      </MockScreen>
 
       <div className="mt-6 flex items-center justify-between bg-bg-elevated border border-rule rounded-[8px] px-4 py-3">
         <span className="text-[13px] text-ink-3">Curious how PMs read the same surface?</span>

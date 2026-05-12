@@ -162,3 +162,117 @@ export function MockTicketRow({
     </div>
   );
 }
+
+/* ── Epic Board (kanban of epics) ────────────────────────────── */
+
+const EPIC_BOARD_LANES: { lane: string; count: number; cards: [string, string, "ok" | "warn" | "danger" | "neutral", string][] }[] = [
+  { lane: "Backlog",     count: 1, cards: [["OBS", "Eng observability baseline", "neutral", "not-started"]] },
+  { lane: "In Progress", count: 4, cards: [
+    ["CDN", "Forecasting retrain", "ok", "on-track"],
+    ["RTE", "Ferry timetable", "warn", "at-risk"],
+    ["MAD", "Madura ops dashboard", "ok", "on-track"],
+    ["HUB", "Hub capacity signals", "ok", "on-track"],
+  ] },
+  { lane: "At Risk",     count: 1, cards: [["DRV", "Driver app reliability", "danger", "blocked"]] },
+  { lane: "Shipped",     count: 0, cards: [] },
+];
+
+export function EpicBoardMock() {
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {EPIC_BOARD_LANES.map((lane) => (
+        <div key={lane.lane} className="bg-bg rounded-[6px] border border-rule p-1.5 space-y-1 min-h-[120px]">
+          <div className="px-1 mb-1 flex items-center justify-between">
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-3">{lane.lane}</span>
+            <MockChip>{lane.count}</MockChip>
+          </div>
+          {lane.cards.map(([k, title, tone, healthLabel]) => (
+            <div key={k} className="bg-bg-card border border-rule-soft rounded-[4px] p-1.5">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="font-mono text-[9px] text-ink-3">{k}</span>
+                <MockChip tone={tone}>{healthLabel}</MockChip>
+              </div>
+              <div className="text-[10px] text-ink leading-tight">{title}</div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Timeline (epic gantt bars) ──────────────────────────────── */
+
+const TIMELINE_EPICS: { key: string; title: string; start: number; end: number; tone: "ok" | "warn" | "danger" | "neutral" }[] = [
+  // start/end are 0-based week indices over an 8-week window.
+  { key: "CDN", title: "Forecasting retrain",      start: 0, end: 5, tone: "ok" },
+  { key: "RTE", title: "Ferry timetable",          start: 1, end: 4, tone: "warn" },
+  { key: "MAD", title: "Madura ops dashboard",     start: 2, end: 6, tone: "ok" },
+  { key: "HUB", title: "Hub capacity signals",     start: 2, end: 7, tone: "ok" },
+  { key: "DRV", title: "Driver app reliability",   start: 3, end: 8, tone: "danger" },
+  { key: "OBS", title: "Eng observability baseline", start: 6, end: 8, tone: "neutral" },
+];
+
+export function TimelineMock({ todayWeek = 3 }: { todayWeek?: number }) {
+  const weeks = 8;
+  const pct = (n: number) => (n / weeks) * 100;
+  return (
+    <div className="bg-bg-card border border-rule rounded-[6px] p-2">
+      {/* Week header */}
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className="w-32 shrink-0" />
+        <div className="flex-1 flex">
+          {Array.from({ length: weeks }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex-1 text-center font-mono text-[9px] uppercase tracking-[0.14em]",
+                i === todayWeek ? "text-accent" : "text-ink-3"
+              )}
+            >
+              W{17 + i}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Rows */}
+      <div className="space-y-1.5">
+        {TIMELINE_EPICS.map((e) => (
+          <div key={e.key} className="flex items-center gap-2">
+            <div className="w-32 shrink-0 flex items-center gap-2">
+              <span className="font-mono text-[9px] text-ink-3">{e.key}</span>
+              <span className="text-[10px] text-ink truncate">{e.title}</span>
+            </div>
+            <div className="flex-1 relative h-4 bg-bg rounded-[3px]">
+              {/* Today hairline lives inside the bar zone */}
+              <div
+                className="absolute top-0 bottom-0 w-px bg-accent z-10 pointer-events-none"
+                style={{ left: `${pct(todayWeek + 0.5)}%` }}
+                aria-hidden
+              />
+              <div
+                className={cn(
+                  "absolute top-0 bottom-0 rounded-[3px]",
+                  e.tone === "ok" && "bg-ok/60",
+                  e.tone === "warn" && "bg-warn/60",
+                  e.tone === "danger" && "bg-danger/60",
+                  e.tone === "neutral" && "bg-rule",
+                )}
+                style={{
+                  left: `${pct(e.start)}%`,
+                  width: `${pct(e.end - e.start)}%`,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center gap-3 text-[9px] text-ink-3 font-mono uppercase tracking-[0.14em]">
+        <span className="flex items-center gap-1.5"><span className="w-2 h-px bg-accent" /> today</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 bg-ok/60 rounded-[2px]" /> on-track</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 bg-warn/60 rounded-[2px]" /> at-risk</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 bg-danger/60 rounded-[2px]" /> blocked</span>
+      </div>
+    </div>
+  );
+}

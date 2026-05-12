@@ -97,6 +97,11 @@ export default function GuidelineOverviewPage() {
           <Step n={4} label="Sprint" when="Mon → Fri" who="Engineers ship" body="PM watches the funnel, triages bugs." />
           <Step n={5} label="Close" when="Mon 18:00 (next)" who="Whole team" body="Retro · carry-over · velocity." />
         </ol>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-3">
+          Note · times above are a tentative sample. The cadence is fixed (one cycle per week)
+          but the exact day-of-week and time-of-day are flexible per team — set them at your
+          first kickoff, not in code.
+        </p>
       </Section>
 
       <MockScreen

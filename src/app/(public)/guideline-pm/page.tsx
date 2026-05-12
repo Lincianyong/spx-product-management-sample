@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
-import { MockScreen, MockChip, MockTicketRow } from "../MockScreen";
+import { MockScreen, MockChip, MockTicketRow, EpicBoardMock, TimelineMock } from "../MockScreen";
 
 export default function GuidelinePmPage() {
   useDocumentTitle("Guideline · PM");
@@ -216,13 +216,94 @@ export default function GuidelinePmPage() {
       </MockScreen>
 
       <SurfaceCard
-        eyebrow="Portfolio · /epics · /timeline · /portfolio"
-        title="Epic Board · Timeline · Portfolio Health."
-        body="The portfolio layer is where conviction-level work lives. Epic Board is a kanban of epics across status lanes. Timeline shows epic durations against the quarter. Portfolio Health rolls allocation up by program."
+        eyebrow="Plan · /backlog"
+        title="Backlog — the table of work waiting to be picked."
+        body="A flat, searchable table of every Engineering ticket, Bug, and Tech Task that isn't yet in a sprint. This is where you groom: re-rank, change priority, retag programs, or kill stale items before Picklist on Friday."
         bullets={[
-          "Epic Board: card-wide drag, row-wise reordering supported.",
-          "Timeline: bars for each epic; quarter banding behind.",
-          "Portfolio Health: stat tiles + 'Allocation by program' bar chart.",
+          "Use when: you want to see the full unscheduled queue across epics in one column.",
+          "Reads at a glance: how deep the queue is, which programs are over-represented, what's been sitting longest.",
+          "Filters: type · status · program multi-select · author. Search hits key, title, tags.",
+        ]}
+      />
+
+      <MockScreen
+        title="Backlog · groomable table"
+        url="/backlog"
+        caption="The PM's grooming surface. Rank, retag, or kill before Friday's Picklist so the slice you draft is already clean."
+        className="mb-8"
+      >
+        <div className="space-y-1">
+          <div className="grid grid-cols-[28px_70px_1fr_60px_80px_60px] gap-2 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-3 border-b border-rule">
+            <span>#</span><span>Key</span><span>Title</span><span>Type</span><span>Priority</span><span>Age</span>
+          </div>
+          {[
+            { n: 1, k: "CDN-3505", title: "Calibration layer after drift gate", type: "Eng",  pri: "P2", age: "8d", tone: "neutral" as const },
+            { n: 2, k: "BUG-4421", title: "Android 14 driver timestamps drift", type: "Bug",  pri: "P0", age: "3d", tone: "danger" as const },
+            { n: 3, k: "HUB-115",  title: "Hourly throughput rollups",          type: "Eng",  pri: "P1", age: "11d", tone: "warn" as const },
+            { n: 4, k: "TCH-3920", title: "Upgrade router service to Go 1.23",  type: "Tech", pri: "P2", age: "5d", tone: "neutral" as const },
+            { n: 5, k: "DRV-202",  title: "Offline-cache hit metrics",          type: "Eng",  pri: "P2", age: "14d", tone: "neutral" as const },
+          ].map((r) => (
+            <div key={r.k} className="grid grid-cols-[28px_70px_1fr_60px_80px_60px] gap-2 px-2 py-1.5 items-center bg-bg-card border border-rule-soft rounded-[4px]">
+              <span className="font-mono text-[10px] text-ink-3">{r.n}</span>
+              <span className="font-mono text-[10px] text-ink-3">{r.k}</span>
+              <span className="text-[11px] text-ink truncate">{r.title}</span>
+              <MockChip>{r.type}</MockChip>
+              <MockChip tone={r.tone}>{r.pri}</MockChip>
+              <span className="font-mono text-[10px] text-ink-3">{r.age}</span>
+            </div>
+          ))}
+        </div>
+      </MockScreen>
+
+      <SurfaceCard
+        eyebrow="Portfolio · /epics"
+        title="Epic Board — the conviction kanban."
+        body="A kanban of every epic in the workspace, lanes for each status. This is the room you walk into when leadership asks 'what's actually in flight?' — at the epic altitude, not the ticket altitude."
+        bullets={[
+          "Use when: you want one screen showing every bet currently funded.",
+          "Reads at a glance: how many epics per lane, which are at-risk vs on-track (health pill on each card), which PMs own which.",
+          "Drag is card-wide and supports row-wise reordering within a lane (priority within a status).",
+          "Filter by quarter · program · pm-owner.",
+        ]}
+      />
+
+      <MockScreen
+        title="Epic Board · status lanes"
+        url="/epics"
+        caption="Each card is an Epic. Lane membership = status; health pill = on-track / at-risk / blocked."
+        className="mb-8"
+      >
+        <EpicBoardMock />
+      </MockScreen>
+
+      <SurfaceCard
+        eyebrow="Portfolio · /timeline"
+        title="Timeline — when each epic actually lands."
+        body="A horizontal Gantt-style view: epics on the Y axis, weeks on the X. Each bar runs from startDate to targetEndDate so you can see at a glance where work is bunched, which epics overlap, and where the quarter has slack."
+        bullets={[
+          "Use when: you want to forecast capacity by week — 'do we have anything shipping in W22?'",
+          "Use when: scheduling a cross-team dependency — see if the upstream epic finishes before yours starts.",
+          "Reads at a glance: quarter banding behind the bars, today's vertical hairline, hover-tooltip with health + PM.",
+          "Clicking a bar opens the epic detail (/e/CDN).",
+        ]}
+      />
+
+      <MockScreen
+        title="Timeline · epics across the quarter"
+        url="/timeline"
+        caption="Hairline at 'today' helps spot epics that should already be in flight but haven't started, and epics that are running long."
+        className="mb-8"
+      >
+        <TimelineMock />
+      </MockScreen>
+
+      <SurfaceCard
+        eyebrow="Portfolio · /portfolio"
+        title="Portfolio Health — the leadership read."
+        body="One screen that answers 'how is the quarter going?'. Stat tiles at the top (in-flight epic count, at-risk count, programs covered) and the 'Allocation by program' bar chart for portfolio shape."
+        bullets={[
+          "Use when: prepping leadership review, weekly portfolio sync, or before a hiring/headcount conversation.",
+          "Reads at a glance: program coverage (which programs are starved), at-risk concentration, health trend.",
         ]}
       />
 
