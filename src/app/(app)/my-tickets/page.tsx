@@ -142,7 +142,7 @@ export default function MyTicketsPage() {
             )}
           </div>
           <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
-            <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger size="sm" className="w-[180px] shrink-0"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
               <SelectItem value="engineering">Engineering</SelectItem>
@@ -151,7 +151,7 @@ export default function MyTicketsPage() {
             </SelectContent>
           </Select>
           <Select value={stateFilter} onValueChange={(v) => setStateFilter(v as StateFilter)}>
-            <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
+            <SelectTrigger size="sm" className="w-[180px] shrink-0"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All states</SelectItem>
               <SelectItem value="open">Open</SelectItem>

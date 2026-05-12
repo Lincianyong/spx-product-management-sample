@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  CheckCircle2,
   CheckSquare,
   ChevronsLeft,
   ChevronsRight,
@@ -69,6 +70,7 @@ export function Sidebar() {
       items: [
         { label: "Sprint Board", href: "/sprint", icon: Columns3 },
         { label: "Planning", href: "/planning", icon: CheckSquare, prefix: "/planning" },
+        { label: "Sprint Close", href: "/sprint-close", icon: CheckCircle2 },
         { label: "Backlog", href: "/backlog", icon: List },
       ],
     },

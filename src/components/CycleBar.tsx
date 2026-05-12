@@ -8,18 +8,20 @@ import { cn } from "@/lib/utils";
 
 /**
  * CycleBar — persistent header rendered by the (cycle) route group
- * (planning + sprint-close). Five milestones laid out as connected
- * dots, each click-navigable. Mirrors the PlanningCalendarMini scrubber
- * on /me so the visual idiom is shared across the app.
+ * (the /planning module). Three planning milestones laid out as
+ * connected dots, each click-navigable. Mirrors the PlanningCalendarMini
+ * scrubber on /me so the visual idiom is shared across the app.
  *
  * - Past dot → green (cycle stage already passed by wall clock)
  * - Current dot → accent-ringed (clock is sitting in this stage)
  * - Future dot → muted
  *
- * The dot for the route the user is currently on gets a stronger label.
+ * Sprint Board and Sprint Close live as their own sidebar entries and
+ * intentionally do not appear here — this bar is the planning scrubber,
+ * not a full lifecycle map.
  */
 
-type StageKey = "picklist" | "estimation" | "joint" | "sprint" | "close";
+type StageKey = "picklist" | "estimation" | "joint";
 
 interface StageDef {
   key: StageKey;
@@ -33,8 +35,6 @@ const STAGES: StageDef[] = [
   { key: "picklist",   label: "Picklist",   href: "/planning/picklist",   matchPath: "/planning/picklist",   clockStages: ["picklist"] },
   { key: "estimation", label: "Estimation", href: "/planning/estimation", matchPath: "/planning/estimation", clockStages: ["estimation"] },
   { key: "joint",      label: "Joint",      href: "/planning/joint",      matchPath: "/planning/joint",      clockStages: ["joint"] },
-  { key: "sprint",     label: "Sprint",     href: "/sprint",              matchPath: "/sprint",              clockStages: ["active"] },
-  { key: "close",      label: "Close",      href: "/sprint-close",        matchPath: "/sprint-close",        clockStages: ["post_active"] },
 ];
 
 export function CycleBar() {
