@@ -2,32 +2,22 @@
 
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { useAppStore, useCurrentUser } from "@/lib/store";
+import { useAppStore } from "@/lib/store";
 import {
-  Avatar,
-  Button,
-  Pill,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  toast,
 } from "@/components/ui";
-import { Textarea } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { cn, formatDate } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function SprintClosePage() {
-  useDocumentTitle("Sprint Close · Retro");
+  useDocumentTitle("Sprint Close");
   const sprints = useAppStore((s) => s.sprints);
   const tickets = useAppStore((s) => s.tickets);
-  const users = useAppStore((s) => s.users);
-  const user = useCurrentUser();
-  const [whatWorked, setWhatWorked] = useState("");
-  const [whatBroke, setWhatBroke] = useState("");
-  const [whatNext, setWhatNext] = useState("");
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null);
 
   // Closed sprints first (newest end-date wins), then the active sprint so a
@@ -48,10 +38,6 @@ export default function SprintClosePage() {
   const done = sprintTickets.filter((t) => t.status === "done" || t.status === "verified");
   const carryOver = sprintTickets.filter((t) => t.status !== "done" && t.status !== "verified");
   const completionPct = sprintTickets.length === 0 ? 0 : Math.round((done.length / sprintTickets.length) * 100);
-
-  const submit = () => {
-    toast(`Retro notes saved for ${sprint.key}`, { kind: "success" });
-  };
 
   return (
     <div>
@@ -88,7 +74,7 @@ export default function SprintClosePage() {
         <Stat label="Carry-over" value={`${carryOver.length} tickets`} accent={carryOver.length > 0 ? "warn" : undefined} />
       </div>
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-3 gap-6">
         <Section title="Shipped" tickets={done} />
         <Section title="Carry-over" tickets={carryOver} accent="warn" />
         <aside>
@@ -100,18 +86,6 @@ export default function SprintClosePage() {
           </div>
         </aside>
       </div>
-
-      <section>
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">Retro notes</div>
-        <div className="grid grid-cols-3 gap-3">
-          <Textarea label="What worked" value={whatWorked} onChange={(e) => setWhatWorked(e.target.value)} />
-          <Textarea label="What broke" value={whatBroke} onChange={(e) => setWhatBroke(e.target.value)} />
-          <Textarea label="What's next" value={whatNext} onChange={(e) => setWhatNext(e.target.value)} />
-        </div>
-        <div className="flex justify-end mt-4">
-          <Button variant="primary" onClick={submit}>Save retro</Button>
-        </div>
-      </section>
     </div>
   );
 }
