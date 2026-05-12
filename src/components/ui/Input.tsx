@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { forwardRef, InputHTMLAttributes, TextareaHTMLAttributes, useId } from "react";
 import { cn } from "@/lib/utils";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -11,7 +11,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, hint, error, className, id, ...rest }, ref) => {
-    const inputId = id ?? rest.name ?? Math.random().toString(36).slice(2);
+    const reactId = useId();
+    const inputId = id ?? rest.name ?? reactId;
     return (
       <label htmlFor={inputId} className="flex flex-col gap-1.5">
         {label && (
@@ -49,7 +50,8 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, hint, error, className, id, ...rest }, ref) => {
-    const inputId = id ?? rest.name ?? Math.random().toString(36).slice(2);
+    const reactId = useId();
+    const inputId = id ?? rest.name ?? reactId;
     return (
       <label htmlFor={inputId} className="flex flex-col gap-1.5">
         {label && (
