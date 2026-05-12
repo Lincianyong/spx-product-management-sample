@@ -29,6 +29,7 @@ import { can } from "@/lib/permissions";
 import { Plus } from "lucide-react";
 import { EpicLevelTimeline } from "@/components/epics/EpicLevelTimeline";
 import { DRAG_SOURCE_OPACITY, DRAG_OVERLAY_CLASS } from "@/lib/drag-styles";
+import { UnsavedPill } from "@/components/comments/CommentComposer";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
@@ -56,6 +57,14 @@ function EpicBoardInner() {
   const initialGroup = (params.get("groupBy") as GroupBy) ?? "health";
   const [view, setView] = useState<View>(initialView);
   const [groupBy, setGroupBy] = useState<GroupBy>(initialGroup);
+  // Baseline snapshot of the view config — set on mount + whenever a saved
+  // view is applied or saved. When the current view diverges, the toolbar
+  // shows an "Edited" pill so the user knows they have unsaved changes.
+  const [baseline, setBaseline] = useState<{ view: View; groupBy: GroupBy }>({
+    view: initialView,
+    groupBy: initialGroup,
+  });
+  const viewDirty = view !== baseline.view || groupBy !== baseline.groupBy;
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -75,13 +84,17 @@ function EpicBoardInner() {
   const applyView = (id: string) => {
     const v = savedViews.find((x) => x.id === id);
     if (!v || v.surface !== "epics") return;
-    if (v.viewMode) setView(v.viewMode);
-    if (v.groupBy) setGroupBy(v.groupBy);
+    const nextView = v.viewMode ?? view;
+    const nextGroupBy = v.groupBy ?? groupBy;
+    setView(nextView);
+    setGroupBy(nextGroupBy);
+    setBaseline({ view: nextView, groupBy: nextGroupBy });
   };
 
   const save = () => {
     if (!user || !saveName.trim()) return;
     saveView({ name: saveName.trim(), surface: "epics", viewMode: view, groupBy, ownerId: user.id });
+    setBaseline({ view, groupBy });
     setSaveOpen(false);
     setSaveName("");
     toast(`View "${saveName.trim()}" saved`);
@@ -132,6 +145,7 @@ function EpicBoardInner() {
           </select>
         )}
         <div className="ml-auto flex items-center gap-2">
+          {viewDirty && <UnsavedPill label="Edited" />}
           <Button variant="secondary" size="sm" onClick={() => setSaveOpen(true)}>Save view</Button>
           {canCreateEpic && (
             <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>

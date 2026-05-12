@@ -42,6 +42,7 @@ import { STATUS_TRANSITIONS, TRANSITIONS_REQUIRING_CONFIRM } from "@/lib/types";
 import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { DRAG_SOURCE_OPACITY, DRAG_OVERLAY_CLASS } from "@/lib/drag-styles";
+import { UnsavedPill } from "@/components/comments/CommentComposer";
 
 type SprintFilter = "me" | "all";
 
@@ -80,6 +81,11 @@ export default function SprintBoardPage() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
+  // Modal state for dragging an ad-hoc ticket onto a workflow column: we
+  // need an Epic to attach the ticket to (force-add into the sprint).
+  const [adhocAssign, setAdhocAssign] = useState<{ ticketId: string; destCol: TicketStatus; epicId: string } | null>(null);
+  const setTicketField = useAppStore((s) => s.setTicketField);
+  const epics = useAppStore((s) => s.epics);
 
   const activeSprint = sprints.find((s) => s.state === "active");
   const viewingSprint = selectedSprintId
@@ -97,11 +103,14 @@ export default function SprintBoardPage() {
     return inSprint;
   }, [tickets, viewingSprint, filter, user]);
 
-  // Sort each column by personalRank so vertical drag-order persists.
+  // Columns show only tickets that have a parent Epic. Ad-hoc tickets live
+  // exclusively in the ad-hoc lane below, so each ticket renders once and
+  // dnd-kit isn't asked to track two sortable ids for the same row.
   const byColumn = useMemo(() => {
     const map: Record<TicketStatus, Ticket[]> = {} as Record<TicketStatus, Ticket[]>;
     for (const col of COLUMNS) map[col.status] = [];
     for (const t of filtered) {
+      if (t.epicId === null) continue;
       const k = ticketColumnKey(t.status);
       if (!k) continue;
       map[k].push(t);
@@ -112,7 +121,13 @@ export default function SprintBoardPage() {
     return map;
   }, [filtered]);
 
-  const adHoc = filtered.filter((t) => t.epicId === null);
+  const adHoc = useMemo(
+    () =>
+      filtered
+        .filter((t) => t.epicId === null)
+        .sort((a, b) => (a.personalRank ?? 99) - (b.personalRank ?? 99)),
+    [filtered]
+  );
   const doneList = byColumn.done;
   const committedPoints = viewingSprint?.committedPoints ?? 0;
   const shippedPoints = doneList.reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
@@ -136,25 +151,64 @@ export default function SprintBoardPage() {
     const ticket = tickets.find((t) => t.id === ticketId);
     if (!ticket) return;
 
-    const sourceCol = ticketColumnKey(ticket.status);
-    // `over.id` is either a column-status string (BoardColumn droppable)
+    const wasAdhoc = ticket.epicId === null;
+    const sourceCol: TicketStatus | "adhoc" = wasAdhoc ? "adhoc" : (ticketColumnKey(ticket.status) ?? "scheduled");
+    // `over.id` is either a column-status string ("scheduled" | … | "adhoc")
     // or another ticket id (sibling sortable item).
     const overId = over.id as string;
-    let destCol: TicketStatus | null = null;
+    let destCol: TicketStatus | "adhoc" | null = null;
     let destIndex: number | null = null;
 
-    const colHit = COLUMNS.find((c) => c.status === overId);
-    if (colHit) {
-      destCol = colHit.status;
-      destIndex = byColumn[destCol].length;
+    if (overId === "adhoc") {
+      destCol = "adhoc";
+      destIndex = adHoc.length;
     } else {
-      const overTicket = tickets.find((t) => t.id === overId);
-      if (overTicket) {
-        destCol = ticketColumnKey(overTicket.status);
-        if (destCol) destIndex = byColumn[destCol].findIndex((t) => t.id === overId);
+      const colHit = COLUMNS.find((c) => c.status === overId);
+      if (colHit) {
+        destCol = colHit.status;
+        destIndex = byColumn[destCol].length;
+      } else {
+        const overTicket = tickets.find((t) => t.id === overId);
+        if (overTicket) {
+          if (overTicket.epicId === null) {
+            destCol = "adhoc";
+            destIndex = adHoc.findIndex((t) => t.id === overId);
+          } else {
+            destCol = ticketColumnKey(overTicket.status);
+            if (destCol) destIndex = byColumn[destCol].findIndex((t) => t.id === overId);
+          }
+        }
       }
     }
-    if (!destCol || !sourceCol) return;
+    if (!destCol) return;
+
+    // ───────────── Ad-hoc lane drops ─────────────
+    // Drop INTO ad-hoc lane: strip the parent Epic (ticket becomes ad-hoc).
+    if (destCol === "adhoc") {
+      if (sourceCol === "adhoc") {
+        const oldIndex = adHoc.findIndex((t) => t.id === ticketId);
+        if (oldIndex === -1 || destIndex === null || oldIndex === destIndex) return;
+        const next = arrayMove(adHoc, oldIndex, destIndex);
+        setPersonalRanks(next.map((t, i) => ({ ticketId: t.id, rank: i + 1 })));
+        return;
+      }
+      setTicketField(ticketId, { epicId: null }, user.id);
+      flashTicket(ticketId);
+      toast(`${ticket.key} marked ad-hoc · counts against sprint capacity as spillover`, { kind: "info" });
+      return;
+    }
+
+    // Drop FROM ad-hoc lane onto a workflow column: needs an Epic, so we
+    // prompt the user instead of auto-guessing one.
+    if (sourceCol === "adhoc") {
+      const firstEpic = epics[0];
+      if (!firstEpic) {
+        toast("No Epics exist to attach this ticket to.", { kind: "error" });
+        return;
+      }
+      setAdhocAssign({ ticketId, destCol, epicId: firstEpic.id });
+      return;
+    }
 
     // Same-column reorder → persist personalRank
     if (sourceCol === destCol) {
@@ -205,10 +259,16 @@ export default function SprintBoardPage() {
 
   // ─── Saved views ──────────────────────────────────────────────────
   const mine = user ? savedViews.filter((v) => v.ownerId === user.id && v.surface === "sprint") : [];
+  // Baseline = the filter snapshot the current view is anchored to. Set on
+  // mount (or when a saved view is applied). When `filter` diverges from
+  // baseline, the board is "edited / unsaved".
+  const [baselineFilter, setBaselineFilter] = useState<SprintFilter>(filter);
+  const viewDirty = filter !== baselineFilter;
   const applyView = (id: string) => {
     const v = savedViews.find((x) => x.id === id);
     if (!v || v.surface !== "sprint" || !v.sprintFilter) return;
     setFilter(v.sprintFilter);
+    setBaselineFilter(v.sprintFilter);
   };
   const submitSaveView = () => {
     if (!user || !saveName.trim()) return;
@@ -218,6 +278,7 @@ export default function SprintBoardPage() {
       ownerId: user.id,
       sprintFilter: filter,
     });
+    setBaselineFilter(filter);
     setSaveOpen(false);
     setSaveName("");
     toast(`View "${saveName.trim()}" saved`);
@@ -306,6 +367,7 @@ export default function SprintBoardPage() {
             </button>
           ))}
         <div className="ml-auto flex items-center gap-2">
+          {viewDirty && <UnsavedPill label="Edited" />}
           <Button variant="secondary" size="sm" onClick={() => setSaveOpen(true)}>Save view</Button>
           <Link
             href="/create"
@@ -359,20 +421,7 @@ export default function SprintBoardPage() {
           ))}
         </div>
 
-        {adHoc.length > 0 && (
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-warn">Ad-hoc lane</span>
-              <Pill variant="warn">{adHoc.length} unplanned in sprint</Pill>
-              <span className="text-[12px] text-ink-3">Counts against capacity. Visible by design.</span>
-            </div>
-            <div className="grid grid-cols-5 gap-4">
-              {adHoc.map((t) => (
-                <TicketCard key={t.id} ticket={t} onOpen={setOpenKey} className="ring-1 ring-warn-soft" />
-              ))}
-            </div>
-          </div>
-        )}
+        <AdhocLane tickets={adHoc} onOpen={setOpenKey} />
 
         <DragOverlay>
           {draggingId && (
@@ -400,6 +449,67 @@ export default function SprintBoardPage() {
           <Button variant="secondary" size="sm" onClick={() => setSaveOpen(false)}>Cancel</Button>
           <Button variant="primary" size="sm" onClick={submitSaveView} disabled={!saveName.trim()}>Save</Button>
         </div>
+      </Modal>
+
+      <Modal
+        open={adhocAssign !== null}
+        onClose={() => setAdhocAssign(null)}
+        title="Force-add to an Epic"
+        size="sm"
+      >
+        {adhocAssign && (
+          <>
+            <p className="text-[13px] text-ink-2 mb-3">
+              Pick an Epic for this ticket. It moves out of the ad-hoc lane and into <span className="font-mono">{labelFor(adhocAssign.destCol)}</span>.
+            </p>
+            <label className="block">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Epic</span>
+              <Select
+                value={adhocAssign.epicId}
+                onValueChange={(v) => setAdhocAssign({ ...adhocAssign, epicId: v })}
+              >
+                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {epics.map((ep) => (
+                    <SelectItem key={ep.id} value={ep.id}>{ep.key} · {ep.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <p className="font-mono text-[11px] text-warn mt-3">
+              ⚠ This counts against committed scope. Sprint capacity may go over plan.
+            </p>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="secondary" size="sm" onClick={() => setAdhocAssign(null)}>Cancel</Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  if (!user || !adhocAssign) return;
+                  const t = tickets.find((x) => x.id === adhocAssign.ticketId);
+                  if (!t) { setAdhocAssign(null); return; }
+                  setTicketField(
+                    adhocAssign.ticketId,
+                    { epicId: adhocAssign.epicId },
+                    user.id
+                  );
+                  // Apply the status transition if it's allowed; otherwise just attach
+                  // the Epic and let the user advance status separately.
+                  const allowed = STATUS_TRANSITIONS[t.type]?.[t.status] ?? [];
+                  if (allowed.includes(adhocAssign.destCol) || t.status === adhocAssign.destCol) {
+                    setTicketStatus(adhocAssign.ticketId, adhocAssign.destCol, user.id);
+                  }
+                  flashTicket(adhocAssign.ticketId);
+                  const ep = epics.find((e) => e.id === adhocAssign.epicId);
+                  toast(`${t.key} force-added to ${ep?.key ?? "epic"} · ${labelFor(adhocAssign.destCol)}`, { kind: "info" });
+                  setAdhocAssign(null);
+                }}
+              >
+                Attach + force-add →
+              </Button>
+            </div>
+          </>
+        )}
       </Modal>
     </div>
   );
@@ -479,6 +589,44 @@ function BoardColumnInner({
 // the pointer.
 function useColumnDroppable(id: string) {
   return useDroppable({ id });
+}
+
+// Ad-hoc lane: tickets in this sprint with no parent Epic. Spans the full
+// row, is its own SortableContext so cards drag inside it AND can be
+// dragged out into a workflow column (which triggers the assign-epic
+// modal in the parent).
+function AdhocLane({ tickets, onOpen }: { tickets: Ticket[]; onOpen: (k: string) => void }) {
+  const { setNodeRef, isOver } = useDroppable({ id: "adhoc" });
+  return (
+    <SortableContext id="adhoc" items={tickets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "mt-8 rounded-[8px] border border-dashed p-3 transition-colors duration-150",
+          isOver ? "border-warn bg-warn-soft" : "border-warn/40 bg-warn-soft/30"
+        )}
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-warn">Ad-hoc lane</span>
+          <Pill variant="warn">{tickets.length} unplanned in sprint</Pill>
+          <span className="text-[12px] text-ink-3">
+            Drag in to mark a ticket ad-hoc · drag out to attach an Epic (force-add).
+          </span>
+        </div>
+        {tickets.length === 0 ? (
+          <div className="text-[12px] italic text-ink-3 px-1 py-3">
+            Drop a ticket here to mark it ad-hoc.
+          </div>
+        ) : (
+          <div className="grid grid-cols-5 gap-3">
+            {tickets.map((t) => (
+              <SortableTicket key={t.id} ticket={t} onOpen={onOpen} />
+            ))}
+          </div>
+        )}
+      </div>
+    </SortableContext>
+  );
 }
 
 function SortableTicket({ ticket, onOpen }: { ticket: Ticket; onOpen: (k: string) => void }) {
