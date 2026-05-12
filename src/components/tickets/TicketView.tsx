@@ -236,10 +236,10 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
                 <Row label="Severity" value={ticket.severity} />
               )}
               {ticket.reproSteps && (
-                <Row label="Repro steps" value={<pre className="whitespace-pre-wrap text-[13px]">{ticket.reproSteps}</pre>} />
+                <Row label="Repro steps" value={<Markdown source={ticket.reproSteps} />} />
               )}
               {ticket.expectedVsActual && (
-                <Row label="Expected vs Actual" value={<pre className="whitespace-pre-wrap text-[13px]">{ticket.expectedVsActual}</pre>} />
+                <Row label="Expected vs Actual" value={<Markdown source={ticket.expectedVsActual} />} />
               )}
               {ticket.affectedScope && <Row label="Affected" value={ticket.affectedScope} />}
               {ticket.sentryLink && (

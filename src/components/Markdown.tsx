@@ -78,6 +78,19 @@ function renderBlock(n: MdNode, key: number): React.ReactNode {
           <code className="font-mono text-[12px] text-ink-2 whitespace-pre">{n.body}</code>
         </pre>
       );
+    case "image":
+      // Block-level image. We render via plain <img> (not next/image) because
+      // attachments arrive as base64 data URLs, which Next's image loader
+      // doesn't optimize.
+      // eslint-disable-next-line @next/next/no-img-element
+      return (
+        <img
+          key={key}
+          src={n.src}
+          alt={n.alt || "attachment"}
+          className="block max-w-full max-h-[480px] rounded-[6px] border border-rule my-2"
+        />
+      );
     case "hr":
       return <hr key={key} className="border-rule-soft" />;
   }

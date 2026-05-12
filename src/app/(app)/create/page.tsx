@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bug, Compass, FileText, Plus, Wrench } from "lucide-react";
+import { Bug, Compass, FileText, ImagePlus, Plus, Wrench } from "lucide-react";
+import { Markdown } from "@/components/Markdown";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import {
@@ -226,6 +227,10 @@ function MarkdownArea({
 }) {
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashAnchor, setSlashAnchor] = useState(0);
+  const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [dropping, setDropping] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handle = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
@@ -245,19 +250,140 @@ function MarkdownArea({
     setSlashOpen(false);
   };
 
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+  const insertImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast("Image larger than 5 MB; not attached.", { kind: "error" });
+      return;
+    }
+    const url = await fileToDataUrl(file);
+    const ta = textareaRef.current;
+    const start = ta?.selectionStart ?? value.length;
+    const end = ta?.selectionEnd ?? value.length;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const leading = before && !before.endsWith("\n") ? "\n" : "";
+    const trailing = after && !after.startsWith("\n") ? "\n" : "";
+    const md = `${leading}![${file.name.replace(/\]/g, "")}](${url})${trailing}`;
+    onChange(before + md + after);
+    queueMicrotask(() => {
+      const node = textareaRef.current;
+      if (!node) return;
+      const pos = (before + md).length;
+      node.focus();
+      node.setSelectionRange(pos, pos);
+    });
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find((it) => it.kind === "file" && it.type.startsWith("image/"));
+    if (!imageItem) return;
+    e.preventDefault();
+    const file = imageItem.getAsFile();
+    if (file) void insertImage(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    setDropping(false);
+    const files = Array.from(e.dataTransfer.files);
+    const image = files.find((f) => f.type.startsWith("image/"));
+    if (!image) return;
+    e.preventDefault();
+    void insertImage(image);
+  };
+
+  const handleAttachClick = () => fileInputRef.current?.click();
+  const handleFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void insertImage(file);
+    e.target.value = "";
+  };
+
   return (
     <div className="relative">
-      <textarea
-        value={value}
-        onChange={handle}
-        placeholder={placeholder}
-        style={{ minHeight }}
-        className={cn(
-          "w-full px-3 py-2 rounded-[6px] border border-rule bg-bg-card text-ink text-[14px] font-mono",
-          className
-        )}
-      />
-      {slashOpen && (
+      {/* Edit/Preview + Attach controls */}
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="inline-flex bg-bg-elevated border border-rule rounded-[6px] p-0.5">
+          {(["edit", "preview"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={cn(
+                "px-2.5 h-6 text-[11px] font-mono uppercase tracking-[0.06em] rounded-[4px] transition-colors duration-100",
+                mode === m
+                  ? "bg-bg-card text-ink"
+                  : "text-ink-3 hover:text-ink-2"
+              )}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={handleAttachClick}
+          className="inline-flex items-center gap-1.5 px-2 h-7 text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink rounded-[4px] hover:bg-rule-soft"
+        >
+          <ImagePlus className="h-3.5 w-3.5" />
+          Attach image
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChosen}
+        />
+      </div>
+
+      {mode === "edit" ? (
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handle}
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragOver={(e) => { e.preventDefault(); setDropping(true); }}
+          onDragLeave={() => setDropping(false)}
+          placeholder={placeholder}
+          style={{ minHeight }}
+          className={cn(
+            "w-full px-3 py-2 rounded-[6px] border bg-bg-card text-ink text-[14px] font-mono transition-colors duration-100",
+            dropping ? "border-accent ring-4 ring-accent-soft" : "border-rule",
+            className
+          )}
+        />
+      ) : (
+        <div
+          style={{ minHeight }}
+          className={cn(
+            "w-full px-3 py-2 rounded-[6px] border border-rule bg-bg-card overflow-y-auto",
+            className
+          )}
+        >
+          {value.trim() ? (
+            <Markdown source={value} />
+          ) : (
+            <p className="italic text-[13px] text-ink-3">Nothing to preview yet.</p>
+          )}
+        </div>
+      )}
+
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-1.5">
+        Paste · drop · or attach an image to embed it inline.
+      </p>
+
+      {slashOpen && mode === "edit" && (
         <div className="absolute z-30 left-3 mt-1 w-64 bg-bg-card border border-rule rounded-[8px] shadow-lg p-1">
           {SLASH_COMMANDS.map((cmd) => (
             <button
@@ -274,6 +400,15 @@ function MarkdownArea({
         </div>
       )}
     </div>
+  );
+}
+
+function FieldLabel({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">{label}</span>
+      {children}
+    </label>
   );
 }
 
@@ -550,10 +685,21 @@ function BugForm() {
     <div className="grid grid-cols-3 gap-8">
       <div className="col-span-2 space-y-4">
         <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Driver app push fires twice on Samsung S22" />
-        <Textarea label="Repro steps" value={reproSteps} onChange={(e) => setReproSteps(e.target.value)} placeholder="1. Install app v3.14 on Samsung S22 (OneUI 6.0)&#10;2. Send any push&#10;3. Observe receipt count" />
+        <FieldLabel label="Repro steps">
+          <MarkdownArea
+            value={reproSteps}
+            onChange={setReproSteps}
+            minHeight={140}
+            placeholder={"1. Install app v3.14 on Samsung S22 (OneUI 6.0)\n2. Send any push\n3. Observe receipt count"}
+          />
+        </FieldLabel>
         <div className="grid grid-cols-2 gap-3">
-          <Textarea label="Expected" value={expected} onChange={(e) => setExpected(e.target.value)} placeholder="What should happen?" />
-          <Textarea label="Actual" value={actual} onChange={(e) => setActual(e.target.value)} placeholder="What's happening instead?" />
+          <FieldLabel label="Expected">
+            <MarkdownArea value={expected} onChange={setExpected} minHeight={120} placeholder="What should happen?" />
+          </FieldLabel>
+          <FieldLabel label="Actual">
+            <MarkdownArea value={actual} onChange={setActual} minHeight={120} placeholder="What's happening instead?" />
+          </FieldLabel>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Input label="Affected scope" value={scope} onChange={(e) => setScope(e.target.value)} placeholder="e.g., ~60 drivers, Jakarta" />

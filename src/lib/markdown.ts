@@ -11,6 +11,7 @@ export type MdNode =
   | { type: "ol"; items: { children: MdInline[] }[] }
   | { type: "blockquote"; children: MdInline[] }
   | { type: "code"; lang: string; body: string }
+  | { type: "image"; src: string; alt: string }
   | { type: "hr" };
 
 export type MdInline =
@@ -64,6 +65,15 @@ export function parseMarkdown(src: string): MdNode[] {
     // HR
     if (/^---+\s*$/.test(line)) {
       out.push({ type: "hr" });
+      i++;
+      continue;
+    }
+
+    // Standalone image: ![alt](src) on its own line is rendered as a block.
+    // Inline images inside a paragraph fall through to paragraph parsing.
+    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+    if (imgMatch) {
+      out.push({ type: "image", alt: imgMatch[1], src: imgMatch[2] });
       i++;
       continue;
     }
@@ -125,7 +135,8 @@ export function parseMarkdown(src: string): MdNode[] {
       !/^\d+\.\s+/.test(lines[i]) &&
       !/^>\s?/.test(lines[i]) &&
       !/^```/.test(lines[i]) &&
-      !/^---+\s*$/.test(lines[i])
+      !/^---+\s*$/.test(lines[i]) &&
+      !/^!\[[^\]]*\]\([^)]+\)\s*$/.test(lines[i])
     ) {
       buf.push(lines[i]);
       i++;
