@@ -20,25 +20,11 @@ export const mockAccounts: MockAccount[] = [
     description: "Product Manager · owns Epics, runs Triage, commits sprint",
   },
   {
-    email: "pmlead@spxexpress.com",
-    password: MOCK_PASSWORD,
-    role: "leadership",
-    displayName: "Diana Wijaya",
-    description: "Head of AI · portfolio health, leadership comments",
-  },
-  {
     email: "eng@spxexpress.com",
     password: MOCK_PASSWORD,
     role: "engineer",
     displayName: "Andre Halim",
-    description: "Senior SWE (Forecasting pod) · daily ticket execution",
-  },
-  {
-    email: "guest@spxexpress.com",
-    password: MOCK_PASSWORD,
-    role: "guest",
-    displayName: "Ronaldo Tan",
-    description: "Ops · files Bug Reports only",
+    description: "Senior SWE · daily ticket execution",
   },
 ];
 

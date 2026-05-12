@@ -30,7 +30,6 @@ const STATUS_FLOW: Record<string, TicketStatus[]> = {
 
 export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
   const tickets = useAppStore((s) => s.tickets);
-  const projects = useAppStore((s) => s.projects);
   const epics = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
   const sprints = useAppStore((s) => s.sprints);
@@ -76,8 +75,7 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
     );
   }
 
-  const project = projects.find((p) => p.id === ticket.projectId);
-  const epic = project ? epics.find((e) => e.id === project.epicId) : undefined;
+  const epic = epics.find((e) => e.id === ticket.epicId);
   const assignee = users.find((u) => u.id === ticket.assigneeId);
   const author = users.find((u) => u.id === ticket.authorId);
   const sprint = sprints.find((s) => s.id === ticket.sprintId);
@@ -144,14 +142,6 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
               <>
                 <Link href={`/e/${epic.key}`} className="hover:text-ink underline-offset-2 hover:underline">
                   {epic.key} · {epic.title}
-                </Link>
-                <span>›</span>
-              </>
-            )}
-            {project && (
-              <>
-                <Link href={`/p/${project.key}`} className="hover:text-ink underline-offset-2 hover:underline">
-                  {project.key}
                 </Link>
                 <span>›</span>
               </>

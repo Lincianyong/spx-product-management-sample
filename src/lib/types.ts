@@ -1,13 +1,8 @@
-export type Role =
-  | "admin"
-  | "pm"
-  | "em"
-  | "engineer"
-  | "designer"
-  | "leadership"
-  | "guest";
-
-export type Pod = "routing" | "sorting" | "forecasting" | "platform";
+// Roles collapse to the two that actually carry work: PM (plans, picks,
+// commits sprints) and Engineer (estimates, executes, ships). Other
+// historical roles (admin, em, leadership, designer, guest) are merged
+// into one of these or removed entirely.
+export type Role = "pm" | "engineer";
 
 export type Priority = "P0" | "P1" | "P2";
 
@@ -101,7 +96,6 @@ export interface User {
   displayName: string;
   handle: string;
   role: Role;
-  pod?: Pod;
   capacityPoints: number;
   expertiseTags: string[];
   status: "available" | "in_meeting" | "ooo";
@@ -109,11 +103,21 @@ export interface User {
   colorKey: "a" | "b" | "c" | "d" | "e" | "f";
 }
 
+/**
+ * The single non-ticket entity. Was previously split into Epic (the bet)
+ * and Project (the execution stream); the two are merged. Tickets hang
+ * directly off an Epic.
+ *
+ * Key uses a domain code (e.g. "CDN", "RTE", "FCST") so a child ticket
+ * like `CDN-3504` reads as "ticket #3504 under epic CDN" without any
+ * hidden mapping table.
+ */
 export interface Epic {
   id: string;
-  key: string; // EPC-###
+  key: string;          // Domain code: CDN, RTE, FCST, …
   title: string;
-  thesis: string;
+  thesis: string;       // The "why now / why this" conviction
+  description: string;  // Longer copy that used to live on Project
   quarter: string;
   status: ProjectStatus;
   health: Health;
@@ -122,22 +126,8 @@ export interface Epic {
   targetEndDate: string;
   tags: string[];
   position: number;
-}
-
-export interface Project {
-  id: string;
-  key: string; // PRJ-###
-  title: string;
-  description: string;
-  epicId: string;
-  status: ProjectStatus;
-  health: Health;
-  pmPicId: string;
-  emPicId: string;
-  startDate: string;
-  targetEndDate: string;
-  tags: string[];
-  pod: Pod;
+  /** Optional soft grouping — e.g. all epics in a "Forecasting v2" program. */
+  program?: string;
 }
 
 export interface AcceptanceCriterion {
@@ -154,12 +144,13 @@ export interface LinkedWorkEdge {
 
 export interface Ticket {
   id: string;
-  key: string; // CDN-#### / BUG-#### / TCH-####
+  key: string; // <DOMAIN>-#### where DOMAIN matches the parent Epic key
   type: TicketType;
   title: string;
   description: string;
   acceptanceCriteria: AcceptanceCriterion[];
-  projectId: string | null; // null = ad-hoc
+  /** Parent Epic. null = standalone (ad-hoc) ticket / bug. */
+  epicId: string | null;
   priority: Priority;
   status: TicketStatus;
   authorId: string;
@@ -188,7 +179,7 @@ export interface Ticket {
   rollbackPlan?: string;
   migrationWindow?: string;
   // AI-suggested
-  aiSuggestedParent?: { projectKey: string; confidence: number; reasoning: string };
+  aiSuggestedParent?: { epicKey: string; confidence: number; reasoning: string };
   aiSuggestedPoints?: { value: number; confidence: number; reasoning: string };
   aiSuggestedAssignee?: { userId: string; confidence: number; reasoning: string };
   aiDuplicates?: { ticketKey: string; confidence: number }[];
@@ -217,7 +208,7 @@ export interface Attachment {
 
 export interface Comment {
   id: string;
-  entityType: "ticket" | "epic" | "project" | "ac_item";
+  entityType: "ticket" | "epic" | "ac_item";
   entityId: string;
   parentCommentId: string | null;
   authorId: string;
@@ -248,7 +239,7 @@ export interface Notification {
     | "triage_new"
     | "digest";
   body: string;
-  entityType?: "ticket" | "epic" | "project" | "sprint";
+  entityType?: "ticket" | "epic" | "sprint";
   entityKey?: string;
   actorId?: string;
   createdAt: string;
@@ -259,7 +250,7 @@ export interface Notification {
 
 export interface ActivityEntry {
   id: string;
-  entityType: "ticket" | "epic" | "project" | "sprint";
+  entityType: "ticket" | "epic" | "sprint";
   entityId: string;
   actorId: string;
   action: string;

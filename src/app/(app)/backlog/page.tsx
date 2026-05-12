@@ -21,7 +21,7 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 export default function BacklogPage() {
   const tickets = useAppStore((s) => s.tickets);
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const setBacklogRanks = useAppStore((s) => s.setBacklogRanks);
   const [projectFilter, setProjectFilter] = useState<string>("all");
   useDocumentTitle("Backlog");
@@ -30,7 +30,7 @@ export default function BacklogPage() {
     const base = tickets.filter((t) => t.status === "backlog");
     const filtered = projectFilter === "all"
       ? base
-      : base.filter((t) => projects.find((p) => p.id === t.projectId)?.key === projectFilter);
+      : base.filter((t) => projects.find((p) => p.id === t.epicId)?.key === projectFilter);
     // sort by backlogRank if set, then priority
     return [...filtered].sort((a, b) => {
       if (a.backlogRank != null && b.backlogRank != null) return a.backlogRank - b.backlogRank;
@@ -97,7 +97,7 @@ export default function BacklogPage() {
             renderItem={(t, handle) => {
               const age = daysBetween(t.createdAt, today);
               const stale = age >= 28;
-              const project = projects.find((p) => p.id === t.projectId);
+              const project = projects.find((p) => p.id === t.epicId);
               const rank = backlog.findIndex((x) => x.id === t.id) + 1;
               return (
                 <div

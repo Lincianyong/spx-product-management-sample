@@ -28,7 +28,6 @@ type TicketFilter = "all" | "in_flight" | "done" | "blocked";
 
 export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
   const epics = useAppStore((s) => s.epics);
-  const projects = useAppStore((s) => s.projects);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
 
@@ -42,19 +41,13 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
   }
 
   const pm = users.find((u) => u.id === epic.pmPicId);
-  const childProjects = useMemo(
-    () => projects.filter((p) => p.epicId === epic.id),
-    [projects, epic.id]
-  );
-  const projectIds = useMemo(() => new Set(childProjects.map((p) => p.id)), [childProjects]);
   const epicTickets = useMemo(
-    () => tickets.filter((t) => t.projectId && projectIds.has(t.projectId)),
-    [tickets, projectIds]
+    () => tickets.filter((t) => t.epicId === epic.id),
+    [tickets, epic.id]
   );
-  const signal = computeEpicHealth(epic, projects, tickets);
+  const signal = computeEpicHealth(epic, tickets);
 
   const [filter, setFilter] = useState<TicketFilter>("all");
-  const [groupByProject, setGroupByProject] = useState(true);
 
   const filtered = useMemo(() => {
     return epicTickets.filter((t) => {
@@ -66,21 +59,6 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
       return true;
     });
   }, [epicTickets, filter]);
-
-  const grouped = useMemo(() => {
-    if (!groupByProject) return [{ project: null, tickets: filtered }];
-    const map = new Map<string, Ticket[]>();
-    for (const t of filtered) {
-      const k = t.projectId ?? "ad-hoc";
-      const arr = map.get(k) ?? [];
-      arr.push(t);
-      map.set(k, arr);
-    }
-    return Array.from(map.entries()).map(([projId, ts]) => ({
-      project: childProjects.find((p) => p.id === projId) ?? null,
-      tickets: ts,
-    }));
-  }, [filtered, groupByProject, childProjects]);
 
   const counts = {
     all: epicTickets.length,
@@ -150,7 +128,7 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
             <span className="truncate">{pm?.displayName ?? "—"}</span>
           </span>
         } />
-        <Stat label="Projects" value={`${childProjects.length}`} />
+        <Stat label="Program" value={epic.program ?? "—"} />
         <Stat label="Target" value={formatDate(epic.targetEndDate)} />
       </div>
 
@@ -179,45 +157,10 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
         </div>
       </section>
 
-      {/* Projects */}
-      <section>
-        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mb-2">
-          Projects · {childProjects.length}
-        </div>
-        {childProjects.length === 0 ? (
-          <p className="italic text-[13px] text-ink-3">No Projects under this Epic yet.</p>
-        ) : (
-          <div className="space-y-1">
-            {childProjects.map((p) => (
-              <Link
-                key={p.id}
-                href={`/p/${p.key}`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-2 px-3 py-2 rounded-[6px] border border-rule bg-bg-card hover:border-accent transition-colors duration-100"
-              >
-                <span className="font-mono text-[11px] text-ink-3 w-16">{p.key}</span>
-                <span className="text-[13px] text-ink truncate flex-1">{p.title}</span>
-                <Pill variant="neutral">{p.pod}</Pill>
-                <HealthPill h={p.health} />
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* Tickets */}
       <section>
-        <div className="flex items-center justify-between mb-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
-            Tickets · {filtered.length} of {epicTickets.length}
-          </div>
-          <button
-            type="button"
-            onClick={() => setGroupByProject((s) => !s)}
-            className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3 hover:text-ink"
-          >
-            {groupByProject ? "Flat list" : "Group by project"}
-          </button>
+        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mb-2">
+          Tickets · {filtered.length} of {epicTickets.length}
         </div>
 
         <div className="flex items-center gap-1 mb-2 flex-wrap">
@@ -244,47 +187,38 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
         {filtered.length === 0 ? (
           <p className="italic text-[12px] text-ink-3 px-2 py-2">No tickets match this filter.</p>
         ) : (
-          <div className="space-y-3">
-            {grouped.map((g) => (
-              <div key={g.project?.id ?? "flat"}>
-                {groupByProject && g.project && (
-                  <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3 mb-1 px-1">
-                    {g.project.key} · {g.project.title}
-                  </div>
-                )}
-                <ul className="bg-bg-card border border-rule rounded-[6px] divide-y divide-rule-soft">
-                  {g.tickets.slice(0, TICKET_LIMIT).map((t) => {
-                    const assignee = users.find((u) => u.id === t.assigneeId);
-                    return (
-                      <li key={t.id}>
-                        <Link
-                          href={`/t/${t.key}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-bg-elevated"
-                        >
-                          <TypePill t={t.type} />
-                          <span className="font-mono text-[10px] text-ink-3 w-16">{t.key}</span>
-                          <span className="text-[12px] text-ink truncate flex-1">{t.title}</span>
-                          <PriorityPill p={t.priority} />
-                          <Pill
-                            variant={
-                              t.status === "done" || t.status === "verified"
-                                ? "ok"
-                                : t.blocked
-                                ? "danger"
-                                : "default"
-                            }
-                          >
-                            {statusLabel[t.status]}
-                          </Pill>
-                          <Avatar user={assignee} size="xs" />
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+          <div>
+            <ul className="bg-bg-card border border-rule rounded-[6px] divide-y divide-rule-soft">
+              {filtered.slice(0, TICKET_LIMIT).map((t) => {
+                const assignee = users.find((u) => u.id === t.assigneeId);
+                return (
+                  <li key={t.id}>
+                    <Link
+                      href={`/t/${t.key}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-bg-elevated"
+                    >
+                      <TypePill t={t.type} />
+                      <span className="font-mono text-[10px] text-ink-3 w-16">{t.key}</span>
+                      <span className="text-[12px] text-ink truncate flex-1">{t.title}</span>
+                      <PriorityPill p={t.priority} />
+                      <Pill
+                        variant={
+                          t.status === "done" || t.status === "verified"
+                            ? "ok"
+                            : t.blocked
+                            ? "danger"
+                            : "default"
+                        }
+                      >
+                        {statusLabel[t.status]}
+                      </Pill>
+                      <Avatar user={assignee} size="xs" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
             {overflow > 0 && (
               <Link
                 href={`/e/${epic.key}`}

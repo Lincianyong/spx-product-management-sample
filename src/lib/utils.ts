@@ -38,17 +38,9 @@ export const typeLabel: Record<TicketType, string> = {
 };
 
 export const roleLabel: Record<Role, string> = {
-  admin: "Admin",
   pm: "PM",
-  em: "EM",
   engineer: "Engineer",
-  designer: "Designer",
-  leadership: "Leadership",
-  guest: "Guest",
 };
-
-export const podLabel = (pod: string | undefined) =>
-  pod ? pod.charAt(0).toUpperCase() + pod.slice(1) : "—";
 
 // Avatar color picker mapping
 export const avatarBg: Record<string, string> = {
@@ -85,21 +77,5 @@ export const formatDate = (iso: string) => {
 // Role landing
 import type { Role as R } from "./types";
 export const landingForRole = (role: R): string => {
-  switch (role) {
-    case "pm":
-      return "/epics";
-    case "leadership":
-      return "/portfolio";
-    case "em":
-      return "/sprint";
-    case "engineer":
-    case "designer":
-      return "/me";
-    case "guest":
-      return "/create?type=bug";
-    case "admin":
-      return "/settings";
-    default:
-      return "/me";
-  }
+  return role === "pm" ? "/epics" : "/me";
 };

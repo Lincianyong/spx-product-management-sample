@@ -37,7 +37,7 @@ function TimelineInner() {
   useDocumentTitle("Sprint Timeline");
   const sprints = useAppStore((s) => s.sprints);
   const tickets = useAppStore((s) => s.tickets);
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
 
   const activeSprint = sprints.find((s) => s.state === "active");
@@ -54,8 +54,8 @@ function TimelineInner() {
     const list = tickets.filter((t) => t.sprintId === sprint.id);
     // Sort by group (project) then by start.
     return [...list].sort((a, b) => {
-      const pa = a.projectId ?? "~ad-hoc";
-      const pb = b.projectId ?? "~ad-hoc";
+      const pa = a.epicId ?? "~ad-hoc";
+      const pb = b.epicId ?? "~ad-hoc";
       if (pa !== pb) return pa.localeCompare(pb);
       const aStart = new Date(a.startedAt ?? a.createdAt).getTime();
       const bStart = new Date(b.startedAt ?? b.createdAt).getTime();
@@ -75,7 +75,7 @@ function TimelineInner() {
   const groupedByProject = useMemo(() => {
     const map = new Map<string, Ticket[]>();
     for (const t of sprintTickets) {
-      const k = t.projectId ?? "__adhoc__";
+      const k = t.epicId ?? "__adhoc__";
       if (!map.has(k)) map.set(k, []);
       map.get(k)!.push(t);
     }
@@ -144,7 +144,7 @@ function SprintTicketGantt({
   groups: [string, Ticket[]][];
   onOpen: (k: string) => void;
 }) {
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
 
   const sprintStart = new Date(sprint.startDate + "T00:00:00").getTime();

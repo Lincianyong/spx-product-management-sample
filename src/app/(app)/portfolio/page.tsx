@@ -23,15 +23,14 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
 type Range = "3m" | "6m" | "12m";
 type HealthFilter = "all" | "on_track" | "at_risk" | "blocked" | "not_started";
-type SortBy = "key" | "health" | "projects";
-type Scope = "all" | "team" | "personal";
+type SortBy = "key" | "health" | "tickets";
+type Scope = "all" | "personal";
 
 const RANGE_LENGTHS: Record<Range, number> = { "3m": 6, "6m": 12, "12m": 24 };
 
 export default function PortfolioPage() {
   useDocumentTitle("Portfolio Health");
   const allEpics = useAppStore((s) => s.epics);
-  const projects = useAppStore((s) => s.projects);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const currentUser = useCurrentUser();
@@ -44,15 +43,8 @@ export default function PortfolioPage() {
   // Scope filter — applied first
   const epics = useMemo(() => {
     if (!currentUser || scope === "all") return allEpics;
-    if (scope === "personal") return allEpics.filter((e) => e.pmPicId === currentUser.id);
-    // team: epics whose child projects include the user's pod
-    const userPod = currentUser.pod;
-    if (!userPod) return allEpics; // PMs/leadership without pod see all in team mode
-    const teamEpicIds = new Set(
-      projects.filter((p) => p.pod === userPod).map((p) => p.epicId)
-    );
-    return allEpics.filter((e) => teamEpicIds.has(e.id));
-  }, [allEpics, projects, scope, currentUser]);
+    return allEpics.filter((e) => e.pmPicId === currentUser.id);
+  }, [allEpics, scope, currentUser]);
 
   const total = epics.length;
   const byHealth = {
@@ -70,15 +62,15 @@ export default function PortfolioPage() {
       const order: Record<string, number> = { blocked: 0, at_risk: 1, on_track: 2, not_started: 3 };
       arr.sort((a, b) => order[a.health] - order[b.health]);
     }
-    if (sortBy === "projects") {
+    if (sortBy === "tickets") {
       arr.sort(
         (a, b) =>
-          projects.filter((p) => p.epicId === b.id).length -
-          projects.filter((p) => p.epicId === a.id).length
+          tickets.filter((t) => t.epicId === b.id).length -
+          tickets.filter((t) => t.epicId === a.id).length
       );
     }
     return arr;
-  }, [epics, healthFilter, sortBy, projects]);
+  }, [epics, healthFilter, sortBy, tickets]);
 
   const blockers = tickets
     .filter((t) => t.blocked || t.status === "scheduled")
@@ -102,7 +94,6 @@ export default function PortfolioPage() {
             onChange={(v) => setScope(v as Scope)}
             options={[
               { value: "all", label: "All" },
-              { value: "team", label: currentUser?.pod ? `Team · ${currentUser.pod}` : "Team" },
               { value: "personal", label: "Personal" },
             ]}
           />
@@ -189,7 +180,7 @@ export default function PortfolioPage() {
           ) : (
             filteredEpics.map((e) => {
               const pm = users.find((u) => u.id === e.pmPicId);
-              const childProjects = projects.filter((p) => p.epicId === e.id).length;
+              const childTickets = tickets.filter((t) => t.epicId === e.id).length;
               return (
                 <Link
                   key={e.id}
@@ -202,7 +193,7 @@ export default function PortfolioPage() {
                     <p className="text-[12px] text-ink-3 line-clamp-1">{e.thesis}</p>
                   </div>
                   <HealthPill h={e.health} />
-                  <Pill variant="neutral">{childProjects} proj</Pill>
+                  <Pill variant="neutral">{childTickets} tix</Pill>
                   <Avatar user={pm} size="xs" />
                 </Link>
               );
@@ -374,35 +365,35 @@ function OnTimeTrend({ range, setRange }: { range: Range; setRange: (r: Range) =
 }
 
 function AllocationByPod({ className }: { className?: string }) {
-  const projects = useAppStore((s) => s.projects);
-  const pods = ["routing", "sorting", "forecasting", "platform"] as const;
-  const data = useMemo(
-    () =>
-      pods.map((pod) => ({
-        pod: pod.charAt(0).toUpperCase() + pod.slice(1),
-        projects: projects.filter((p) => p.pod === pod).length,
-      })),
-    [projects]
-  );
+  // Was pod-based; now groups by epic.program label (with "Ungrouped" fallback).
+  const allEpics = useAppStore((s) => s.epics);
+  const data = useMemo(() => {
+    const groups = new Map<string, number>();
+    for (const e of allEpics) {
+      const key = e.program ?? "Ungrouped";
+      groups.set(key, (groups.get(key) ?? 0) + 1);
+    }
+    return Array.from(groups.entries()).map(([program, count]) => ({ program, epics: count }));
+  }, [allEpics]);
 
   const config: ChartConfig = {
-    projects: { label: "Projects", color: "var(--accent)" },
+    epics: { label: "Epics", color: "var(--accent)" },
   };
 
   return (
     <section className={cn("bg-bg-card border border-rule rounded-[8px] p-4", className)}>
       <div className="flex items-center justify-between mb-3">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Allocation by pod</div>
-        <span className="font-mono text-[11px] text-ink-3">{projects.length} Projects</span>
+        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Allocation by program</div>
+        <span className="font-mono text-[11px] text-ink-3">{allEpics.length} Epics</span>
       </div>
       <div className="h-[220px]">
         <ChartContainer config={config}>
           <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 0, bottom: 4 }}>
             <CartesianGrid strokeDasharray="2 4" horizontal={false} />
             <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} allowDecimals={false} />
-            <YAxis type="category" dataKey="pod" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} width={80} />
+            <YAxis type="category" dataKey="program" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} width={120} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="projects" fill="var(--color-projects)" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="epics" fill="var(--color-epics)" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ChartContainer>
       </div>

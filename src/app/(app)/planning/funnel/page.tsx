@@ -184,7 +184,7 @@ export default function FunnelPage() {
   useDocumentTitle("Sprint Funnel");
   const tickets = useAppStore((s) => s.tickets);
   const sprints = useAppStore((s) => s.sprints);
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
   const user = useCurrentUser();
 
@@ -199,7 +199,7 @@ export default function FunnelPage() {
 
   const filteredTickets = useMemo(() => {
     if (projectFilter === "all") return tickets;
-    return tickets.filter((t) => projects.find((p) => p.id === t.projectId)?.key === projectFilter);
+    return tickets.filter((t) => projects.find((p) => p.id === t.epicId)?.key === projectFilter);
   }, [tickets, projectFilter, projects]);
 
   const counts = useMemo(() => {
@@ -428,7 +428,7 @@ export default function FunnelPage() {
             ) : (
               <div className="bg-bg-card border border-rule rounded-[8px] divide-y divide-rule-soft">
                 {stageTickets.map((t) => {
-                  const project = projects.find((p) => p.id === t.projectId);
+                  const project = projects.find((p) => p.id === t.epicId);
                   const author = users.find((u) => u.id === t.authorId);
                   const assignee = users.find((u) => u.id === t.assigneeId);
                   return (
@@ -588,10 +588,7 @@ function RoleRail({
   chokes: { pm: number; eng: number; joint: number };
   sprints: Sprint[];
 }) {
-  if (role === "leadership") return <LeadershipRail sprints={sprints} counts={counts} />;
-  if (role === "em") return <EmRail counts={counts} chokes={chokes} />;
-  if (role === "engineer" || role === "designer") return <EngRail counts={counts} user={user} />;
-  // PM / Admin / fallback
+  if (role === "engineer") return <EngRail counts={counts} user={user} />;
   return <PmRail counts={counts} chokes={chokes} />;
 }
 
@@ -743,7 +740,7 @@ function EngRail({ counts, user }: { counts: Record<Stage, Ticket[]>; user: User
 
 function EmRail({ counts, chokes }: { counts: Record<Stage, Ticket[]>; chokes: { pm: number; eng: number; joint: number } }) {
   const users = useAppStore((s) => s.users);
-  const engineers = users.filter((u) => (u.role === "engineer" || u.role === "designer") && u.capacityPoints > 0);
+  const engineers = users.filter((u) => u.role === "engineer" && u.capacityPoints > 0);
   const loadByUser: Record<string, number> = {};
   for (const t of counts.assigned.concat(counts.committed)) {
     if (t.assigneeId && t.storyPoints) {

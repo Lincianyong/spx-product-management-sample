@@ -32,7 +32,7 @@ const TYPE_META: Record<QuickType, { label: string; prefix: string; cap: "create
 
 export function QuickCreate({ open, onClose }: Props) {
   const router = useRouter();
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const user = useCurrentUser();
 
   const typeOptions = useMemo(() => {
@@ -67,7 +67,7 @@ export function QuickCreate({ open, onClose }: Props) {
       title: title.trim(),
       description: "",
       acceptanceCriteria: [],
-      projectId: proj?.id ?? null,
+      epicId: proj?.id ?? null,
       priority: "P2",
       status: "triage",
       authorId: user.id,

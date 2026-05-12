@@ -6,7 +6,6 @@ import type {
   Ticket,
   Sprint,
   Epic,
-  Project,
   Comment,
   Notification,
   ActivityEntry,
@@ -17,7 +16,6 @@ import { STATUS_TRANSITIONS } from "./types";
 import {
   seedUsers,
   seedEpics,
-  seedProjects,
   seedTickets,
   seedSprints,
   seedComments,
@@ -33,9 +31,9 @@ export interface SavedView {
   createdAt: string;
   // Epic-board specific
   viewMode?: "kanban" | "list" | "table" | "timeline" | "backlog";
-  groupBy?: "health" | "quarter" | "pic";
+  groupBy?: "health" | "quarter" | "pic" | "program";
   // Sprint-board specific
-  sprintFilter?: "me" | "pod" | "all";
+  sprintFilter?: "me" | "all";
 }
 
 export interface AppState {
@@ -68,7 +66,6 @@ export interface AppState {
 
   users: User[];
   epics: Epic[];
-  projects: Project[];
   tickets: Ticket[];
   sprints: Sprint[];
   comments: Comment[];
@@ -113,7 +110,6 @@ export interface AppState {
 const baseSeed = () => ({
   users: seedUsers,
   epics: seedEpics,
-  projects: seedProjects,
   tickets: seedTickets,
   sprints: seedSprints,
   comments: seedComments,
@@ -495,7 +491,7 @@ export const useAppStore = create<AppState>()(
       name: "cadence-v1",
       // Bumped when the persisted shape grew (theme + sidebarCollapsed
       // were added). Old payloads are simply ignored — we keep defaults.
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage))),
       // Defensive merge: if the persisted blob is malformed (different shape
       // from a previous build), fall back to current defaults instead of
@@ -516,7 +512,6 @@ export const useAppStore = create<AppState>()(
         currentUserId: s.currentUserId,
         users: s.users,
         epics: s.epics,
-        projects: s.projects,
         tickets: s.tickets,
         sprints: s.sprints,
         comments: s.comments,
@@ -543,5 +538,5 @@ export const userById = (id: string | null | undefined) => {
   return useAppStore.getState().users.find((u) => u.id === id);
 };
 
-export const projectByKey = (key: string) =>
-  useAppStore.getState().projects.find((p) => p.key === key);
+export const epicByKey = (key: string) =>
+  useAppStore.getState().epics.find((e) => e.key === key);

@@ -28,7 +28,7 @@ export default function JointPlanningPage() {
     [tickets]
   );
 
-  const engineers = users.filter((u) => (u.role === "engineer" || u.role === "designer") && u.capacityPoints > 0);
+  const engineers = users.filter((u) => u.role === "engineer" && u.capacityPoints > 0);
 
   const loadByUser = useMemo(() => {
     const map: Record<string, number> = {};
@@ -113,7 +113,7 @@ export default function JointPlanningPage() {
                   <Avatar user={u} size="sm" />
                   <div className="min-w-0">
                     <div className="text-[13px] text-ink truncate">{u.displayName}</div>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3">{u.role} · {u.pod ?? "—"}</div>
+                    <div className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3">{u.role}</div>
                   </div>
                 </div>
                 <div className="h-2 bg-rule-soft rounded-full overflow-hidden mb-1.5">

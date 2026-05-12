@@ -83,7 +83,6 @@ export function Sidebar() {
         { label: "Epic Board", href: "/epics", icon: LayoutGrid },
         { label: "Timeline", href: "/timeline", icon: TrendingUp },
         { label: "Portfolio Health", href: "/portfolio", icon: Activity },
-        { label: "Workload Heatmap", href: "/heatmap", icon: Grid3x3 },
       ],
     },
     {

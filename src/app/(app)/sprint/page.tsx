@@ -43,7 +43,7 @@ import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { DRAG_SOURCE_OPACITY, DRAG_OVERLAY_CLASS } from "@/lib/drag-styles";
 
-type SprintFilter = "me" | "pod" | "all";
+type SprintFilter = "me" | "all";
 
 const COLUMNS: { status: TicketStatus; label: string }[] = [
   { status: "scheduled", label: "Scheduled" },
@@ -75,11 +75,7 @@ export default function SprintBoardPage() {
 
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [filter, setFilter] = useState<SprintFilter>(
-    user?.role === "engineer" || user?.role === "designer"
-      ? "me"
-      : user?.role === "em"
-      ? "pod"
-      : "all"
+    user?.role === "engineer" ? "me" : "all"
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -98,12 +94,6 @@ export default function SprintBoardPage() {
     if (!viewingSprint) return [];
     const inSprint = tickets.filter((t) => t.sprintId === viewingSprint.id);
     if (filter === "me") return inSprint.filter((t) => t.assigneeId === user?.id);
-    if (filter === "pod" && user?.pod) {
-      return inSprint.filter((t) => {
-        const proj = useAppStore.getState().projects.find((p) => p.id === t.projectId);
-        return proj?.pod === user.pod;
-      });
-    }
     return inSprint;
   }, [tickets, viewingSprint, filter, user]);
 
@@ -122,7 +112,7 @@ export default function SprintBoardPage() {
     return map;
   }, [filtered]);
 
-  const adHoc = filtered.filter((t) => t.projectId === null);
+  const adHoc = filtered.filter((t) => t.epicId === null);
   const doneList = byColumn.done;
   const committedPoints = viewingSprint?.committedPoints ?? 0;
   const shippedPoints = doneList.reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
@@ -277,7 +267,6 @@ export default function SprintBoardPage() {
               </SelectContent>
             </Select>
             <FilterChip active={filter === "me"} onClick={() => setFilter("me")}>Me</FilterChip>
-            <FilterChip active={filter === "pod"} onClick={() => setFilter("pod")}>Pod</FilterChip>
             <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>All</FilterChip>
           </div>
         }

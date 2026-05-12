@@ -313,8 +313,8 @@ function RoleStatsStrip({
   lastSprintShipped: number | null;
   authoredOpen: Ticket[];
 }) {
-  // Engineer / Designer — original eng-centric strip
-  if (role === "engineer" || role === "designer") {
+  // Engineer — eng-centric strip
+  if (role === "engineer") {
     return (
       <div className="grid grid-cols-4 gap-3 mb-6">
         <StatCard
@@ -398,119 +398,7 @@ function RoleStatsStrip({
     );
   }
 
-  // EM — pod aggregate
-  if (role === "em") {
-    const pod = user.pod;
-    const podMembers = pod
-      ? users.filter((u) => u.pod === pod && u.capacityPoints > 0 && (u.role === "engineer" || u.role === "designer"))
-      : [];
-    const podCap = podMembers.reduce((acc, u) => acc + u.capacityPoints, 0);
-    const podTickets = activeSprint
-      ? tickets.filter((t) =>
-          t.sprintId === activeSprint.id &&
-          podMembers.some((m) => m.id === t.assigneeId)
-        )
-      : [];
-    const podCommit = podTickets.reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
-    const podShipped = podTickets
-      .filter((t) => t.status === "done" || t.status === "verified")
-      .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
-    const podLoadPct = podCap > 0 ? Math.round((podCommit / podCap) * 100) : 0;
-    const podShipPct = podCommit > 0 ? Math.round((podShipped / podCommit) * 100) : 0;
-    const overloaded = podMembers.filter((u) => {
-      const userCommit = tickets
-        .filter((t) => t.sprintId === activeSprint?.id && t.assigneeId === u.id)
-        .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
-      return u.capacityPoints > 0 && userCommit > u.capacityPoints;
-    }).length;
-    return (
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <StatCard
-          label="Pod load"
-          value={`${podCommit}/${podCap}`}
-          unit="pt"
-          tint={podLoadPct > 100 ? "danger" : podLoadPct > 90 ? "warn" : "ok"}
-          progress={Math.min(podLoadPct, 130)}
-          caption={`${podLoadPct}% · ${podMembers.length} ICs`}
-        />
-        <StatCard
-          label="Pod progress"
-          value={`${podShipped}/${podCommit}`}
-          unit="pt"
-          progress={podShipPct}
-          caption={`${podShipPct}% shipped`}
-        />
-        <StatCard
-          label="Days remaining"
-          value={String(daysRemaining)}
-          unit={daysRemaining === 1 ? "day" : "days"}
-          caption={activeSprint?.key ?? "—"}
-        />
-        <StatCard
-          label="Overloaded"
-          value={String(overloaded)}
-          unit={overloaded === 1 ? "IC" : "ICs"}
-          tint={overloaded > 0 ? "warn" : "ok"}
-          caption={overloaded > 0 ? "above capacity" : "all within capacity"}
-        />
-      </div>
-    );
-  }
-
-  // Leadership — portfolio health
-  if (role === "leadership") {
-    const onTrack = epics.filter((e) => e.health === "on_track").length;
-    const atRisk = epics.filter((e) => e.health === "at_risk").length;
-    const blocked = epics.filter((e) => e.health === "blocked").length;
-    const totalEpics = epics.length;
-    const onTrackPct = totalEpics > 0 ? Math.round((onTrack / totalEpics) * 100) : 0;
-    // Cycle on-time = avg of (shipped / committed) across last 4 closed sprints
-    const closed = sprints
-      .filter((s) => s.state === "closed" && s.committedPoints > 0)
-      .slice(-4);
-    const avgOnTime =
-      closed.length > 0
-        ? Math.round(
-            (closed.reduce((acc, s) => acc + s.shippedPoints / s.committedPoints, 0) / closed.length) * 100
-          )
-        : 0;
-    return (
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <StatCard
-          label="Epics on track"
-          value={`${onTrack}/${totalEpics}`}
-          unit="epics"
-          tint={onTrackPct >= 70 ? "ok" : onTrackPct >= 50 ? "warn" : "danger"}
-          progress={onTrackPct}
-          caption={`${onTrackPct}% green`}
-        />
-        <StatCard
-          label="At risk"
-          value={String(atRisk)}
-          unit={atRisk === 1 ? "epic" : "epics"}
-          tint={atRisk > 0 ? "warn" : "ok"}
-          caption={atRisk > 0 ? "watch this week" : "none flagged"}
-        />
-        <StatCard
-          label="Blocked"
-          value={String(blocked)}
-          unit={blocked === 1 ? "epic" : "epics"}
-          tint={blocked > 0 ? "danger" : "ok"}
-          caption={blocked > 0 ? "needs unblock" : "none blocked"}
-        />
-        <StatCard
-          label="Cycle on-time"
-          value={`${avgOnTime}%`}
-          unit=""
-          tint={avgOnTime >= 90 ? "ok" : avgOnTime >= 75 ? "warn" : "danger"}
-          progress={Math.min(avgOnTime, 100)}
-          caption={`last ${closed.length || 4} sprints`}
-        />
-      </div>
-    );
-  }
-
-  // Fallback (shouldn't hit)
+  // Fallback (shouldn't hit — only PM + Engineer roles exist)
   return null;
 }
 

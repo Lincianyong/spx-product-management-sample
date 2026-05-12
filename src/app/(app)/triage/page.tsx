@@ -12,7 +12,7 @@ const SLA: Record<string, number> = { P0: 4, P1: 24, P2: 168 };
 
 export default function TriagePage() {
   const tickets = useAppStore((s) => s.tickets);
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const epics = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
   const setTicketField = useAppStore((s) => s.setTicketField);
@@ -44,16 +44,16 @@ export default function TriagePage() {
 
   const allChecked = triage.length > 0 && selected.size === triage.length;
 
-  const confirm = (ticketId: string, projectKey?: string) => {
+  const confirm = (ticketId: string, epicKey?: string) => {
     if (!user) return;
     const t = tickets.find((x) => x.id === ticketId);
-    const project = projects.find((p) => p.key === projectKey);
+    const project = projects.find((p) => p.key === epicKey);
     // Bug flow: Triage → Reproduced → Backlog (separate step)
     if (t?.type === "bug") {
-      setTicketField(ticketId, { status: "reproduced", projectId: project?.id ?? null }, user.id);
+      setTicketField(ticketId, { status: "reproduced", epicId: project?.id ?? null }, user.id);
       toast("Bug acknowledged · awaiting Reproduced confirmation");
     } else {
-      setTicketField(ticketId, { status: "backlog", projectId: project?.id ?? null }, user.id);
+      setTicketField(ticketId, { status: "backlog", epicId: project?.id ?? null }, user.id);
       toast("Confirmed → Backlog");
     }
   };
@@ -75,9 +75,9 @@ export default function TriagePage() {
     selected.forEach((id) => {
       const t = triage.find((x) => x.id === id);
       if (!t) return;
-      const projKey = t.aiSuggestedParent?.projectKey;
+      const projKey = t.aiSuggestedParent?.epicKey;
       const project = projects.find((p) => p.key === projKey);
-      setTicketField(id, { status: "backlog", projectId: project?.id ?? t.projectId ?? null }, user.id);
+      setTicketField(id, { status: "backlog", epicId: project?.id ?? t.epicId ?? null }, user.id);
     });
     toast(`${selected.size} confirmed → Backlog`, { kind: "success" });
     setSelected(new Set());
@@ -109,41 +109,39 @@ export default function TriagePage() {
   };
 
   const promote = () => {
-    if (!promoteFor || !user || !promoteEpicId || !promoteTitle.trim()) return;
+    if (!promoteFor || !user || !promoteTitle.trim()) return;
     const ticket = tickets.find((t) => t.id === promoteFor);
     if (!ticket) return;
-    const epic = epics.find((e) => e.id === promoteEpicId);
-    if (!epic) return;
-    // Create a new Project and route the ticket as its first child
-    const newProjectKey = `PRJ-${Math.floor(Math.random() * 900 + 200)}`;
+    // 2-level model: "promote" spawns a brand-new Epic and routes this
+    // ticket as its first child.
+    const titleSlug = promoteTitle.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+    const code = titleSlug.length >= 2 ? titleSlug : `EP${Date.now() % 1000}`;
+    const newEpicId = `ep_${Date.now()}`;
     useAppStore.setState((s) => ({
-      projects: [
-        ...s.projects,
+      epics: [
+        ...s.epics,
         {
-          id: `pr_${Date.now()}`,
-          key: newProjectKey,
+          id: newEpicId,
+          key: code,
           title: promoteTitle.trim(),
-          description: ticket.description || ticket.title,
-          epicId: epic.id,
+          thesis: ticket.description || ticket.title,
+          description: (ticket.description || ticket.title).slice(0, 140),
+          quarter: "Q2 2026",
           status: "backlog",
           health: "not_started",
           pmPicId: user.id,
-          emPicId: user.id,
           startDate: new Date().toISOString().slice(0, 10),
           targetEndDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
           tags: [],
-          pod: "platform",
+          position: s.epics.length,
         },
       ],
     }));
-    const newProj = useAppStore.getState().projects.find((p) => p.key === newProjectKey);
-    if (newProj) {
-      setTicketField(promoteFor, { status: "backlog", projectId: newProj.id }, user.id);
-    }
+    setTicketField(promoteFor, { status: "backlog", epicId: newEpicId }, user.id);
     setPromoteFor(null);
     setPromoteEpicId("");
     setPromoteTitle("");
-    toast(`Promoted to new Project ${newProjectKey} under ${epic.key}`, { kind: "success" });
+    toast(`Promoted to new Epic ${code}`, { kind: "success" });
   };
 
   if (triage.length === 0) {
@@ -236,10 +234,10 @@ export default function TriagePage() {
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   {t.aiSuggestedParent && (
                     <AiTag
-                      label={`Parent · ${t.aiSuggestedParent.projectKey}`}
+                      label={`Parent · ${t.aiSuggestedParent?.epicKey}`}
                       confidence={t.aiSuggestedParent.confidence}
                       reasoning={t.aiSuggestedParent.reasoning}
-                      onAccept={() => confirm(t.id, t.aiSuggestedParent!.projectKey)}
+                      onAccept={() => confirm(t.id, t.aiSuggestedParent!.epicKey)}
                     />
                   )}
                   {t.aiDuplicates?.map((d) => (
@@ -260,7 +258,7 @@ export default function TriagePage() {
               <div className="flex flex-col gap-2 shrink-0 w-[200px]">
                 {t.type === "bug" && t.status === "triage" && (
                   <>
-                    <Button variant="primary" size="sm" onClick={() => confirm(t.id, t.aiSuggestedParent?.projectKey)}>
+                    <Button variant="primary" size="sm" onClick={() => confirm(t.id, t.aiSuggestedParent?.epicKey)}>
                       Acknowledge bug
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => cannotReproduce(t.id)}>
@@ -274,7 +272,7 @@ export default function TriagePage() {
                   </Button>
                 )}
                 {t.type !== "bug" && (
-                  <Button variant="primary" size="sm" onClick={() => confirm(t.id, t.aiSuggestedParent?.projectKey)}>
+                  <Button variant="primary" size="sm" onClick={() => confirm(t.id, t.aiSuggestedParent?.epicKey)}>
                     Confirm → Backlog
                   </Button>
                 )}

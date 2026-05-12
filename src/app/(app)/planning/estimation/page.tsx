@@ -16,7 +16,7 @@ const CONCERN_FLAGS = ["no repro", "needs decomposition", "blocked", "spike firs
 export default function EstimationPage() {
   useDocumentTitle("Estimation · Stage 4b");
   const tickets = useAppStore((s) => s.tickets);
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const setTicketField = useAppStore((s) => s.setTicketField);
   const user = useCurrentUser();
   const router = useRouter();
@@ -101,7 +101,7 @@ export default function EstimationPage() {
 
       <div className="space-y-3">
         {picked.map((t, idx) => {
-          const proj = projects.find((p) => p.id === t.projectId);
+          const proj = projects.find((p) => p.id === t.epicId);
           const tooBig = (t.storyPoints ?? 0) >= 13;
           return (
             <div key={t.id} className="bg-bg-card border border-rule rounded-[8px] p-4">

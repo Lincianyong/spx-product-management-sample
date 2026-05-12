@@ -36,7 +36,7 @@ export default function PicklistPage() {
   const tickets = useAppStore((s) => s.tickets);
   const currentUser = useCurrentUser();
   const canPick = can(currentUser?.role, "pick_for_sprint");
-  const projects = useAppStore((s) => s.projects);
+  const epics = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
   const sprints = useAppStore((s) => s.sprints);
   const setPickedForSprint = useAppStore((s) => s.setPickedForSprint);
@@ -81,8 +81,8 @@ export default function PicklistPage() {
     if (typeFilter !== "all" && t.type !== typeFilter) return false;
     if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
     if (projectFilter !== "all") {
-      if (projectFilter === "ad-hoc" && t.projectId !== null) return false;
-      if (projectFilter !== "ad-hoc" && t.projectId !== projectFilter) return false;
+      if (projectFilter === "ad-hoc" && t.epicId !== null) return false;
+      if (projectFilter !== "ad-hoc" && t.epicId !== projectFilter) return false;
     }
     if (authorFilter !== "all" && t.authorId !== authorFilter) return false;
     if (carryOnly && !t.carryOver) return false;
@@ -105,8 +105,8 @@ export default function PicklistPage() {
         v = a.title.localeCompare(b.title);
         break;
       case "parent": {
-        const pa = projects.find((p) => p.id === a.projectId)?.key ?? "~ad-hoc";
-        const pb = projects.find((p) => p.id === b.projectId)?.key ?? "~ad-hoc";
+        const pa = epics.find((p) => p.id === a.epicId)?.key ?? "~ad-hoc";
+        const pb = epics.find((p) => p.id === b.epicId)?.key ?? "~ad-hoc";
         v = pa.localeCompare(pb);
         break;
       }
@@ -253,7 +253,7 @@ export default function PicklistPage() {
                   rank={sortedPicked.findIndex((x) => x.id === t.id) + 1}
                   onToggle={() => togglePicked(t.id, false)}
                   handle={canPick ? handle : undefined}
-                  projects={projects}
+                  epics={epics}
                   users={users}
                   picked
                   disabled={!canPick}
@@ -307,7 +307,7 @@ export default function PicklistPage() {
             onAuthorFilter={setAuthorFilter}
             priorityFilter={priorityFilter}
             onPriorityFilter={setPriorityFilter}
-            projects={projects}
+            epics={epics}
             authors={candidateAuthors}
           />
           {sortedUnpicked.length === 0 ? (
@@ -323,7 +323,7 @@ export default function PicklistPage() {
                 t={t}
                 rank={null}
                 onToggle={() => togglePicked(t.id, true)}
-                projects={projects}
+                epics={epics}
                 users={users}
                 picked={false}
                 disabled={!canPick}
@@ -434,7 +434,7 @@ function BacklogFilterRow({
   projectFilter, onProjectFilter,
   authorFilter, onAuthorFilter,
   priorityFilter, onPriorityFilter,
-  projects, authors,
+  epics, authors,
 }: {
   keyQuery: string;
   onKeyQuery: (v: string) => void;
@@ -446,7 +446,7 @@ function BacklogFilterRow({
   onAuthorFilter: (v: string) => void;
   priorityFilter: Priority | "all";
   onPriorityFilter: (v: Priority | "all") => void;
-  projects: import("@/lib/types").Project[];
+  epics: import("@/lib/types").Epic[];
   authors: import("@/lib/types").User[];
 }) {
   return (
@@ -473,7 +473,7 @@ function BacklogFilterRow({
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
           <SelectItem value="ad-hoc">Ad-hoc</SelectItem>
-          {projects.map((p) => (
+          {epics.map((p) => (
             <SelectItem key={p.id} value={p.id}>{p.key}</SelectItem>
           ))}
         </SelectContent>
@@ -522,7 +522,7 @@ function PickRow({
   rank,
   onToggle,
   handle,
-  projects,
+  epics,
   users,
   picked,
   disabled,
@@ -531,12 +531,12 @@ function PickRow({
   rank: number | null;
   onToggle: () => void;
   handle?: Record<string, unknown>;
-  projects: import("@/lib/types").Project[];
+  epics: import("@/lib/types").Epic[];
   users: import("@/lib/types").User[];
   picked: boolean;
   disabled?: boolean;
 }) {
-  const project = projects.find((p) => p.id === t.projectId);
+  const project = epics.find((p) => p.id === t.epicId);
   const author = users.find((u) => u.id === t.authorId);
   return (
     <div

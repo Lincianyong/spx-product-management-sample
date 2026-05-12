@@ -24,7 +24,7 @@ import {
   type ChartConfig,
 } from "@/components/ui";
 import { TicketCard } from "@/components/tickets/TicketCard";
-import { cn, podLabel, relativeTime, roleLabel } from "@/lib/utils";
+import { cn, relativeTime, roleLabel } from "@/lib/utils";
 import { Tombstone } from "@/components/Tombstone";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
@@ -46,7 +46,7 @@ export default function ProfilePage({ params }: { params: { handle: string } }) 
   const activeSprint = sprints.find((s) => s.state === "active");
   const inSprint = tickets.filter((t) => t.assigneeId === user.id && t.sprintId === activeSprint?.id);
   const myEpics = epics.filter((e) => e.pmPicId === user.id);
-  const isPM = user.role === "pm" || user.role === "leadership";
+  const isPM = user.role === "pm";
 
   const prActivity = [
     { repo: "spx/forecasting", title: "CDN-3504 · Drift detection on retrain pipeline", state: "open", merged: false, at: new Date(Date.now() - 3 * 86400000).toISOString() },
@@ -65,7 +65,7 @@ export default function ProfilePage({ params }: { params: { handle: string } }) 
       <div className="flex items-start gap-6 mb-8">
         <Avatar user={user} size="lg" />
         <div className="flex-1">
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">{roleLabel[user.role]} · {podLabel(user.pod)}</div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2">{roleLabel[user.role]}</div>
           <h1 className="display text-display-l text-ink leading-[1.05]">{user.displayName}</h1>
           <div className="flex items-center gap-2 mt-3">
             <RolePill role={user.role} />
@@ -155,7 +155,6 @@ export default function ProfilePage({ params }: { params: { handle: string } }) 
 
           <aside className="space-y-3">
             <Stat label="Capacity" value={`${user.capacityPoints} pts/sprint`} />
-            <Stat label="Pod" value={podLabel(user.pod)} />
             <Stat label="Status" value={user.status === "ooo" ? "Out of office" : user.status === "in_meeting" ? "In a meeting" : "Available"} />
           </aside>
         </div>

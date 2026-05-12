@@ -277,7 +277,7 @@ function MarkdownArea({
 }
 
 function ParentSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   return (
     <label className="flex flex-col gap-1.5">
       <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Parent project</span>
@@ -307,7 +307,7 @@ function useGoToTicket() {
 
 // ─── Engineering Ticket ──────────────────────────────────────────────
 function TicketForm() {
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const user = useCurrentUser();
   const goTo = useGoToTicket();
   const [title, setTitle] = useState("");
@@ -327,7 +327,7 @@ function TicketForm() {
       title: title.trim(),
       description,
       acceptanceCriteria: ac.map((it) => ({ id: `ac_${Math.random().toString(36).slice(2, 8)}`, text: it, done: false })),
-      projectId: proj?.id ?? null,
+      epicId: proj?.id ?? null,
       priority: "P2",
       status: "triage",
       authorId: user.id,
@@ -383,7 +383,7 @@ function TicketForm() {
 
 // ─── Tech Task ───────────────────────────────────────────────────────
 function TechTaskForm() {
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const user = useCurrentUser();
   const goTo = useGoToTicket();
   const [title, setTitle] = useState("");
@@ -409,7 +409,7 @@ function TechTaskForm() {
         title: title.trim(),
         description,
         acceptanceCriteria: ac.map((it) => ({ id: `ac_${Math.random().toString(36).slice(2, 8)}`, text: it, done: false })),
-        projectId: proj?.id ?? null,
+        epicId: proj?.id ?? null,
         priority: "P2" as const,
         status: "triage" as const,
         authorId: user.id,
@@ -493,7 +493,7 @@ function BugForm() {
         title: title.trim(),
         description: "",
         acceptanceCriteria: [],
-        projectId: null,
+        epicId: null,
         priority: severity === "S1" ? "P0" as const : severity === "S2" ? "P1" as const : "P2" as const,
         status: "triage" as const,
         authorId: user.id,
@@ -581,7 +581,7 @@ function EpicForm() {
     new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
   );
 
-  const pmCandidates = users.filter((u) => u.role === "pm" || u.role === "leadership" || u.role === "admin");
+  const pmCandidates = users.filter((u) => u.role === "pm");
   const canSubmit = title.trim().length >= 8 && thesis.trim().length >= 20 && pmPicId;
 
   const addTag = () => {
@@ -593,12 +593,14 @@ function EpicForm() {
 
   const submit = () => {
     if (!canSubmit || !user) return;
-    const seq = epics.length + 100;
+    const titleSlug = title.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+    const code = titleSlug.length >= 2 ? titleSlug : `EP${epics.length + 1}`;
     const newEpic: Epic = {
       id: `ep_${Date.now()}`,
-      key: `EPC-${seq.toString().padStart(3, "0")}`,
+      key: code,
       title: title.trim(),
       thesis: thesis.trim(),
+      description: thesis.trim().slice(0, 140),
       quarter,
       status: "backlog",
       health: "not_started",

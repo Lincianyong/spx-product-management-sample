@@ -36,7 +36,7 @@ export default function NotificationsPage() {
 
   // Inject live SLA-breach signals as virtual notifications (PM only)
   const slaSignals = useMemo(() => {
-    if (user?.role !== "pm" && user?.role !== "admin") return [];
+    if (user?.role !== "pm") return [];
     return tickets
       .filter((t) => t.status === "triage")
       .map((t) => {

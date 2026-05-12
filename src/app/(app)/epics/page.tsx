@@ -32,7 +32,7 @@ import { DRAG_SOURCE_OPACITY, DRAG_OVERLAY_CLASS } from "@/lib/drag-styles";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
-type GroupBy = "health" | "quarter" | "pic";
+type GroupBy = "health" | "quarter" | "pic" | "program";
 
 export default function EpicBoardPage() {
   return (
@@ -198,7 +198,7 @@ function GroupByPicker({ value, onChange }: { value: string; onChange: (v: Group
   return (
     <div className="flex items-center gap-2 mb-4">
       <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Group by</span>
-      {(["health", "quarter", "pic"] as const).map((g) => (
+      {(["health", "quarter", "pic", "program"] as const).map((g) => (
         <button
           key={g}
           onClick={() => onChange(g)}
@@ -224,6 +224,14 @@ function useGroups(epics: Epic[], groupBy: GroupBy) {
     const quarters = Array.from(new Set(epics.map((e) => e.quarter)));
     return quarters.map((q) => ({ key: q, label: q, items: epics.filter((e) => e.quarter === q) }));
   }
+  if (groupBy === "program") {
+    const programs = Array.from(new Set(epics.map((e) => e.program ?? "Ungrouped")));
+    return programs.map((p) => ({
+      key: p,
+      label: p,
+      items: epics.filter((e) => (e.program ?? "Ungrouped") === p),
+    }));
+  }
   const pmIds = Array.from(new Set(epics.map((e) => e.pmPicId)));
   return pmIds.map((id) => {
     const u = users.find((x) => x.id === id);
@@ -241,10 +249,10 @@ function EpicCard({
   /** Drag-handle listeners spread onto the grip icon (sortable contexts). */
   dragHandle?: Record<string, unknown>;
 }) {
-  const projects = useAppStore((s) => s.projects);
+  const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const pm = users.find((u) => u.id === epic.pmPicId);
-  const childProjects = projects.filter((p) => p.epicId === epic.id);
+  const childTickets = tickets.filter((t) => t.epicId === epic.id);
 
   return (
     <div
@@ -282,7 +290,7 @@ function EpicCard({
         <h3 className="display text-display-s text-ink leading-tight mb-2">{epic.title}</h3>
         <p className="text-[13px] text-ink-2 line-clamp-3 mb-3">{epic.thesis}</p>
         <div className="flex items-center justify-between text-[11px] font-mono text-ink-3">
-          <span>{childProjects.length} project{childProjects.length === 1 ? "" : "s"} · {epic.quarter}</span>
+          <span>{childTickets.length} ticket{childTickets.length === 1 ? "" : "s"} · {epic.quarter}</span>
           <Avatar user={pm} size="xs" />
         </div>
       </button>
@@ -412,6 +420,7 @@ function EpicDndContext({
       if (groupBy === "health") patch.health = destKey as Health;
       else if (groupBy === "quarter") patch.quarter = destKey;
       else if (groupBy === "pic") patch.pmPicId = destKey;
+      else if (groupBy === "program") patch.program = destKey === "Ungrouped" ? undefined : destKey;
       useAppStore.setState((s) => ({
         epics: s.epics.map((x) => (x.id === activeId ? { ...x, ...patch } : x)),
       }));
@@ -474,7 +483,7 @@ function EpicDropColumn({
 
 function TableView({ epics, groupBy, onOpen }: ViewProps) {
   const users = useAppStore((s) => s.users);
-  const projects = useAppStore((s) => s.projects);
+  const tickets = useAppStore((s) => s.tickets);
   const groups = useGroups(epics, groupBy);
   return (
     <div className="space-y-6">
@@ -487,7 +496,7 @@ function TableView({ epics, groupBy, onOpen }: ViewProps) {
             <table className="w-full">
               <thead className="bg-bg-elevated">
                 <tr className="border-b border-rule">
-                  {["Key", "Title", "Quarter", "Health", "PM", "Projects", "Target"].map((h) => (
+                  {["Key", "Title", "Quarter", "Health", "PM", "Tickets", "Target"].map((h) => (
                     <th key={h} className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 px-4 py-3">
                       {h}
                     </th>
@@ -497,7 +506,7 @@ function TableView({ epics, groupBy, onOpen }: ViewProps) {
               <tbody>
                 {g.items.map((e) => {
                   const pm = users.find((u) => u.id === e.pmPicId);
-                  const projCount = projects.filter((p) => p.epicId === e.id).length;
+                  const ticketCount = tickets.filter((t) => t.epicId === e.id).length;
                   return (
                     <tr key={e.id} onClick={() => onOpen(e.key)} className="border-b border-rule-soft hover:bg-bg-elevated cursor-pointer">
                       <td className="px-4 py-3 font-mono text-[12px]">
@@ -518,7 +527,7 @@ function TableView({ epics, groupBy, onOpen }: ViewProps) {
                           <span className="text-[13px] text-ink-2">{pm?.displayName}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{projCount}</td>
+                      <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{ticketCount}</td>
                       <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{formatDate(e.targetEndDate)}</td>
                     </tr>
                   );
@@ -579,7 +588,7 @@ function CreateEpicModal({
   );
   const [showPreview, setShowPreview] = useState(false);
 
-  const pmCandidates = users.filter((u) => u.role === "pm" || u.role === "leadership" || u.role === "admin");
+  const pmCandidates = users.filter((u) => u.role === "pm");
   const canSubmit = title.trim().length >= 8 && thesis.trim().length >= 20 && pmPicId;
 
   const reset = () => {
@@ -606,12 +615,16 @@ function CreateEpicModal({
 
   const submit = () => {
     if (!canSubmit || !user) return;
-    const seq = epics.length + 100;
+    // Domain code = uppercase truncation of the title; falls back to a
+    // numeric stub if the user typed something unwieldy.
+    const titleSlug = title.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+    const code = titleSlug.length >= 2 ? titleSlug : `EP${epics.length + 1}`;
     const newEpic: Epic = {
       id: `ep_${Date.now()}`,
-      key: `EPC-${seq.toString().padStart(3, "0")}`,
+      key: code,
       title: title.trim(),
       thesis: thesis.trim(),
+      description: thesis.trim().slice(0, 140),
       quarter,
       status: "backlog",
       health: "not_started",

@@ -15,14 +15,13 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 export default function EpicDetailPage({ params }: { params: { key: string } }) {
   const { key } = params;
   const epics = useAppStore((s) => s.epics);
-  const projects = useAppStore((s) => s.projects);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const comments = useAppStore((s) => s.comments);
   const addComment = useAppStore((s) => s.addComment);
   const user = useCurrentUser();
 
-  const [tab, setTab] = useState<"overview" | "projects" | "timeline" | "activity" | "comments">("overview");
+  const [tab, setTab] = useState<"overview" | "tickets" | "timeline" | "activity" | "comments">("overview");
 
   const epic = epics.find((e) => e.key === key);
   useDocumentTitle(epic ? `${epic.key} · ${epic.title}` : `${key} · Epic not found`);
@@ -31,9 +30,8 @@ export default function EpicDetailPage({ params }: { params: { key: string } }) 
   }
 
   const pm = users.find((u) => u.id === epic.pmPicId);
-  const childProjects = projects.filter((p) => p.epicId === epic.id);
-  const allTickets = tickets.filter((t) => childProjects.some((p) => p.id === t.projectId));
-  const signal = computeEpicHealth(epic, projects, tickets);
+  const allTickets = tickets.filter((t) => t.epicId === epic.id);
+  const signal = computeEpicHealth(epic, tickets);
   const doneTickets = allTickets.filter((t) => t.status === "done" || t.status === "verified").length;
   const progressPct = allTickets.length === 0 ? 0 : Math.round((doneTickets / allTickets.length) * 100);
 
@@ -84,14 +82,14 @@ export default function EpicDetailPage({ params }: { params: { key: string } }) 
       {/* Health rollup */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <Stat label="PM" value={<span className="flex items-center gap-2"><Avatar user={pm} size="xs" /><span>{pm?.displayName}</span></span>} />
-        <Stat label="Projects" value={`${childProjects.length}`} />
+        <Stat label="Program" value={epic.program ?? "Ungrouped"} />
         <Stat label="Tickets" value={`${doneTickets} / ${allTickets.length} done`} />
         <Stat label="Target end" value={formatDate(epic.targetEndDate)} />
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-rule mb-6">
-        {(["overview", "projects", "timeline", "activity", "comments"] as const).map((t) => (
+        {(["overview", "tickets", "timeline", "activity", "comments"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -140,32 +138,26 @@ export default function EpicDetailPage({ params }: { params: { key: string } }) 
         </div>
       )}
 
-      {tab === "projects" && (
-        <div className="grid grid-cols-2 gap-4">
-          {childProjects.map((p) => (
-            <Link key={p.id} href={`/p/${p.key}`} className="block bg-bg-card border border-rule rounded-[8px] p-4 hover:border-accent transition-colors duration-150 border-l-4 border-l-accent">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[11px] text-ink-3">{p.key}</span>
-                <HealthPill h={p.health} />
+      {tab === "tickets" && (
+        <div className="grid grid-cols-2 gap-3">
+          {allTickets.map((t) => (
+            <Link key={t.id} href={`/t/${t.key}`} className="block bg-bg-card border border-rule rounded-[8px] p-3 hover:border-accent transition-colors duration-150">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-mono text-[11px] text-ink-3">{t.key}</span>
+                <Pill variant={t.status === "done" || t.status === "verified" ? "ok" : "default"}>{t.status.replace("_", " ")}</Pill>
               </div>
-              <h3 className="display text-display-s text-ink mb-2">{p.title}</h3>
-              <p className="text-[13px] text-ink-2 line-clamp-2">{p.description}</p>
+              <div className="text-[13px] text-ink truncate">{t.title}</div>
             </Link>
           ))}
+          {allTickets.length === 0 && (
+            <p className="text-[13px] italic text-ink-3 col-span-2">No tickets under this epic yet.</p>
+          )}
         </div>
       )}
 
       {tab === "timeline" && (
         <div className="bg-bg-card border border-rule rounded-[8px] p-5">
-          <p className="text-[13px] text-ink-3 italic">Project timeline view — shows child Project bars across the Epic's date range.</p>
-          {childProjects.map((p) => (
-            <div key={p.id} className="grid grid-cols-[200px_1fr] gap-4 items-center py-3 border-b border-rule-soft">
-              <Link href={`/p/${p.key}`} className="text-[13px] text-ink hover:text-accent">{p.title}</Link>
-              <div className="relative h-5 bg-rule-soft rounded-[4px]">
-                <div className={cn("absolute top-0 bottom-0 rounded-[4px]", p.health === "on_track" ? "bg-ok" : p.health === "at_risk" ? "bg-warn" : "bg-danger")} style={{ left: "5%", width: "70%" }} />
-              </div>
-            </div>
-          ))}
+          <p className="text-[13px] text-ink-3 italic">Timeline view of this epic's tickets — see the standalone /timeline page for the sprint-level Gantt.</p>
         </div>
       )}
 

@@ -72,17 +72,6 @@ export function TypePill({ t }: { t: TicketType }) {
 }
 
 export function RolePill({ role }: { role: Role }) {
-  const v =
-    role === "pm"
-      ? "accent"
-      : role === "em"
-      ? "info"
-      : role === "engineer" || role === "designer"
-      ? "neutral"
-      : role === "leadership"
-      ? "warn"
-      : role === "guest"
-      ? "ai"
-      : "default";
+  const v = role === "pm" ? "accent" : "neutral";
   return <Pill variant={v}>{role.toUpperCase()}</Pill>;
 }

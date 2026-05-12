@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { HealthPill, PriorityPill, TypePill } from "@/components/ui";
 import { cn, formatDate } from "@/lib/utils";
-import type { Epic, Ticket, TicketStatus, Project } from "@/lib/types";
+import type { Epic, Ticket, TicketStatus } from "@/lib/types";
 
 const DAY_MS = 86400000;
 const LABEL_W = 280;
@@ -31,7 +31,7 @@ export function EpicLevelTimeline({
   epics: Epic[];
   onOpenEpic: (k: string) => void;
 }) {
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const tickets = useAppStore((s) => s.tickets);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -138,8 +138,7 @@ export function EpicLevelTimeline({
                 expanded={expanded.has(e.id)}
                 onToggle={() => toggle(e.id)}
                 onOpenEpic={onOpenEpic}
-                projects={projects.filter((p) => p.epicId === e.id)}
-                tickets={tickets}
+                tickets={tickets.filter((t) => t.epicId === e.id)}
                 start={start}
                 laneWidth={laneWidth}
                 dateToPx={dateToPx}
@@ -169,9 +168,7 @@ function EpicRow({
   expanded,
   onToggle,
   onOpenEpic,
-  projects,
   tickets,
-  start,
   laneWidth,
   dateToPx,
 }: {
@@ -179,7 +176,6 @@ function EpicRow({
   expanded: boolean;
   onToggle: () => void;
   onOpenEpic: (k: string) => void;
-  projects: Project[];
   tickets: Ticket[];
   start: number;
   laneWidth: number;
@@ -189,10 +185,7 @@ function EpicRow({
   const epicEndPx = dateToPx(isoToMs(epic.targetEndDate));
   const left = Math.max(0, epicStartPx);
   const width = Math.max(20, epicEndPx - epicStartPx);
-  const projectsInEpic = projects;
-  const ticketsInEpic = tickets.filter((t) =>
-    projectsInEpic.some((p) => p.id === t.projectId)
-  );
+  const ticketsInEpic = tickets;
 
   return (
     <>
@@ -239,73 +232,20 @@ function EpicRow({
 
       {expanded && (
         <>
-          {projectsInEpic.length === 0 && ticketsInEpic.length === 0 && (
+          {ticketsInEpic.length === 0 ? (
             <div className="flex items-center border-b border-rule-soft bg-bg-elevated/30" style={{ height: TICKET_ROW_H }}>
               <div style={{ width: LABEL_W }} className="shrink-0 sticky left-0 bg-bg-elevated/30 border-r border-rule pl-10 pr-3 italic text-[12px] text-ink-4">
-                No projects or tickets yet.
+                No tickets yet.
               </div>
               <div className="flex-1" style={{ width: laneWidth }} />
             </div>
+          ) : (
+            ticketsInEpic.map((t) => (
+              <TicketRow key={t.id} ticket={t} laneWidth={laneWidth} dateToPx={dateToPx} />
+            ))
           )}
-          {projectsInEpic.map((p) => {
-            const projectTickets = ticketsInEpic.filter((t) => t.projectId === p.id);
-            return (
-              <ProjectBlock
-                key={p.id}
-                project={p}
-                tickets={projectTickets}
-                start={start}
-                laneWidth={laneWidth}
-                dateToPx={dateToPx}
-              />
-            );
-          })}
         </>
       )}
-    </>
-  );
-}
-
-function ProjectBlock({
-  project,
-  tickets,
-  laneWidth,
-  dateToPx,
-}: {
-  project: Project;
-  tickets: Ticket[];
-  start: number;
-  laneWidth: number;
-  dateToPx: (ms: number) => number;
-}) {
-  const projStartPx = dateToPx(isoToMs(project.startDate));
-  const projEndPx = dateToPx(isoToMs(project.targetEndDate));
-  const left = Math.max(0, projStartPx);
-  const width = Math.max(20, projEndPx - projStartPx);
-  return (
-    <>
-      <div className="flex items-center border-b border-rule-soft bg-bg-elevated/30" style={{ height: TICKET_ROW_H }}>
-        <div
-          style={{ width: LABEL_W }}
-          className="shrink-0 sticky left-0 bg-bg-elevated/30 border-r border-rule pl-10 pr-3 flex items-center gap-1.5 min-w-0"
-        >
-          <Link href={`/p/${project.key}`} className="font-mono text-[10px] text-ink-3 hover:text-accent shrink-0">
-            {project.key}
-          </Link>
-          <span className="text-[12px] text-ink-2 truncate">{project.title}</span>
-          <span className="font-mono text-[10px] text-ink-4 ml-auto shrink-0">{tickets.length}</span>
-        </div>
-        <div className="relative h-full" style={{ width: laneWidth }}>
-          <div
-            className="absolute top-1 bottom-1 rounded-[3px] bg-accent-soft border border-accent-deep/30"
-            style={{ left, width }}
-            title={`${project.key} · ${formatDate(project.startDate)} → ${formatDate(project.targetEndDate)}`}
-          />
-        </div>
-      </div>
-      {tickets.map((t) => (
-        <TicketRow key={t.id} ticket={t} laneWidth={laneWidth} dateToPx={dateToPx} />
-      ))}
     </>
   );
 }

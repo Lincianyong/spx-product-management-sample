@@ -26,7 +26,7 @@ const NEXT_STATUS_FOR_TYPE: Record<string, TicketStatus[]> = {
 export function TicketCard({ ticket, onOpen, compact, dragHandleProps, className, showQuickActions = true }: Props) {
   const router = useRouter();
   const users = useAppStore((s) => s.users);
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const recentlyMoved = useAppStore((s) => s.recentlyMovedTicketId);
   const setTicketStatus = useAppStore((s) => s.setTicketStatus);
   const flashTicket = useAppStore((s) => s.flashTicket);
@@ -35,7 +35,7 @@ export function TicketCard({ ticket, onOpen, compact, dragHandleProps, className
   const menu = useContextMenu();
 
   const assignee = users.find((u) => u.id === ticket.assigneeId) ?? null;
-  const project = projects.find((p) => p.id === ticket.projectId);
+  const project = projects.find((p) => p.id === ticket.epicId);
 
   const flow = NEXT_STATUS_FOR_TYPE[ticket.type] ?? NEXT_STATUS_FOR_TYPE.engineering;
   const idx = flow.indexOf(ticket.status);

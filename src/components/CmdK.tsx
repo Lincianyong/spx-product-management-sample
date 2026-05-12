@@ -16,7 +16,7 @@ export function CmdK() {
   const user = useCurrentUser();
   const tickets = useAppStore((s) => s.tickets);
   const epics = useAppStore((s) => s.epics);
-  const projects = useAppStore((s) => s.projects);
+  const projects = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
   const setTicketStatus = useAppStore((s) => s.setTicketStatus);
   const setTicketField = useAppStore((s) => s.setTicketField);
