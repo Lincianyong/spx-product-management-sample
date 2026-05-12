@@ -66,6 +66,13 @@ export function Sidebar() {
       ],
     },
     {
+      title: "Capture",
+      items: [
+        { label: "Create", href: "/create", icon: PlusSquare, requires: "view_create" },
+        { label: "My Bugs", href: "/my-bugs", icon: FileText, requires: "view_my_bugs" },
+      ],
+    },
+    {
       title: "Plan",
       items: [
         { label: "Triage", href: "/triage", icon: Inbox, count: () => triageCount },
@@ -83,13 +90,6 @@ export function Sidebar() {
         { label: "Epic Board", href: "/epics", icon: LayoutGrid },
         { label: "Timeline", href: "/timeline", icon: TrendingUp },
         { label: "Portfolio Health", href: "/portfolio", icon: Activity },
-      ],
-    },
-    {
-      title: "Capture",
-      items: [
-        { label: "Create", href: "/create", icon: PlusSquare, requires: "view_create" },
-        { label: "My Bugs", href: "/my-bugs", icon: FileText, requires: "view_my_bugs" },
       ],
     },
     {
