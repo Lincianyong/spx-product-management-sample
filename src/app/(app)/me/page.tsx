@@ -2,18 +2,24 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { AlertTriangle, AtSign, Clock } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { TicketCard } from "@/components/tickets/TicketCard";
 import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
 import { SortableList, DragHandle } from "@/components/SortableList";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { toast } from "@/components/ui";
-import type { Ticket } from "@/lib/types";
+import { Avatar, Pill, PriorityPill, TypePill, toast } from "@/components/ui";
+import type { Ticket, Sprint, User, Comment, ActivityEntry } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+import { cn, relativeTime, statusLabel } from "@/lib/utils";
+
+const DAY_MS = 86400000;
 
 export default function MyWorkPage() {
   const tickets = useAppStore((s) => s.tickets);
   const sprints = useAppStore((s) => s.sprints);
+  const comments = useAppStore((s) => s.comments);
+  const activity = useAppStore((s) => s.activity);
   const setPersonalRanks = useAppStore((s) => s.setPersonalRanks);
   const user = useCurrentUser();
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -23,13 +29,112 @@ export default function MyWorkPage() {
   if (!user) return null;
 
   const activeSprint = sprints.find((s) => s.state === "active");
+  const planningSprint = sprints.find((s) => s.state === "planning");
+
+  // ─── Filtered ticket lists ──────────────────────────────────────
+  const mineInActive = useMemo(
+    () => tickets.filter((t) => t.assigneeId === user.id && t.sprintId === activeSprint?.id),
+    [tickets, user.id, activeSprint?.id]
+  );
 
   const thisSprint = useMemo(() => {
-    const arr = tickets.filter(
-      (t) => t.assigneeId === user.id && t.sprintId === activeSprint?.id && t.status !== "done" && t.status !== "verified"
-    );
+    const arr = mineInActive.filter((t) => t.status !== "done" && t.status !== "verified");
     return [...arr].sort((a, b) => (a.personalRank ?? 99) - (b.personalRank ?? 99));
-  }, [tickets, user.id, activeSprint?.id]);
+  }, [mineInActive]);
+
+  const upNext = useMemo(
+    () => tickets.filter((t) => t.assigneeId === user.id && t.status === "backlog"),
+    [tickets, user.id]
+  );
+
+  const blockingThem = useMemo(
+    () =>
+      tickets.filter(
+        (t) =>
+          t.assigneeId === user.id &&
+          tickets.some(
+            (o) => o.linkedWork.some((e) => e.type === "blocked_by" && e.ticketKey === t.key) && o.status !== "done"
+          )
+      ),
+    [tickets, user.id]
+  );
+
+  const blockingMe = useMemo(
+    () => tickets.filter((t) => t.assigneeId === user.id && t.linkedWork.some((e) => e.type === "blocked_by")),
+    [tickets, user.id]
+  );
+
+  const authoredOpen = useMemo(
+    () =>
+      tickets.filter(
+        (t) =>
+          t.authorId === user.id &&
+          !["done", "verified", "cancelled", "cannot_reproduce"].includes(t.status)
+      ),
+    [tickets, user.id]
+  );
+
+  // ─── Stats ──────────────────────────────────────────────────────
+  const committedPts = mineInActive.reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
+  const shippedPts = mineInActive
+    .filter((t) => t.status === "done" || t.status === "verified")
+    .reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
+  const progressPct = committedPts > 0 ? Math.round((shippedPts / committedPts) * 100) : 0;
+  const loadPct = user.capacityPoints > 0 ? Math.round((committedPts / user.capacityPoints) * 100) : 0;
+
+  const daysRemaining = activeSprint
+    ? Math.max(0, Math.ceil((new Date(activeSprint.endDate).getTime() - Date.now()) / DAY_MS))
+    : 0;
+
+  // Deterministic mock for last sprint shipped (until we have per-engineer historical data)
+  const lastSprintShipped = useMemo(() => {
+    const closed = sprints.find((s) => s.state === "closed");
+    if (!closed) return null;
+    const seed = user.id.charCodeAt(2) % 8;
+    return Math.max(8, 12 + seed); // 12-19 pts
+  }, [sprints, user.id]);
+
+  // ─── Mentions awaiting reply ────────────────────────────────────
+  const unrepliedMentions = useMemo(
+    () => findUnrepliedMentions(comments, user.id),
+    [comments, user.id]
+  );
+
+  // ─── Time-in-status warnings ────────────────────────────────────
+  const staleStatus = useMemo(() => {
+    const out: { ticket: Ticket; days: number; threshold: number }[] = [];
+    const now = Date.now();
+    for (const t of mineInActive) {
+      if (t.status === "in_progress" && t.startedAt) {
+        const days = Math.floor((now - new Date(t.startedAt).getTime()) / DAY_MS);
+        if (days > 3) out.push({ ticket: t, days, threshold: 3 });
+      } else if (t.status === "review") {
+        // Find last status_change to "review" in activity
+        const last = [...activity]
+          .reverse()
+          .find((a) => a.entityId === t.id && a.action === "status_change" && a.afterValue === "review");
+        if (last) {
+          const days = Math.floor((now - new Date(last.timestamp).getTime()) / DAY_MS);
+          if (days > 2) out.push({ ticket: t, days, threshold: 2 });
+        }
+      }
+    }
+    return out;
+  }, [mineInActive, activity]);
+
+  // ─── Recent activity on my tickets ──────────────────────────────
+  const myEntityIds = useMemo(
+    () => new Set(tickets.filter((t) => t.assigneeId === user.id || t.authorId === user.id).map((t) => t.id)),
+    [tickets, user.id]
+  );
+  const recentActivity = useMemo(
+    () =>
+      [...activity]
+        .filter((a) => a.entityType === "ticket" && myEntityIds.has(a.entityId) && a.actorId !== user.id)
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 10),
+    [activity, myEntityIds, user.id]
+  );
 
   const onReorderThisSprint = (next: typeof thisSprint) => {
     const ranks = next.map((t, idx) => ({ ticketId: t.id, rank: idx + 1 }));
@@ -37,18 +142,7 @@ export default function MyWorkPage() {
     toast("Personal priority saved. Others don't see this.", { kind: "info" });
   };
 
-  const upNext = tickets.filter(
-    (t) => t.assigneeId === user.id && t.status === "backlog"
-  );
-
-  const blockingThem = tickets.filter((t) => {
-    // tickets I'm assigned to that block other in-progress work
-    return t.assigneeId === user.id && tickets.some((other) => other.linkedWork.some((edge) => edge.type === "blocked_by" && edge.ticketKey === t.key) && other.status !== "done");
-  });
-
-  const blockingMe = tickets.filter((t) => {
-    return t.assigneeId === user.id && t.linkedWork.some((edge) => edge.type === "blocked_by");
-  });
+  const sprintForCal = planningSprint ?? activeSprint;
 
   return (
     <div>
@@ -62,7 +156,58 @@ export default function MyWorkPage() {
         lede={`${activeSprint?.key ?? "No active sprint"} · ${thisSprint.length} tickets in flight, ${upNext.length} waiting in your queue.`}
       />
 
-      <div className="grid grid-cols-2 gap-6">
+      {/* Stats strip */}
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        <StatCard
+          label="Sprint load"
+          value={`${committedPts}/${user.capacityPoints}`}
+          unit="pt"
+          tint={loadPct > 100 ? "danger" : loadPct > 90 ? "warn" : "ok"}
+          progress={Math.min(loadPct, 130)}
+          caption={`${loadPct}%${loadPct > 100 ? " · over" : ""}`}
+        />
+        <StatCard
+          label="Sprint progress"
+          value={`${shippedPts}/${committedPts}`}
+          unit="pt"
+          progress={progressPct}
+          caption={`${progressPct}% shipped`}
+        />
+        <StatCard
+          label="Days remaining"
+          value={String(daysRemaining)}
+          unit={daysRemaining === 1 ? "day" : "days"}
+          caption={activeSprint?.key ?? "—"}
+        />
+        <StatCard
+          label="Last sprint"
+          value={lastSprintShipped != null ? String(lastSprintShipped) : "—"}
+          unit={lastSprintShipped != null ? "pt shipped" : ""}
+          caption={lastSprintShipped != null && committedPts > 0
+            ? lastSprintShipped >= committedPts
+              ? "↑ vs this sprint"
+              : "ahead of last"
+            : "no history"}
+        />
+      </div>
+
+      {/* Calendar strip */}
+      {sprintForCal && <PlanningCalendarMini sprint={sprintForCal} />}
+
+      {/* Inline alerts */}
+      {(unrepliedMentions.length > 0 || staleStatus.length > 0) && (
+        <div className="space-y-2 mb-6">
+          {unrepliedMentions.length > 0 && (
+            <MentionsAlert mentions={unrepliedMentions} />
+          )}
+          {staleStatus.length > 0 && (
+            <StatusAlert items={staleStatus} />
+          )}
+        </div>
+      )}
+
+      {/* 2x2 panels */}
+      <div className="grid grid-cols-2 gap-6 mb-6">
         <Panel title="This sprint" count={thisSprint.length} eyebrow="On now · drag (⠿) for personal order">
           {thisSprint.length === 0 ? (
             <EmptyEcho text="Nothing on your plate this sprint. Pick up an ad-hoc, or grab from the queue below." />
@@ -121,14 +266,267 @@ export default function MyWorkPage() {
         </Panel>
       </div>
 
+      {/* Tickets I Filed + Recent activity */}
+      <div className="grid grid-cols-[1fr_360px] gap-6">
+        <FiledPanel tickets={authoredOpen} onOpen={setOpenKey} />
+        <ActivityPanel items={recentActivity} />
+      </div>
+
       <TicketSlideOver ticketKey={openKey} onClose={() => setOpenKey(null)} />
     </div>
   );
 }
 
-function Panel({ title, eyebrow, count, accent, children }: { title: string; eyebrow: string; count: number; accent?: "warn" | "danger"; children: React.ReactNode }) {
+// ─── Stats strip ─────────────────────────────────────────────────
+function StatCard({
+  label,
+  value,
+  unit,
+  caption,
+  progress,
+  tint,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  caption?: string;
+  progress?: number;
+  tint?: "ok" | "warn" | "danger";
+}) {
+  const tintBar =
+    tint === "danger" ? "bg-danger" :
+    tint === "warn" ? "bg-warn" :
+    tint === "ok" ? "bg-ok" : "bg-accent";
+  const tintBorder =
+    tint === "danger" ? "border-l-danger" :
+    tint === "warn" ? "border-l-warn" :
+    "border-l-accent";
+  return (
+    <div className={cn("bg-bg-card border border-rule rounded-[8px] p-4 border-l-4", tintBorder)}>
+      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mb-1.5">{label}</div>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="display text-display-m text-ink">{value}</span>
+        {unit && <span className="font-mono text-[11px] text-ink-3">{unit}</span>}
+      </div>
+      {progress != null && (
+        <div className="h-1.5 bg-rule-soft rounded-full overflow-hidden mb-1.5">
+          <div className={cn("h-full transition-all duration-300", tintBar)} style={{ width: `${Math.min(progress, 130)}%` }} />
+        </div>
+      )}
+      {caption && <div className="font-mono text-[11px] text-ink-3">{caption}</div>}
+    </div>
+  );
+}
+
+// ─── Planning calendar mini ─────────────────────────────────────
+function PlanningCalendarMini({ sprint }: { sprint: Sprint }) {
+  const sprintStart = new Date(sprint.startDate + "T10:30:00");
+  const tue = new Date(sprintStart);
+  tue.setHours(10, 0, 0, 0);
+  const mon = new Date(tue);
+  mon.setDate(tue.getDate() - 1);
+
+  const milestones = [
+    { label: "Picklist", ts: setTime(mon, 9, 0) },
+    { label: "Estimation", ts: setTime(mon, 14, 0) },
+    { label: "Joint", ts: setTime(tue, 10, 0) },
+    { label: "Sprint", ts: setTime(tue, 10, 30) },
+  ];
+  const now = Date.now();
+  const reachedIdx = milestones.findIndex((m) => now < m.ts.getTime());
+  const activeIdx = reachedIdx === -1 ? milestones.length - 1 : Math.max(0, reachedIdx - 1);
+
+  return (
+    <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-4 flex items-center gap-4">
+      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 shrink-0">
+        Cycle for {sprint.key}
+      </div>
+      <div className="flex items-center gap-2 flex-1">
+        {milestones.map((m, i) => (
+          <div key={i} className="flex items-center gap-2 flex-1">
+            <div className="flex flex-col items-center min-w-0">
+              <span
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  i < activeIdx ? "bg-ok" : i === activeIdx ? "bg-accent ring-4 ring-accent-soft" : "bg-rule"
+                )}
+              />
+              <span className={cn(
+                "font-mono text-[10px] mt-1 text-center",
+                i === activeIdx ? "text-ink" : "text-ink-3"
+              )}>
+                {m.label}
+              </span>
+            </div>
+            {i < milestones.length - 1 && (
+              <span className={cn("flex-1 h-px", i < activeIdx ? "bg-ok" : "bg-rule")} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function setTime(d: Date, h: number, m: number) {
+  const x = new Date(d);
+  x.setHours(h, m, 0, 0);
+  return x;
+}
+
+// ─── Mentions alert ─────────────────────────────────────────────
+function findUnrepliedMentions(comments: Comment[], userId: string) {
+  const mentionsOfMe = comments.filter((c) => c.mentions.includes(userId) && c.authorId !== userId && !c.deletedAt);
+  return mentionsOfMe.filter((m) => {
+    const replies = comments.filter((c) => c.parentCommentId === m.id);
+    return !replies.some((r) => r.authorId === userId);
+  }).slice(0, 5);
+}
+
+function MentionsAlert({ mentions }: { mentions: Comment[] }) {
+  const users = useAppStore((s) => s.users);
+  const tickets = useAppStore((s) => s.tickets);
+  return (
+    <div className="bg-accent-soft border border-accent rounded-[8px] p-3 flex items-start gap-3">
+      <AtSign className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent mb-1.5">
+          {mentions.length} mention{mentions.length === 1 ? "" : "s"} awaiting reply
+        </div>
+        <ul className="space-y-1.5">
+          {mentions.map((m) => {
+            const author = users.find((u) => u.id === m.authorId);
+            const ticket = tickets.find((t) => t.id === m.entityId);
+            return (
+              <li key={m.id} className="text-[13px]">
+                <Link href={ticket ? `/t/${ticket.key}#c-${m.id}` : "#"} className="flex items-center gap-2 hover:underline underline-offset-2">
+                  <Avatar user={author} size="xs" />
+                  <span className="font-medium text-ink">{author?.displayName}</span>
+                  <span className="text-ink-3 truncate flex-1">{m.body.slice(0, 80)}{m.body.length > 80 ? "…" : ""}</span>
+                  {ticket && <span className="font-mono text-[11px] text-ink-3 shrink-0">{ticket.key}</span>}
+                  <span className="font-mono text-[11px] text-ink-4 shrink-0">{relativeTime(m.createdAt)}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// ─── Status alert ───────────────────────────────────────────────
+function StatusAlert({ items }: { items: { ticket: Ticket; days: number; threshold: number }[] }) {
+  return (
+    <div className="bg-warn-soft border border-warn rounded-[8px] p-3 flex items-start gap-3">
+      <Clock className="h-4 w-4 text-warn shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-warn mb-1.5">
+          {items.length} ticket{items.length === 1 ? "" : "s"} idle past threshold
+        </div>
+        <ul className="space-y-1">
+          {items.map(({ ticket, days, threshold }) => (
+            <li key={ticket.id} className="text-[13px]">
+              <Link href={`/t/${ticket.key}`} className="flex items-center gap-2 hover:underline underline-offset-2">
+                <TypePill t={ticket.type} />
+                <span className="font-mono text-[11px] text-ink-3">{ticket.key}</span>
+                <span className="text-ink truncate flex-1">{ticket.title}</span>
+                <Pill variant="warn">{statusLabel[ticket.status]} · {days}d / {threshold}d</Pill>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// ─── Filed panel ────────────────────────────────────────────────
+function FiledPanel({ tickets, onOpen }: { tickets: Ticket[]; onOpen: (k: string) => void }) {
   return (
     <section className="bg-bg-card border border-rule rounded-[8px] p-5">
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Authored · open</div>
+          <h3 className="display text-display-s text-ink mt-1">Tickets you filed</h3>
+        </div>
+        <span className="font-mono text-[12px] text-ink-3">{tickets.length} open</span>
+      </div>
+      {tickets.length === 0 ? (
+        <p className="italic text-[13px] text-ink-3 py-4">Nothing open that you filed.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {tickets.slice(0, 6).map((t) => (
+            <TicketCard key={t.id} ticket={t} onOpen={onOpen} compact />
+          ))}
+        </div>
+      )}
+      {tickets.length > 6 && (
+        <Link href="/my-bugs" className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep mt-3 inline-block">
+          + {tickets.length - 6} more →
+        </Link>
+      )}
+    </section>
+  );
+}
+
+// ─── Activity panel ─────────────────────────────────────────────
+function ActivityPanel({ items }: { items: ActivityEntry[] }) {
+  const users = useAppStore((s) => s.users);
+  const tickets = useAppStore((s) => s.tickets);
+  return (
+    <section className="bg-bg-card border border-rule rounded-[8px] p-5">
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">By others</div>
+          <h3 className="display text-display-s text-ink mt-1">Recent activity</h3>
+        </div>
+        <span className="font-mono text-[12px] text-ink-3">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="italic text-[13px] text-ink-3">No one else has touched your tickets recently.</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {items.map((a) => {
+            const actor = users.find((u) => u.id === a.actorId);
+            const ticket = tickets.find((t) => t.id === a.entityId);
+            return (
+              <li key={a.id} className={cn("flex items-start gap-2.5 text-[13px]", a.aiInfluenced && "bg-ai-soft/40 -mx-2 px-2 py-1 rounded-[6px]")}>
+                <Avatar user={actor} size="xs" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-ink-2 leading-snug">
+                    <span className="text-ink">{actor?.displayName}</span>{" "}
+                    <span className="text-ink-3">{a.action.replace("_", " ")}</span>
+                    {a.beforeValue && a.afterValue && (
+                      <>
+                        {" "}<span className="font-mono text-[11px] text-ink-3">{a.beforeValue} → {a.afterValue}</span>
+                      </>
+                    )}
+                  </div>
+                  {ticket && (
+                    <Link href={`/t/${ticket.key}`} className="font-mono text-[11px] text-ink-3 hover:text-accent">
+                      {ticket.key}
+                    </Link>
+                  )}
+                </div>
+                <span className="font-mono text-[11px] text-ink-4 shrink-0">{relativeTime(a.timestamp)}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// ─── Existing helpers ───────────────────────────────────────────
+function Panel({ title, eyebrow, count, accent, children }: { title: string; eyebrow: string; count: number; accent?: "warn" | "danger"; children: React.ReactNode }) {
+  return (
+    <section className={cn(
+      "bg-bg-card border border-rule rounded-[8px] p-5",
+      accent === "warn" && "border-l-4 border-l-warn",
+      accent === "danger" && "border-l-4 border-l-danger"
+    )}>
       <div className="flex items-end justify-between mb-4">
         <div>
           <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{eyebrow}</div>
