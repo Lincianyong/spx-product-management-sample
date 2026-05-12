@@ -1,8 +1,22 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  closestCorners,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, HealthPill, Pill, Button, DatePicker, Modal, Input, toast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
@@ -13,13 +27,7 @@ import { EpicSlideOver } from "@/components/epics/EpicSlideOver";
 import { Markdown } from "@/components/Markdown";
 import { can } from "@/lib/permissions";
 import { Plus } from "lucide-react";
-import {
-  GanttView,
-  MonthView,
-  SwimlaneView,
-  TimelineModeStrip,
-  type TimelineMode,
-} from "@/components/epics/TimelineViews";
+import { EpicLevelTimeline } from "@/components/epics/EpicLevelTimeline";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
@@ -38,9 +46,6 @@ function EpicBoardInner() {
   const router = useRouter();
   const params = useSearchParams();
   const epics = useAppStore((s) => s.epics);
-  const projects = useAppStore((s) => s.projects);
-  const sprints = useAppStore((s) => s.sprints);
-  const users = useAppStore((s) => s.users);
   const savedViews = useAppStore((s) => s.savedViews);
   const saveView = useAppStore((s) => s.saveView);
   const deleteView = useAppStore((s) => s.deleteView);
@@ -48,10 +53,8 @@ function EpicBoardInner() {
 
   const initialView = (params.get("view") as View) ?? "kanban";
   const initialGroup = (params.get("groupBy") as GroupBy) ?? "health";
-  const initialTimelineMode = (params.get("tl") as TimelineMode) ?? "gantt";
   const [view, setView] = useState<View>(initialView);
   const [groupBy, setGroupBy] = useState<GroupBy>(initialGroup);
-  const [timelineMode, setTimelineMode] = useState<TimelineMode>(initialTimelineMode);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -63,17 +66,16 @@ function EpicBoardInner() {
     const q = new URLSearchParams();
     q.set("view", view);
     q.set("groupBy", groupBy);
-    if (view === "timeline") q.set("tl", timelineMode);
     router.replace(`/epics?${q.toString()}`, { scroll: false });
-  }, [view, groupBy, timelineMode, router]);
+  }, [view, groupBy, router]);
 
   const mine = user ? savedViews.filter((v) => v.ownerId === user.id && v.surface === "epics") : [];
 
   const applyView = (id: string) => {
     const v = savedViews.find((x) => x.id === id);
-    if (!v) return;
-    setView(v.viewMode);
-    setGroupBy(v.groupBy);
+    if (!v || v.surface !== "epics") return;
+    if (v.viewMode) setView(v.viewMode);
+    if (v.groupBy) setGroupBy(v.groupBy);
   };
 
   const save = () => {
@@ -112,16 +114,9 @@ function EpicBoardInner() {
         }
       />
 
-      {/* Toolbar: GroupBy / Timeline-mode left · saved views switcher · New Epic + Save view right */}
+      {/* Toolbar: GroupBy (hidden in Timeline view) · saved views switcher · New Epic + Save view */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        {view === "timeline" ? (
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Timeline</span>
-            <TimelineModeStrip mode={timelineMode} onChange={setTimelineMode} />
-          </div>
-        ) : (
-          <GroupByPicker value={groupBy} onChange={setGroupBy} />
-        )}
+        {view !== "timeline" && <GroupByPicker value={groupBy} onChange={setGroupBy} />}
         {mine.length > 0 && (
           <select
             onChange={(e) => e.target.value && applyView(e.target.value)}
@@ -171,15 +166,7 @@ function EpicBoardInner() {
       {view === "kanban" && <KanbanView epics={epics} groupBy={groupBy} onOpen={setOpenKey} />}
       {view === "list" && <ListView epics={epics} groupBy={groupBy} onOpen={setOpenKey} />}
       {view === "table" && <TableView epics={epics} groupBy={groupBy} onOpen={setOpenKey} />}
-      {view === "timeline" && timelineMode === "gantt" && (
-        <GanttView epics={epics} onOpenEpic={setOpenKey} />
-      )}
-      {view === "timeline" && timelineMode === "month" && (
-        <MonthView epics={epics} projects={projects} sprints={sprints} onOpenEpic={setOpenKey} />
-      )}
-      {view === "timeline" && timelineMode === "swimlane" && (
-        <SwimlaneView epics={epics} projects={projects} users={users} onOpenEpic={setOpenKey} />
-      )}
+      {view === "timeline" && <EpicLevelTimeline epics={epics} onOpenEpic={setOpenKey} />}
       {view === "backlog" && <BacklogView epics={epics} onOpen={setOpenKey} />}
 
       <EpicSlideOver epicKey={openKey} onClose={() => setOpenKey(null)} />
@@ -243,35 +230,82 @@ function useGroups(epics: Epic[], groupBy: GroupBy) {
   });
 }
 
-function EpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) => void }) {
+function EpicCard({
+  epic,
+  onOpen,
+  dragHandle,
+  dragging,
+}: {
+  epic: Epic;
+  onOpen: (k: string) => void;
+  /** Drag-handle listeners spread onto the grip icon (sortable contexts). */
+  dragHandle?: Record<string, unknown>;
+  /** When true, render with a "lifted" treatment in the DragOverlay. */
+  dragging?: boolean;
+}) {
   const projects = useAppStore((s) => s.projects);
   const users = useAppStore((s) => s.users);
   const pm = users.find((u) => u.id === epic.pmPicId);
   const childProjects = projects.filter((p) => p.epicId === epic.id);
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(epic.key)}
-      className="block w-full text-left bg-bg-card border border-rule rounded-[8px] shadow-sm hover:border-accent hover:-translate-y-px transition-all duration-150 border-l-4 border-l-accent p-4"
+    <div
+      className={cn(
+        "group relative bg-bg-card border border-rule rounded-[8px] shadow-sm border-l-4 border-l-accent",
+        "transition-all duration-150",
+        dragging ? "shadow-lg ring-2 ring-accent" : "hover:border-accent hover:-translate-y-px"
+      )}
     >
-      <div className="flex items-center justify-between mb-2">
-        <Link
-          href={`/e/${epic.key}`}
+      {dragHandle && (
+        <button
+          {...dragHandle}
+          type="button"
+          aria-label="Drag epic to reorder"
+          className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-[4px] text-ink-4 hover:text-ink-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
-          className="font-mono text-[11px] text-ink-3 hover:text-accent underline-offset-2 hover:underline"
         >
-          {epic.key}
-        </Link>
-        <HealthPill h={epic.health} />
-      </div>
-      <h3 className="display text-display-s text-ink leading-tight mb-2">{epic.title}</h3>
-      <p className="text-[13px] text-ink-2 line-clamp-3 mb-3">{epic.thesis}</p>
-      <div className="flex items-center justify-between text-[11px] font-mono text-ink-3">
-        <span>{childProjects.length} project{childProjects.length === 1 ? "" : "s"} · {epic.quarter}</span>
-        <Avatar user={pm} size="xs" />
-      </div>
-    </button>
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => onOpen(epic.key)}
+        className="block w-full text-left p-4"
+      >
+        <div className="flex items-center justify-between mb-2 pr-7">
+          <Link
+            href={`/e/${epic.key}`}
+            onClick={(e) => e.stopPropagation()}
+            className="font-mono text-[11px] text-ink-3 hover:text-accent underline-offset-2 hover:underline"
+          >
+            {epic.key}
+          </Link>
+          <HealthPill h={epic.health} />
+        </div>
+        <h3 className="display text-display-s text-ink leading-tight mb-2">{epic.title}</h3>
+        <p className="text-[13px] text-ink-2 line-clamp-3 mb-3">{epic.thesis}</p>
+        <div className="flex items-center justify-between text-[11px] font-mono text-ink-3">
+          <span>{childProjects.length} project{childProjects.length === 1 ? "" : "s"} · {epic.quarter}</span>
+          <Avatar user={pm} size="xs" />
+        </div>
+      </button>
+    </div>
+  );
+}
+
+// Sortable wrapper used by Kanban/List views. The grip icon receives drag
+// listeners so the body of the card stays clickable for the slide-over.
+function SortableEpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: epic.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <EpicCard epic={epic} onOpen={onOpen} dragHandle={listeners} />
+    </div>
   );
 }
 
@@ -284,42 +318,159 @@ interface ViewProps {
 function KanbanView({ epics, groupBy, onOpen }: ViewProps) {
   const groups = useGroups(epics, groupBy);
   return (
-    <div className="grid gap-4 grid-cols-4 items-start">
-      {groups.map((g) => (
-        <div key={g.key} className="bg-bg-elevated rounded-[8px] p-3">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{g.label}</span>
-            <span className="font-mono text-[11px] text-ink-3">{g.items.length}</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {g.items.length === 0 && (
-              <div className="text-[12px] text-ink-4 italic px-1 py-2">Nothing here.</div>
-            )}
-            {g.items.map((e) => (
-              <EpicCard key={e.id} epic={e} onOpen={onOpen} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    <EpicDndContext epics={epics} groups={groups} groupBy={groupBy} onOpen={onOpen}>
+      <div className="grid gap-4 grid-cols-4 items-start">
+        {groups.map((g) => (
+          <EpicDropColumn key={String(g.key)} id={String(g.key)} className="bg-bg-elevated rounded-[8px] p-3">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{g.label}</span>
+              <span className="font-mono text-[11px] text-ink-3">{g.items.length}</span>
+            </div>
+            <SortableContext id={String(g.key)} items={g.items.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-col gap-3 min-h-[40px]">
+                {g.items.length === 0 && (
+                  <div className="text-[12px] text-ink-4 italic px-1 py-2">Drop epics here.</div>
+                )}
+                {g.items.map((e) => (
+                  <SortableEpicCard key={e.id} epic={e} onOpen={onOpen} />
+                ))}
+              </div>
+            </SortableContext>
+          </EpicDropColumn>
+        ))}
+      </div>
+    </EpicDndContext>
   );
 }
 
 function ListView({ epics, groupBy, onOpen }: ViewProps) {
   const groups = useGroups(epics, groupBy);
   return (
-    <div className="space-y-6">
-      {groups.map((g) => (
-        <div key={g.key}>
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3 flex items-center gap-2">
-            {g.label} <span className="text-ink-4">·</span> <span className="text-ink-4">{g.items.length}</span>
+    <EpicDndContext epics={epics} groups={groups} groupBy={groupBy} onOpen={onOpen}>
+      <div className="space-y-6">
+        {groups.map((g) => (
+          <EpicDropColumn key={String(g.key)} id={String(g.key)}>
+            <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3 flex items-center gap-2">
+              {g.label} <span className="text-ink-4">·</span> <span className="text-ink-4">{g.items.length}</span>
+            </div>
+            <SortableContext id={String(g.key)} items={g.items.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+              <div className="grid grid-cols-2 gap-4 items-start min-h-[40px]">
+                {g.items.map((e) => <SortableEpicCard key={e.id} epic={e} onOpen={onOpen} />)}
+                {g.items.length === 0 && <p className="text-[12px] text-ink-4 italic">Drop epics here.</p>}
+              </div>
+            </SortableContext>
+          </EpicDropColumn>
+        ))}
+      </div>
+    </EpicDndContext>
+  );
+}
+
+// Shared drag context: ties a set of grouped epic columns together so cards
+// can be dragged within a group (reorder via epic.position) or across groups
+// (mutates health / quarter / pmPicId depending on the current groupBy).
+function EpicDndContext({
+  epics,
+  groups,
+  groupBy,
+  onOpen,
+  children,
+}: {
+  epics: Epic[];
+  groups: { key: string; label: string; items: Epic[] }[];
+  groupBy: GroupBy;
+  onOpen: (k: string) => void;
+  children: React.ReactNode;
+}) {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragging = draggingId ? epics.find((e) => e.id === draggingId) ?? null : null;
+
+  const groupKeyOf = (epicId: string): string | undefined => {
+    for (const g of groups) if (g.items.some((i) => i.id === epicId)) return String(g.key);
+    return undefined;
+  };
+
+  const onDragStart = (e: DragStartEvent) => setDraggingId(String(e.active.id));
+  const onDragEnd = (e: DragEndEvent) => {
+    setDraggingId(null);
+    const { active, over } = e;
+    if (!over) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (activeId === overId) return;
+
+    const sourceKey = groupKeyOf(activeId);
+    // overId is either a group key (dropped on the column) or another epic id.
+    const overGroup = groups.find((g) => String(g.key) === overId);
+    const destKey = overGroup ? String(overGroup.key) : groupKeyOf(overId);
+    if (!sourceKey || !destKey) return;
+
+    const epic = epics.find((x) => x.id === activeId);
+    if (!epic) return;
+
+    // Cross-group → mutate the group-defining field.
+    if (sourceKey !== destKey) {
+      const patch: Partial<Epic> = {};
+      if (groupBy === "health") patch.health = destKey as Health;
+      else if (groupBy === "quarter") patch.quarter = destKey;
+      else if (groupBy === "pic") patch.pmPicId = destKey;
+      useAppStore.setState((s) => ({
+        epics: s.epics.map((x) => (x.id === activeId ? { ...x, ...patch } : x)),
+      }));
+      toast(
+        `${epic.key} → ${groupBy === "pic" ? "PM " : groupBy + " "}${destKey.replace("_", " ")}`,
+        { kind: "success" }
+      );
+      return;
+    }
+
+    // Same-group reorder → persist epic.position.
+    const list = groups.find((g) => String(g.key) === sourceKey)!.items;
+    const oldIndex = list.findIndex((i) => i.id === activeId);
+    const newIndex = overGroup ? list.length - 1 : list.findIndex((i) => i.id === overId);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+    const next = arrayMove(list, oldIndex, newIndex);
+    useAppStore.setState((s) => ({
+      epics: s.epics.map((x) => {
+        const idx = next.findIndex((y) => y.id === x.id);
+        return idx >= 0 ? { ...x, position: idx } : x;
+      }),
+    }));
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      {children}
+      <DragOverlay>
+        {dragging && (
+          <div className="opacity-95 rotate-[-1deg] w-72">
+            <EpicCard epic={dragging} onOpen={onOpen} dragging />
           </div>
-          <div className="grid grid-cols-2 gap-4 items-start">
-            {g.items.map((e) => <EpicCard key={e.id} epic={e} onOpen={onOpen} />)}
-            {g.items.length === 0 && <p className="text-[12px] text-ink-4 italic">Nothing here.</p>}
-          </div>
-        </div>
-      ))}
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+// Column-level droppable so dropping on an empty group still routes the
+// epic to that group (otherwise `over` would be null with no children).
+function EpicDropColumn({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(className, isOver && "outline outline-2 outline-accent-soft rounded-[8px]")}
+    >
+      {children}
     </div>
   );
 }

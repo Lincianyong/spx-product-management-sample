@@ -28,11 +28,14 @@ import {
 export interface SavedView {
   id: string;
   name: string;
-  surface: "epics";
-  viewMode: "kanban" | "list" | "table" | "timeline" | "backlog";
-  groupBy: "health" | "quarter" | "pic";
+  surface: "epics" | "sprint";
   ownerId: string;
   createdAt: string;
+  // Epic-board specific
+  viewMode?: "kanban" | "list" | "table" | "timeline" | "backlog";
+  groupBy?: "health" | "quarter" | "pic";
+  // Sprint-board specific
+  sprintFilter?: "me" | "pod" | "all";
 }
 
 export interface AppState {
