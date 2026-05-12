@@ -120,7 +120,6 @@ export default function GuidelineEngPage() {
           "Expected vs Actual — two short paragraphs.",
           "Affected scope — which devices, regions, % of users.",
           "Severity (S1 · S2 · S3) — drives priority on the board.",
-          "Sentry link if available — direct deep link to the trace.",
         ]}
       />
 
@@ -139,7 +138,6 @@ export default function GuidelineEngPage() {
           <FormRow label="Repro steps" value="1. Install on Pixel 8 (A14)  2. Mark delivery complete  3. Compare clocks" />
           <FormRow label="Expected vs actual" value="Expected ±10s of server. Actual ~3 min ahead." />
           <FormRow label="Affected scope" value="All A14 devices, ~340 active drivers Jakarta region" />
-          <FormRow label="Sentry" value={<span className="font-mono text-[10px] text-accent">sentry.io/issues/INST-12842</span>} />
         </div>
       </MockScreen>
 
