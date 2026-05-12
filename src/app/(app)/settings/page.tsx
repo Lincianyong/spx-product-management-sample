@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Button, Checkbox, Pill, RolePill, Modal, Input, Textarea, toast } from "@/components/ui";
+import { Button, Checkbox, Pill, Modal, Input, toast } from "@/components/ui";
 import { cn, roleLabel } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
-const TABS = ["workspace", "sso", "roles", "integrations", "automations", "notifications"] as const;
+const TABS = ["workspace", "sso", "roles", "integrations", "notifications"] as const;
 type Tab = (typeof TABS)[number];
 
 const ROLE_MATRIX: Record<string, Record<string, "✓" | "—" | "PIC" | "Read">> = {
@@ -39,30 +39,14 @@ const INITIAL_INTEGRATIONS: Integration[] = [
   { id: "pagerduty", name: "PagerDuty", status: "Off", body: "P0 escalation routing for SRE.", authType: "OAuth" },
 ];
 
-interface Automation {
-  id: string;
-  name: string;
-  trigger: string;
-  action: string;
-  active: boolean;
-}
-
-const INITIAL_AUTOMATIONS: Automation[] = [
-  { id: "a1", name: "Notify Lark on P0", trigger: "Ticket created with priority P0", action: "Post to #cadence-urgent + page on-call", active: true },
-  { id: "a2", name: "Auto-link PR by title", trigger: "GitHub PR opens with [CDN-####] in title", action: "Link PR ↔ ticket, suggest status: Review", active: true },
-  { id: "a3", name: "Weekly digest", trigger: "Every Friday 17:00 SGT", action: "Email leadership · health + on-time + blockers", active: false },
-];
-
 export default function SettingsPage() {
   useDocumentTitle("Settings");
   const user = useCurrentUser();
   const resetMockData = useAppStore((s) => s.resetMockData);
   const [tab, setTab] = useState<Tab>("workspace");
   const [integrations, setIntegrations] = useState<Integration[]>(INITIAL_INTEGRATIONS);
-  const [automations, setAutomations] = useState<Automation[]>(INITIAL_AUTOMATIONS);
   const [connectFor, setConnectFor] = useState<Integration | null>(null);
   const [connectInput, setConnectInput] = useState("");
-  const [automationOpen, setAutomationOpen] = useState<Automation | "new" | null>(null);
 
   const toggleIntegration = (id: string) => {
     const integ = integrations.find((i) => i.id === id);
@@ -83,20 +67,6 @@ export default function SettingsPage() {
     toast(`${connectFor.name} connected`);
     setConnectFor(null);
     setConnectInput("");
-  };
-
-  const toggleAutomation = (id: string) =>
-    setAutomations((arr) => arr.map((a) => (a.id === id ? { ...a, active: !a.active } : a)));
-
-  const saveAutomation = (a: Automation) => {
-    if (automationOpen === "new") {
-      setAutomations((arr) => [...arr, { ...a, id: `a_${Date.now()}` }]);
-      toast("Automation created");
-    } else {
-      setAutomations((arr) => arr.map((x) => (x.id === a.id ? a : x)));
-      toast("Automation updated");
-    }
-    setAutomationOpen(null);
   };
 
   return (
@@ -210,34 +180,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {tab === "automations" && (
-        <div className="max-w-3xl">
-          <div className="flex justify-end mb-3">
-            <Button variant="primary" size="sm" onClick={() => setAutomationOpen("new")}>+ New automation</Button>
-          </div>
-          <div className="bg-bg-card border border-rule rounded-[8px] divide-y divide-rule-soft">
-            {automations.map((a) => (
-              <div key={a.id} className="flex items-start gap-4 px-4 py-3">
-                <Checkbox checked={a.active} onCheckedChange={() => toggleAutomation(a.id)} className="mt-1" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[14px] text-ink font-medium">{a.name}</div>
-                  <div className="text-[12px] text-ink-3 mt-0.5">
-                    <span className="font-mono uppercase text-[10px] tracking-[0.14em] text-ink-3">When </span> {a.trigger}
-                  </div>
-                  <div className="text-[12px] text-ink-3">
-                    <span className="font-mono uppercase text-[10px] tracking-[0.14em] text-ink-3">Then </span> {a.action}
-                  </div>
-                </div>
-                <Pill variant={a.active ? "ok" : "neutral"} dot>{a.active ? "Active" : "Paused"}</Pill>
-                <button onClick={() => setAutomationOpen(a)} className="text-[12px] text-accent hover:underline font-mono uppercase tracking-[0.06em]">Edit</button>
-              </div>
-            ))}
-            {automations.length === 0 && <p className="px-4 py-6 italic text-[13px] text-ink-3">No automations yet.</p>}
-          </div>
-          <p className="text-[12px] text-ink-3 mt-3 font-mono">Demo: actions log to toast — they don't dispatch real Lark / GitHub events.</p>
-        </div>
-      )}
-
       {tab === "notifications" && <NotificationPrefsTable />}
 
       <Modal open={!!connectFor} onClose={() => setConnectFor(null)} title={`Connect ${connectFor?.name ?? ""}`} size="sm">
@@ -257,60 +199,7 @@ export default function SettingsPage() {
           <Button variant="primary" size="sm" onClick={finishConnect} disabled={!connectInput.trim()}>Connect</Button>
         </div>
       </Modal>
-
-      <AutomationEditor
-        open={automationOpen !== null}
-        initial={automationOpen === "new" ? null : automationOpen}
-        onClose={() => setAutomationOpen(null)}
-        onSave={saveAutomation}
-      />
     </div>
-  );
-}
-
-function AutomationEditor({ open, initial, onClose, onSave }: {
-  open: boolean;
-  initial: Automation | null;
-  onClose: () => void;
-  onSave: (a: Automation) => void;
-}) {
-  const [name, setName] = useState("");
-  const [trigger, setTrigger] = useState("");
-  const [action, setAction] = useState("");
-  const [active, setActive] = useState(true);
-  useState(() => {
-    if (initial) {
-      setName(initial.name);
-      setTrigger(initial.trigger);
-      setAction(initial.action);
-      setActive(initial.active);
-    } else {
-      setName(""); setTrigger(""); setAction(""); setActive(true);
-    }
-  });
-  return (
-    <Modal open={open} onClose={onClose} title={initial ? "Edit automation" : "New automation"} size="md">
-      <div className="space-y-3">
-        <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Notify Lark on P0" />
-        <Textarea label="When" value={trigger} onChange={(e) => setTrigger(e.target.value)} placeholder="Ticket created with priority P0" />
-        <Textarea label="Then" value={action} onChange={(e) => setAction(e.target.value)} placeholder="Post to #cadence-urgent" />
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Checkbox checked={active} onCheckedChange={(c) => setActive(Boolean(c))} />
-          <span className="text-[13px] text-ink-2">Active</span>
-        </label>
-      </div>
-      <div className="flex justify-end gap-2 mt-4">
-        <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => onSave({ id: initial?.id ?? "_new", name, trigger, action, active })}
-          disabled={!name.trim() || !trigger.trim() || !action.trim()}
-        >
-          Save
-        </Button>
-      </div>
-    </Modal>
   );
 }
 
@@ -326,12 +215,12 @@ function NotificationPrefsTable() {
     { key: "digest", label: "Daily digest" },
   ];
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-2xl">
       <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
         <table className="w-full">
           <thead className="bg-bg-elevated">
             <tr className="border-b border-rule">
-              {["Event", "In-app", "Lark", "Email"].map((h) => (
+              {["Event", "In-app"].map((h) => (
                 <th key={h} className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 px-4 py-3">{h}</th>
               ))}
             </tr>
@@ -344,12 +233,6 @@ function NotificationPrefsTable() {
                   <td className="px-4 py-2.5 text-[13px] text-ink">{e.label}</td>
                   <td className="px-4 py-2.5">
                     <Checkbox checked={p.inApp} onCheckedChange={(c) => setPref(e.key, "inApp", Boolean(c))} />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Checkbox checked={p.lark} onCheckedChange={(c) => setPref(e.key, "lark", Boolean(c))} />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Checkbox checked={p.email} onCheckedChange={(c) => setPref(e.key, "email", Boolean(c))} />
                   </td>
                 </tr>
               );
