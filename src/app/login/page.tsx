@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@/components/ui";
@@ -64,8 +65,14 @@ export default function LoginPage() {
           </h1>
           <p className="font-body text-body-l text-ink-2 max-w-md mt-6">
             Three altitudes — Epic, Project, Ticket. Three planning stages — picklist, estimation,
-            joint commit. AI as evidence, never author.
+            joint commit. One weekly cycle, every team on the same beat.
           </p>
+          <Link
+            href="/guideline"
+            className="inline-flex items-center gap-1.5 mt-4 font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep"
+          >
+            Read the user guide →
+          </Link>
         </div>
 
         <div className="space-y-3">
