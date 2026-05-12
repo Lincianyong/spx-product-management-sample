@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  BookOpen,
   CheckCircle2,
   CheckSquare,
   ChevronsLeft,
@@ -32,6 +33,12 @@ interface NavItem {
   count?: () => number;
   hint?: string;
   prefix?: string;
+  /**
+   * Extra path prefixes that should also mark this entry active. Used
+   * when one sidebar item fronts multiple sibling routes that don't
+   * share a slash-prefix (e.g. /guideline + /guideline-pm + /guideline-eng).
+   */
+  alsoActiveOn?: string[];
   requires?: Capability;
 }
 
@@ -85,6 +92,7 @@ export function Sidebar() {
     {
       title: "Workspace",
       items: [
+        { label: "Guidelines", href: "/guideline", icon: BookOpen, alsoActiveOn: ["/guideline-pm", "/guideline-eng"] },
         { label: "Settings", href: "/settings", icon: SettingsIcon },
       ],
     },
@@ -164,7 +172,8 @@ export function Sidebar() {
                 const matchPath = item.prefix ?? item.href.split("?")[0];
                 const isActive =
                   pathname === matchPath ||
-                  (matchPath !== "/" && pathname.startsWith(matchPath + "/"));
+                  (matchPath !== "/" && pathname.startsWith(matchPath + "/")) ||
+                  (item.alsoActiveOn?.some((p) => pathname === p || pathname.startsWith(p + "/")) ?? false);
                 const count = item.count?.() ?? 0;
                 const Icon = item.icon;
                 return (
