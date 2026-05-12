@@ -1,73 +1,40 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface Props {
   size?: "sm" | "md" | "lg";
+  /** showExpress is kept for API compatibility; the official PNG is the
+   *  full SPX EXPRESS wordmark, so the prop has no rendering effect. */
   showExpress?: boolean;
   className?: string;
 }
 
 /**
- * Inline SVG approximation of the SPX Express mark.
- * Renders "SPX" in heavy oblique sans + signature speed-lines under
- * the letters. Optional EXPRESS tagline.
+ * Official SPX Express wordmark from the SPX Design System.
+ * Source: github.com/Lincianyong/spx-ds/assets/spx-express-logo.png
  *
- * To replace with the exact source SVG, copy the original paths into
- * the <g fill="#EE4D2D"> below in place of the <text> and slash rects.
+ * Per the DS brand spec (foundations/00-brand.md):
+ * - Use on white, neutral-50, neutral-1000, or brand-50 surfaces only
+ * - Maintain clear-space equal to the X height
+ * - Never below 24px tall (legibility breaks)
+ * - Sizes: 24 (favicon) / 40 (topbar) / 64 (login) / 96 (hero)
  */
-export function SpxLogo({ size = "sm", showExpress = false, className }: Props) {
-  const sizeCls = {
-    sm: "h-7",
-    md: "h-12",
-    lg: "h-[72px]",
-  }[size];
+export function SpxLogo({ size = "sm", className }: Props) {
+  // Native PNG aspect: 512 × 205 ≈ 2.498 : 1
+  const dims =
+    size === "sm" ? { h: 28, w: 70 } :   // ~topbar (40px is canonical; sidebar is tighter)
+    size === "md" ? { h: 48, w: 120 } :  // login surface
+    { h: 72, w: 180 };                    // hero
 
   return (
-    <svg
-      role="img"
-      aria-label="SPX Express"
-      viewBox="0 0 220 90"
-      className={cn(sizeCls, "w-auto", className)}
-    >
-      <g fill="#EE4D2D">
-        {/* Italic SPX wordmark */}
-        <g transform="skewX(-12)">
-          <text
-            x="34" y="58"
-            fontFamily="'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-            fontWeight="900"
-            fontStyle="italic"
-            fontSize="64"
-            letterSpacing="-2"
-          >
-            SPX
-          </text>
-        </g>
-
-        {/* Extended X-stroke — the diagonal slash that gives the mark its character */}
-        <path d="M 158 18 L 200 18 L 178 78 L 136 78 Z" opacity="0" />
-        <polygon points="170,20 178,20 152,82 144,82" />
-
-        {showExpress && (
-          <text
-            x="148" y="83"
-            fontFamily="'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-            fontWeight="900"
-            fontStyle="italic"
-            fontSize="13"
-            letterSpacing="3"
-          >
-            EXPRESS
-          </text>
-        )}
-
-        {/* Four speed lines beneath the letters */}
-        <g transform="skewX(-30)">
-          <rect x="14" y="78" width="10" height="5" />
-          <rect x="30" y="78" width="22" height="5" />
-          <rect x="58" y="78" width="44" height="5" />
-          <rect x="108" y="78" width="12" height="5" />
-        </g>
-      </g>
-    </svg>
+    <Image
+      src="/spx-express-logo.png"
+      alt="SPX Express"
+      width={dims.w}
+      height={dims.h}
+      priority
+      className={cn("h-auto w-auto select-none", className)}
+      style={{ height: dims.h }}
+    />
   );
 }

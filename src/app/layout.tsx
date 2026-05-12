@@ -73,11 +73,8 @@ export const metadata: Metadata = {
     title: "Cadence — SPX Express AI Engineering",
     description: "Plan with conviction. Ship in cadence.",
   },
-  icons: {
-    icon: "/icon.svg",
-    apple: "/apple-icon.svg",
-    shortcut: "/icon.svg",
-  },
+  // Icons are auto-detected from src/app/icon.png + src/app/apple-icon.png
+  // (Next 14 file-based convention). No need to declare them here.
   appleWebApp: {
     capable: true,
     title: "Cadence",
