@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, AtSign, Clock } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
@@ -462,14 +462,14 @@ function PlanningCalendarMini({ sprint }: { sprint: Sprint }) {
   const activeIdx = reachedIdx === -1 ? milestones.length - 1 : Math.max(0, reachedIdx - 1);
 
   return (
-    <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-4 flex items-center gap-4">
+    <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-4 flex items-center justify-between gap-12">
       <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 shrink-0">
         Cycle for {sprint.key}
       </div>
       <div className="flex items-center gap-2 flex-1">
         {milestones.map((m, i) => (
-          <div key={i} className="flex items-center gap-2 flex-1">
-            <div className="flex flex-col items-center min-w-0">
+          <Fragment key={i}>
+            <div className="flex flex-col items-center min-w-0 shrink-0">
               <span
                 className={cn(
                   "w-2 h-2 rounded-full",
@@ -484,9 +484,9 @@ function PlanningCalendarMini({ sprint }: { sprint: Sprint }) {
               </span>
             </div>
             {i < milestones.length - 1 && (
-              <span className={cn("flex-1 h-px", i < activeIdx ? "bg-ok" : "bg-rule")} />
+              <span aria-hidden className={cn("flex-1 h-px", i < activeIdx ? "bg-ok" : "bg-rule")} />
             )}
-          </div>
+          </Fragment>
         ))}
       </div>
     </div>
