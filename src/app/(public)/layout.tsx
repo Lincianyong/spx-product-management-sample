@@ -10,7 +10,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       <PublicNav />
-      <main className="flex-1 w-full max-w-[1100px] mx-auto px-6 py-8">
+      <main className="flex-1 w-full max-w-[1280px] mx-auto px-6 py-8">
         {children}
       </main>
       <footer className="border-t border-rule-soft py-6">

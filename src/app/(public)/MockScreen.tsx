@@ -9,12 +9,14 @@ import { cn } from "@/lib/utils";
  * visuals stay in sync with the design tokens as they evolve.
  */
 export function MockScreen({
+  id,
   title,
   url,
   caption,
   children,
   className,
 }: {
+  id?: string;
   title: string;
   url: string;
   caption?: string;
@@ -22,7 +24,7 @@ export function MockScreen({
   className?: string;
 }) {
   return (
-    <figure className={cn("not-prose", className)}>
+    <figure id={id} className={cn("not-prose", className)}>
       <div className="bg-bg-elevated border border-rule rounded-[10px] overflow-hidden shadow-md">
         {/* Window chrome */}
         <div className="flex items-center gap-2 px-3 h-9 border-b border-rule bg-bg-card">
