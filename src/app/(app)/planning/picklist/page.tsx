@@ -406,19 +406,17 @@ function BacklogFilterRow({
   authors: import("@/lib/types").User[];
 }) {
   return (
-    <div className="grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-2 bg-bg-elevated/60 border-b border-rule-soft items-center">
-      <span />
-      <span />
-      <span />
+    <div className="grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-2 bg-bg-elevated/30 border-b border-rule items-center">
+      <span className="col-span-3" />
       <input
         type="text"
         value={keyQuery}
         onChange={(e) => onKeyQuery(e.target.value)}
         placeholder="key…"
         aria-label="Filter by key"
-        className="h-7 px-2 text-[12px] font-mono rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 min-w-0"
+        className="h-7 px-2 text-[12px] font-mono rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 min-w-0 w-full"
       />
-      <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
         <input
           type="text"
           value={titleQuery}
@@ -428,7 +426,7 @@ function BacklogFilterRow({
           className="h-7 px-2 text-[12px] rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 flex-1 min-w-0"
         />
         <Select value={typeFilter} onValueChange={(v) => onTypeFilter(v as TicketType | "all")}>
-          <SelectTrigger size="sm" className="h-7 w-24 shrink-0"><SelectValue /></SelectTrigger>
+          <SelectTrigger size="sm" className="h-7 px-2 w-[88px] shrink-0"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
             <SelectItem value="bug">Bug</SelectItem>
@@ -439,7 +437,7 @@ function BacklogFilterRow({
         <label
           title="Show carry-over tickets only"
           className={cn(
-            "inline-flex items-center gap-1 px-1.5 h-7 rounded-[4px] border text-[11px] font-mono uppercase tracking-[0.06em] cursor-pointer select-none shrink-0",
+            "inline-flex items-center justify-center px-2 h-7 rounded-[4px] border text-[11px] font-mono uppercase tracking-[0.06em] cursor-pointer select-none shrink-0",
             carryOnly ? "border-warn text-warn bg-warn-soft" : "border-rule text-ink-3 bg-bg-card hover:border-ink-4"
           )}
         >
@@ -453,7 +451,7 @@ function BacklogFilterRow({
         </label>
       </div>
       <Select value={projectFilter} onValueChange={onProjectFilter}>
-        <SelectTrigger size="sm" className="h-7 min-w-0"><SelectValue /></SelectTrigger>
+        <SelectTrigger size="sm" className="h-7 px-2 min-w-0 w-full"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
           <SelectItem value="ad-hoc">Ad-hoc</SelectItem>
@@ -463,7 +461,7 @@ function BacklogFilterRow({
         </SelectContent>
       </Select>
       <Select value={authorFilter} onValueChange={onAuthorFilter}>
-        <SelectTrigger size="sm" className="h-7 min-w-0"><SelectValue /></SelectTrigger>
+        <SelectTrigger size="sm" className="h-7 px-2 min-w-0 w-full"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
           {authors.map((u) => (
@@ -473,7 +471,7 @@ function BacklogFilterRow({
       </Select>
       <span />
       <Select value={priorityFilter} onValueChange={(v) => onPriorityFilter(v as Priority | "all")}>
-        <SelectTrigger size="sm" className="h-7 min-w-0"><SelectValue /></SelectTrigger>
+        <SelectTrigger size="sm" className="h-7 px-2 min-w-0 w-full"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
           <SelectItem value="P0">P0</SelectItem>
