@@ -39,10 +39,10 @@ const TYPES: {
   blurb: string;
   prefix: string;
 }[] = [
+  { id: "bug",       label: "Bug",                   lane: "All", cap: "create_bug",       icon: Bug,     blurb: "Something broken. Repro / Expected / Actual required. Anyone can file.",                              prefix: "BUG" },
   { id: "epic",      label: "Epic",                  lane: "PM",  cap: "create_epic",      icon: Compass, blurb: "Conviction-level bet. Quarter altitude. Title + thesis + PM owner.",                                  prefix: "EPC" },
   { id: "ticket",    label: "Engineering Ticket",    lane: "PM",  cap: "create_ticket",    icon: FileText, blurb: "A unit of engineering work. Lands in Backlog; PM picks it during the next sprint planning.",          prefix: "CDN" },
   { id: "tech-task", label: "Tech Task",             lane: "Eng", cap: "create_tech_task", icon: Wrench,  blurb: "Internal infra, migration, refactor. Requires blast radius + rollback plan.",                       prefix: "TCH" },
-  { id: "bug",       label: "Bug",                   lane: "All", cap: "create_bug",       icon: Bug,     blurb: "Something broken. Repro / Expected / Actual required. Anyone can file.",                              prefix: "BUG" },
 ];
 
 // ─── Page ────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: Crea
           Your role doesn't have a creation lane assigned.
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 max-w-3xl">
+        <div className="grid grid-cols-3 gap-3 max-w-4xl">
           {allowed.map((t) => {
             const Icon = t.icon;
             return (

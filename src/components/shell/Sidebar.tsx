@@ -55,7 +55,6 @@ export function Sidebar() {
       title: "Daily",
       items: [
         { label: "My Work", href: "/me", icon: UserIcon },
-        { label: "Sprint Board", href: "/sprint", icon: Columns3 },
       ],
     },
     {
@@ -68,6 +67,7 @@ export function Sidebar() {
     {
       title: "Plan",
       items: [
+        { label: "Sprint Board", href: "/sprint", icon: Columns3 },
         { label: "Planning", href: "/planning", icon: CheckSquare, prefix: "/planning" },
         { label: "Backlog", href: "/backlog", icon: List },
       ],
