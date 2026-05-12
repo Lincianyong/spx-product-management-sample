@@ -20,3 +20,7 @@ export {
   SelectItem,
   SelectSeparator,
 } from "./Select";
+export { Checkbox } from "./Checkbox";
+export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from "./Popover";
+export { Calendar } from "./Calendar";
+export { DatePicker } from "./DatePicker";

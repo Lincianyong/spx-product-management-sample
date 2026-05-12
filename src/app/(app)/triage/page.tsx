@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { PageHeader, EmptyState } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Avatar, Button, Pill, PriorityPill, TypePill, AiTag, toast } from "@/components/ui";
+import { Avatar, Button, Checkbox, Pill, PriorityPill, TypePill, AiTag, toast } from "@/components/ui";
 import { Modal, Textarea } from "@/components/ui";
 import { cn, relativeTime } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
@@ -177,14 +177,13 @@ export default function TriagePage() {
       {/* Bulk controls */}
       <div className="bg-bg-elevated border border-rule rounded-[8px] px-4 py-3 mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={allChecked}
-            onChange={() => {
+          <Checkbox
+            checked={selected.size === 0 ? false : allChecked ? true : "indeterminate"}
+            onCheckedChange={() => {
               if (allChecked) setSelected(new Set());
               else setSelected(new Set(triage.map((t) => t.id)));
             }}
-            className="w-4 h-4 accent-accent"
+            aria-label="Select all"
           />
           <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
             {selected.size} of {triage.length} selected
@@ -214,11 +213,11 @@ export default function TriagePage() {
                 slaBreach ? "border-l-4 border-l-danger border-danger-soft bg-danger-soft/30" : "border-rule"
               )}
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={selected.has(t.id)}
-                onChange={() => toggleSelect(t.id)}
-                className="mt-1 w-4 h-4 accent-accent"
+                onCheckedChange={() => toggleSelect(t.id)}
+                className="mt-1"
+                aria-label={`Select ${t.key}`}
               />
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">

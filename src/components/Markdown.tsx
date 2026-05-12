@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import { parseMarkdown, type MdInline, type MdNode } from "@/lib/markdown";
 import { useAppStore } from "@/lib/store";
-import { Avatar, Pill, PriorityPill } from "@/components/ui";
+import { Avatar, Checkbox, Pill, PriorityPill } from "@/components/ui";
 import { statusLabel } from "@/lib/utils";
 
 interface Props {
@@ -49,12 +49,7 @@ function renderBlock(n: MdNode, key: number): React.ReactNode {
               {item.checked === null ? (
                 <span className="text-ink-3 leading-[1.55]">•</span>
               ) : (
-                <input
-                  type="checkbox"
-                  checked={item.checked}
-                  readOnly
-                  className="mt-1 w-3.5 h-3.5 accent-accent"
-                />
+                <Checkbox checked={item.checked} className="mt-1 pointer-events-none" tabIndex={-1} aria-readonly />
               )}
               <span className={item.checked ? "line-through text-ink-4" : ""}>
                 {item.children.map((c, j) => renderInline(c, j))}

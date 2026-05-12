@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Button, Pill, RolePill, Modal, Input, Textarea, toast } from "@/components/ui";
+import { Button, Checkbox, Pill, RolePill, Modal, Input, Textarea, toast } from "@/components/ui";
 import { cn, roleLabel } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 
@@ -223,7 +223,7 @@ export default function SettingsPage() {
           <div className="bg-bg-card border border-rule rounded-[8px] divide-y divide-rule-soft">
             {automations.map((a) => (
               <div key={a.id} className="flex items-start gap-4 px-4 py-3">
-                <input type="checkbox" checked={a.active} onChange={() => toggleAutomation(a.id)} className="mt-1 w-4 h-4 accent-accent" />
+                <Checkbox checked={a.active} onCheckedChange={() => toggleAutomation(a.id)} className="mt-1" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[14px] text-ink font-medium">{a.name}</div>
                   <div className="text-[12px] text-ink-3 mt-0.5">
@@ -299,8 +299,8 @@ function AutomationEditor({ open, initial, onClose, onSave }: {
         <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Notify Lark on P0" />
         <Textarea label="When" value={trigger} onChange={(e) => setTrigger(e.target.value)} placeholder="Ticket created with priority P0" />
         <Textarea label="Then" value={action} onChange={(e) => setAction(e.target.value)} placeholder="Post to #cadence-urgent" />
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="w-4 h-4 accent-accent" />
+        <label className="flex items-center gap-2 cursor-pointer">
+          <Checkbox checked={active} onCheckedChange={(c) => setActive(Boolean(c))} />
           <span className="text-[13px] text-ink-2">Active</span>
         </label>
       </div>
@@ -349,13 +349,13 @@ function NotificationPrefsTable() {
                 <tr key={e.key} className="border-b border-rule-soft">
                   <td className="px-4 py-2.5 text-[13px] text-ink">{e.label}</td>
                   <td className="px-4 py-2.5">
-                    <input type="checkbox" checked={p.inApp} onChange={(ev) => setPref(e.key, "inApp", ev.target.checked)} className="w-4 h-4 accent-accent" />
+                    <Checkbox checked={p.inApp} onCheckedChange={(c) => setPref(e.key, "inApp", Boolean(c))} />
                   </td>
                   <td className="px-4 py-2.5">
-                    <input type="checkbox" checked={p.lark} onChange={(ev) => setPref(e.key, "lark", ev.target.checked)} className="w-4 h-4 accent-accent" />
+                    <Checkbox checked={p.lark} onCheckedChange={(c) => setPref(e.key, "lark", Boolean(c))} />
                   </td>
                   <td className="px-4 py-2.5">
-                    <input type="checkbox" checked={p.email} onChange={(ev) => setPref(e.key, "email", ev.target.checked)} className="w-4 h-4 accent-accent" />
+                    <Checkbox checked={p.email} onCheckedChange={(c) => setPref(e.key, "email", Boolean(c))} />
                   </td>
                 </tr>
               );

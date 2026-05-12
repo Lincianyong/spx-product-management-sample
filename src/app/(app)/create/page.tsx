@@ -9,6 +9,8 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import {
   AiTag,
   Button,
+  Checkbox,
+  DatePicker,
   Input,
   Pill,
   toast,
@@ -651,11 +653,11 @@ function EpicForm() {
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Start</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]" />
+              <DatePicker value={startDate} onChange={setStartDate} />
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Target end</span>
-              <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]" />
+              <DatePicker value={targetEndDate} onChange={setTargetEndDate} fromDate={startDate} />
             </label>
           </div>
         </div>
@@ -735,7 +737,7 @@ function AcEditor({
       <ul className="space-y-1.5 mb-2">
         {items.map((it, i) => (
           <li key={i} className="flex items-center gap-2">
-            <input type="checkbox" className="w-4 h-4 accent-accent" disabled />
+            <Checkbox checked={false} disabled aria-readonly />
             <span className="flex-1 text-[13px] text-ink-2">{it}</span>
             <button onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="text-ink-4 hover:text-danger text-[12px]">×</button>
           </li>

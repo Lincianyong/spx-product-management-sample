@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Avatar, Button, Pill, PriorityPill, TypePill, AiTag, toast } from "@/components/ui";
+import { Avatar, Button, Checkbox, Pill, PriorityPill, TypePill, AiTag, toast } from "@/components/ui";
 import { cn, statusLabel, relativeTime, formatDate } from "@/lib/utils";
 import type { TicketStatus, Comment } from "@/lib/types";
 import { CommentThread } from "@/components/comments/CommentThread";
@@ -467,11 +467,10 @@ function AcItem({
   return (
     <li className="group" {...menu.bind}>
       <div className="flex items-start gap-3 px-3 py-2 rounded-[6px] hover:bg-rule-soft">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={ac.done}
-          onChange={onToggle}
-          className="mt-1 w-4 h-4 accent-accent"
+          onCheckedChange={() => onToggle()}
+          className="mt-1"
         />
         <span className={cn("flex-1 text-[14px]", ac.done && "line-through text-ink-4")}>{ac.text}</span>
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-100">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { Avatar, HealthPill, Pill, Button, Modal, Input, toast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
+import { Avatar, HealthPill, Pill, Button, DatePicker, Modal, Input, toast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { cn, healthLabel, formatDate } from "@/lib/utils";
 import type { Epic, Health } from "@/lib/types";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
@@ -546,11 +546,11 @@ function CreateEpicModal({
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Start</span>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]" />
+              <DatePicker value={startDate} onChange={setStartDate} />
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Target end</span>
-              <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className="h-10 px-3 rounded-[6px] border border-rule bg-bg-card text-[13px]" />
+              <DatePicker value={targetEndDate} onChange={setTargetEndDate} fromDate={startDate} />
             </label>
           </div>
         </div>

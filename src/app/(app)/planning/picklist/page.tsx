@@ -8,6 +8,7 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import {
   Avatar,
   Button,
+  Checkbox,
   Pill,
   PriorityPill,
   TypePill,
@@ -528,13 +529,12 @@ function PickRow({
       )}
     >
       {handle ? <DragHandle handleProps={handle} className="text-[16px]" /> : <span />}
-      <input
-        type="checkbox"
+      <Checkbox
         checked={picked}
-        onChange={onToggle}
+        onCheckedChange={() => onToggle()}
         disabled={disabled}
         title={disabled ? "Only PM can modify the picklist" : undefined}
-        className="w-4 h-4 accent-accent disabled:opacity-40 disabled:cursor-not-allowed"
+        aria-label={picked ? "Remove from picks" : "Add to picks"}
       />
       <span className="font-mono text-[12px] text-ink-3">{rank ?? "—"}</span>
       <span className="font-mono text-[12px] text-ink">{t.key}</span>

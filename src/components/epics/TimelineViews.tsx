@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Diamond, Flag } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import {
+  DatePicker,
   HealthPill,
   toast,
   Select,
@@ -243,10 +244,8 @@ export function GanttView({
         </div>
         {rangePreset === "custom" && (
           <div className="flex items-center gap-2 ml-2">
-            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
-              className="h-8 px-2 text-[12px] rounded-[6px] border border-rule bg-bg-card" />
-            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
-              className="h-8 px-2 text-[12px] rounded-[6px] border border-rule bg-bg-card" />
+            <DatePicker size="sm" value={customFrom} onChange={setCustomFrom} className="w-40" />
+            <DatePicker size="sm" value={customTo} onChange={setCustomTo} fromDate={customFrom} className="w-40" />
           </div>
         )}
         <span className="ml-auto font-mono text-[11px] text-ink-3">
