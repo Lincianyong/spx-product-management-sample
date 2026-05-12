@@ -9,20 +9,19 @@ import { cn } from "@/lib/utils";
 
 /**
  * CycleBar — persistent header rendered by the (cycle) route group
- * (the /planning module). Three planning milestones laid out as
- * connected dots, each click-navigable. Mirrors the PlanningCalendarMini
- * scrubber on /me so the visual idiom is shared across the app.
+ * (the /planning module). Four milestones laid out as connected dots,
+ * each click-navigable. Mirrors the PlanningCalendarMini scrubber on
+ * /me so the visual idiom is shared across the app.
  *
  * - Past dot → green (cycle stage already passed by wall clock)
  * - Current dot → accent-ringed (clock is sitting in this stage)
  * - Future dot → muted
  *
- * Sprint Board and Sprint Close live as their own sidebar entries and
- * intentionally do not appear here — this bar is the planning scrubber,
- * not a full lifecycle map.
+ * Sprint Close lives as its own sidebar entry and intentionally is not
+ * a stage in this bar — close is a retro, not a scrubber position.
  */
 
-type StageKey = "picklist" | "estimation" | "joint";
+type StageKey = "picklist" | "estimation" | "joint" | "sprint";
 
 interface StageDef {
   key: StageKey;
@@ -36,6 +35,7 @@ const STAGES: StageDef[] = [
   { key: "picklist",   label: "Picklist",   href: "/planning/picklist",   matchPath: "/planning/picklist",   clockStages: ["picklist"] },
   { key: "estimation", label: "Estimation", href: "/planning/estimation", matchPath: "/planning/estimation", clockStages: ["estimation"] },
   { key: "joint",      label: "Joint",      href: "/planning/joint",      matchPath: "/planning/joint",      clockStages: ["joint"] },
+  { key: "sprint",     label: "Sprint",     href: "/sprint",              matchPath: "/sprint",              clockStages: ["active"] },
 ];
 
 export function CycleBar() {
@@ -53,7 +53,7 @@ export function CycleBar() {
   const activeIdx = STAGES.findIndex((s) => s.clockStages.includes(clock));
 
   return (
-    <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-6 flex items-center gap-4">
+    <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-6 flex items-center justify-between gap-6">
       <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 shrink-0">
         Cycle for {anchor.key} · Now {weekday(now)} {time(now)}
       </div>
