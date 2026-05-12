@@ -41,6 +41,7 @@ import type { TicketStatus, Ticket } from "@/lib/types";
 import { STATUS_TRANSITIONS, TRANSITIONS_REQUIRING_CONFIRM } from "@/lib/types";
 import { TicketSlideOver } from "@/components/tickets/TicketSlideOver";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+import { DRAG_SOURCE_OPACITY, DRAG_OVERLAY_CLASS } from "@/lib/drag-styles";
 
 type SprintFilter = "me" | "pod" | "all";
 
@@ -386,7 +387,7 @@ export default function SprintBoardPage() {
 
         <DragOverlay>
           {draggingId && (
-            <div className="opacity-90 rotate-[-2deg]">
+            <div className={DRAG_OVERLAY_CLASS}>
               <TicketCard ticket={tickets.find((t) => t.id === draggingId)!} compact />
             </div>
           )}
@@ -496,7 +497,7 @@ function SortableTicket({ ticket, onOpen }: { ticket: Ticket; onOpen: (k: string
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? DRAG_SOURCE_OPACITY : 1,
   };
   return (
     <div ref={setNodeRef} style={style} {...attributes}>

@@ -8,7 +8,7 @@ import { cn, statusLabel, relativeTime, formatDate } from "@/lib/utils";
 import { Ban, Lightbulb } from "lucide-react";
 import type { TicketStatus, Comment } from "@/lib/types";
 import { CommentThread } from "@/components/comments/CommentThread";
-import { CommentComposer } from "@/components/comments/CommentComposer";
+import { CommentComposer, UnsavedPill } from "@/components/comments/CommentComposer";
 import { Markdown } from "@/components/Markdown";
 import { LinkedWorkGraph } from "@/components/tickets/LinkedWorkGraph";
 import { CopyLinkButton } from "@/components/CopyLinkMenu";
@@ -366,23 +366,26 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
                       placeholder="What changed? e.g., Pairing with @kev tomorrow on the migration window."
                       className="min-h-[64px] text-[13px]"
                     />
-                    <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center justify-between mt-2 gap-3">
                       <p className="text-[11px] text-ink-3 font-mono">
                         Visible to everyone watching this ticket. Logged with your name + timestamp.
                       </p>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => {
-                          if (!noteDraft.trim() || !user) return;
-                          addStatusNote(ticket.id, noteDraft, user.id);
-                          setNoteDraft("");
-                          toast("Status update posted");
-                        }}
-                        disabled={!noteDraft.trim()}
-                      >
-                        Post update
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {noteDraft.trim() && <UnsavedPill />}
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => {
+                            if (!noteDraft.trim() || !user) return;
+                            addStatusNote(ticket.id, noteDraft, user.id);
+                            setNoteDraft("");
+                            toast("Status update posted");
+                          }}
+                          disabled={!noteDraft.trim()}
+                        >
+                          Post update
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}

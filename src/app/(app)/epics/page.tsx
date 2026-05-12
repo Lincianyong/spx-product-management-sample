@@ -28,6 +28,7 @@ import { Markdown } from "@/components/Markdown";
 import { can } from "@/lib/permissions";
 import { Plus } from "lucide-react";
 import { EpicLevelTimeline } from "@/components/epics/EpicLevelTimeline";
+import { DRAG_SOURCE_OPACITY, DRAG_OVERLAY_CLASS } from "@/lib/drag-styles";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
@@ -234,14 +235,11 @@ function EpicCard({
   epic,
   onOpen,
   dragHandle,
-  dragging,
 }: {
   epic: Epic;
   onOpen: (k: string) => void;
   /** Drag-handle listeners spread onto the grip icon (sortable contexts). */
   dragHandle?: Record<string, unknown>;
-  /** When true, render with a "lifted" treatment in the DragOverlay. */
-  dragging?: boolean;
 }) {
   const projects = useAppStore((s) => s.projects);
   const users = useAppStore((s) => s.users);
@@ -252,8 +250,7 @@ function EpicCard({
     <div
       className={cn(
         "group relative bg-bg-card border border-rule rounded-[8px] shadow-sm border-l-4 border-l-accent",
-        "transition-all duration-150",
-        dragging ? "shadow-lg ring-2 ring-accent" : "hover:border-accent hover:-translate-y-px"
+        "transition-all duration-150 hover:border-accent hover:-translate-y-px"
       )}
     >
       {dragHandle && (
@@ -300,7 +297,7 @@ function SortableEpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) =>
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? DRAG_SOURCE_OPACITY : 1,
   };
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
@@ -444,8 +441,8 @@ function EpicDndContext({
       {children}
       <DragOverlay>
         {dragging && (
-          <div className="opacity-95 rotate-[-1deg] w-72">
-            <EpicCard epic={dragging} onOpen={onOpen} dragging />
+          <div className={cn(DRAG_OVERLAY_CLASS, "w-72")}>
+            <EpicCard epic={dragging} onOpen={onOpen} />
           </div>
         )}
       </DragOverlay>

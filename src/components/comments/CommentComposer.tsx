@@ -186,7 +186,10 @@ export function CommentComposer({ placeholder = "Write a comment…", initial = 
             />
           </label>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {(body !== initial || attachments.length > 0) && (body.trim() || attachments.length > 0) && (
+            <UnsavedPill />
+          )}
           {onCancel && (
             <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
           )}
@@ -196,6 +199,23 @@ export function CommentComposer({ placeholder = "Write a comment…", initial = 
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Compact pill that signals a draft is held in component state and hasn't
+ * been written back through onSubmit yet. Same shape is reused on the
+ * status-note composer in TicketView so the affordance reads consistently.
+ */
+export function UnsavedPill({ label = "Unsaved" }: { label?: string }) {
+  return (
+    <span
+      title="You have unsaved changes — click the submit button to save."
+      className="inline-flex items-center gap-1 px-1.5 h-5 rounded-[4px] bg-warn-soft text-warn font-mono text-[10px] uppercase tracking-[0.06em]"
+    >
+      <span className="w-1 h-1 rounded-full bg-warn animate-pulse" />
+      {label}
+    </span>
   );
 }
 
