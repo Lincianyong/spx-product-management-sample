@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PlanningNav } from "@/components/PlanningNav";
 import { useAppStore, useCurrentUser } from "@/lib/store";
@@ -26,11 +25,10 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { can } from "@/lib/permissions";
 import { LaneBanner } from "@/components/LaneBanner";
 
-type SortKey = "rank" | "priority" | "created" | "title" | "type";
+type SortKey = "key" | "title" | "parent" | "author" | "created" | "priority";
 type SortDir = "asc" | "desc";
 
 const PRIORITY_ORDER: Record<Priority, number> = { P0: 0, P1: 1, P2: 2 };
-const TYPE_ORDER: Record<TicketType, number> = { bug: 0, engineering: 1, tech_task: 2 };
 
 export default function PicklistPage() {
   useDocumentTitle("Picklist · Stage 4a");
@@ -46,14 +44,15 @@ export default function PicklistPage() {
   const user = useCurrentUser();
   const router = useRouter();
 
-  // ─── Search · Filter · Sort state ──────────────────────────────────
-  const [query, setQuery] = useState("");
+  // ─── Search · Filter · Sort state (scoped to Available backlog table) ─
+  const [keyQuery, setKeyQuery] = useState("");
+  const [titleQuery, setTitleQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TicketType | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
-  const [projectFilter, setProjectFilter] = useState<string>("all"); // project id or "all" / "ad-hoc"
+  const [projectFilter, setProjectFilter] = useState<string>("all");
   const [authorFilter, setAuthorFilter] = useState<string>("all");
   const [carryOnly, setCarryOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<SortKey>("rank");
+  const [sortBy, setSortBy] = useState<SortKey>("priority");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const planningSprint = sprints.find((s) => s.state === "planning");
@@ -76,7 +75,7 @@ export default function PicklistPage() {
       .filter((u): u is NonNullable<typeof u> => Boolean(u));
   }, [candidates, users]);
 
-  // Filter predicate — applied to BOTH lists so search/filter scoping is consistent.
+  // Filter predicate — scoped to the Available backlog table.
   const matches = (t: Ticket) => {
     if (typeFilter !== "all" && t.type !== typeFilter) return false;
     if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
@@ -86,13 +85,10 @@ export default function PicklistPage() {
     }
     if (authorFilter !== "all" && t.authorId !== authorFilter) return false;
     if (carryOnly && !t.carryOver) return false;
-    if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      const author = users.find((u) => u.id === t.authorId);
-      const proj = projects.find((p) => p.id === t.projectId);
-      const hay = [t.key, t.title, t.description, ...(t.tags ?? []), author?.displayName ?? "", proj?.key ?? ""]
-        .join(" ")
-        .toLowerCase();
+    if (keyQuery.trim() && !t.key.toLowerCase().includes(keyQuery.trim().toLowerCase())) return false;
+    if (titleQuery.trim()) {
+      const q = titleQuery.trim().toLowerCase();
+      const hay = [t.title, t.description, ...(t.tags ?? [])].join(" ").toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -101,41 +97,48 @@ export default function PicklistPage() {
   const compare = (a: Ticket, b: Ticket): number => {
     let v = 0;
     switch (sortBy) {
-      case "rank":
-        v = (a.backlogRank ?? 99) - (b.backlogRank ?? 99);
-        break;
-      case "priority":
-        v = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-        break;
-      case "created":
-        v = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case "key":
+        v = a.key.localeCompare(b.key, undefined, { numeric: true });
         break;
       case "title":
         v = a.title.localeCompare(b.title);
         break;
-      case "type":
-        v = TYPE_ORDER[a.type] - TYPE_ORDER[b.type];
+      case "parent": {
+        const pa = projects.find((p) => p.id === a.projectId)?.key ?? "~ad-hoc";
+        const pb = projects.find((p) => p.id === b.projectId)?.key ?? "~ad-hoc";
+        v = pa.localeCompare(pb);
+        break;
+      }
+      case "author": {
+        const ua = users.find((u) => u.id === a.authorId)?.displayName ?? "";
+        const ub = users.find((u) => u.id === b.authorId)?.displayName ?? "";
+        v = ua.localeCompare(ub);
+        break;
+      }
+      case "created":
+        v = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        break;
+      case "priority":
+        v = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
         break;
     }
     return sortDir === "asc" ? v : -v;
   };
 
-  // Picked list — always rank-sorted (drag order is the source of truth),
-  // but search/filter still scopes which items are shown.
+  // Picked list — always rank-sorted (drag order is the source of truth).
+  // Filters are scoped to the Available backlog table only.
   const sortedPicked = useMemo(() => {
-    return [...picked]
-      .filter(matches)
-      .sort((a, b) => (a.picklistRank ?? 99) - (b.picklistRank ?? 99));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [picked, query, typeFilter, priorityFilter, projectFilter, authorFilter, carryOnly]);
+    return [...picked].sort((a, b) => (a.picklistRank ?? 99) - (b.picklistRank ?? 99));
+  }, [picked]);
 
   const sortedUnpicked = useMemo(() => {
     return [...unpicked].filter(matches).sort(compare);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unpicked, query, typeFilter, priorityFilter, projectFilter, authorFilter, carryOnly, sortBy, sortDir]);
+  }, [unpicked, keyQuery, titleQuery, typeFilter, priorityFilter, projectFilter, authorFilter, carryOnly, sortBy, sortDir]);
 
   const filtersActive =
-    Boolean(query.trim()) ||
+    Boolean(keyQuery.trim()) ||
+    Boolean(titleQuery.trim()) ||
     typeFilter !== "all" ||
     priorityFilter !== "all" ||
     projectFilter !== "all" ||
@@ -143,7 +146,8 @@ export default function PicklistPage() {
     carryOnly;
 
   const clearFilters = () => {
-    setQuery("");
+    setKeyQuery("");
+    setTitleQuery("");
     setTypeFilter("all");
     setPriorityFilter("all");
     setProjectFilter("all");
@@ -207,153 +211,36 @@ export default function PicklistPage() {
         />
       )}
 
-      {/* Search + filters + sort toolbar */}
-      <div className="bg-bg-card border border-rule rounded-[8px] p-3 mb-4 space-y-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[220px] max-w-md">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-4 pointer-events-none" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search key, title, tags, author…"
-              className="w-full h-8 pl-8 pr-8 text-[12px] rounded-[6px] border border-rule bg-bg-card text-ink placeholder:text-ink-4"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-4 hover:text-ink"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TicketType | "all")}>
-              <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="bug">Bug</SelectItem>
-                <SelectItem value="engineering">Ticket</SelectItem>
-                <SelectItem value="tech_task">Tech task</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as Priority | "all")}>
-              <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All priorities</SelectItem>
-                <SelectItem value="P0">P0</SelectItem>
-                <SelectItem value="P1">P1</SelectItem>
-                <SelectItem value="P2">P2</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={projectFilter} onValueChange={setProjectFilter}>
-              <SelectTrigger size="sm" className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All projects</SelectItem>
-                <SelectItem value="ad-hoc">Ad-hoc (no parent)</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.key} · {p.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={authorFilter} onValueChange={setAuthorFilter}>
-              <SelectTrigger size="sm" className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All authors</SelectItem>
-                {candidateAuthors.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>{u.displayName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <label className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-[6px] border border-rule bg-bg-card text-[12px] text-ink-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={carryOnly}
-                onChange={(e) => setCarryOnly(e.target.checked)}
-                className="w-3.5 h-3.5 accent-accent"
-              />
-              Carry-over only
-            </label>
-
-            {filtersActive && (
-              <button
-                onClick={clearFilters}
-                className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 flex-wrap pt-2 border-t border-rule-soft">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Sort backlog by</span>
-            {([
-              { id: "rank", label: "Rank" },
-              { id: "priority", label: "Priority" },
-              { id: "created", label: "Created" },
-              { id: "title", label: "Title" },
-              { id: "type", label: "Type" },
-            ] as { id: SortKey; label: string }[]).map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSortBy(s.id)}
-                className={cn(
-                  "px-2.5 h-7 text-[11px] font-mono uppercase rounded-[4px] border transition-colors duration-100",
-                  sortBy === s.id ? "bg-ink text-bg-card border-ink" : "bg-bg-card text-ink-2 border-rule hover:border-ink-4"
-                )}
-              >
-                {s.label}
-              </button>
-            ))}
-            <button
-              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-              className="px-2.5 h-7 text-[11px] font-mono uppercase rounded-[4px] border bg-bg-card text-ink-2 border-rule hover:border-ink-4"
-              title={sortDir === "asc" ? "Ascending — click to flip" : "Descending — click to flip"}
-            >
-              {sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
-            </button>
-          </div>
-          <Button variant="primary" onClick={send} disabled={!canPick} title={!canPick ? "Only PM can hand off" : undefined}>
+      {/* Slim top action strip — Last sprint context + Send CTA */}
+      <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-2.5 mb-4 flex items-center gap-3 flex-wrap">
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+          Picked {picked.length} · Carry-over {candidates.filter((t) => t.carryOver).length}
+        </span>
+        {lastSprint && (
+          <span className="text-[12px] text-ink-3">
+            <span className="text-ink-4">·</span>{" "}
+            Last: {lastSprint.key} shipped {lastSprint.shippedPoints}/{lastSprint.committedPoints} pts
+          </span>
+        )}
+        <div className="ml-auto">
+          <Button variant="primary" size="sm" onClick={send} disabled={!canPick} title={!canPick ? "Only PM can hand off" : undefined}>
             Send {picked.length} to Engineering Sprint Planning →
           </Button>
         </div>
       </div>
 
-      {lastSprint && (
-        <div className="bg-bg-elevated border border-rule rounded-[8px] px-4 py-2.5 mb-4 flex items-center gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Last sprint</span>
-          <span className="text-[13px] text-ink-2">
-            {lastSprint.key} shipped {lastSprint.shippedPoints} of {lastSprint.committedPoints} pts ·
-            {" "}{candidates.filter((t) => t.carryOver).length} tickets carrying over
-          </span>
-        </div>
-      )}
-
-      {/* Picked list (sortable) */}
+      {/* Picked list (drag-ranked, no inline filters — picks are the user's hand-curated set) */}
       <div className="mb-6">
         <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2 flex items-center gap-2">
           <span>Picked · drag (⠿) to re-rank</span>
           <span className="text-ink-4">·</span>
-          <span className="text-ink-4">
-            {sortedPicked.length} shown{filtersActive && picked.length !== sortedPicked.length ? ` of ${picked.length}` : ""}
-          </span>
+          <span className="text-ink-4">{picked.length} {picked.length === 1 ? "ticket" : "tickets"}</span>
         </div>
         <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
           <PickRowHeader rank />
-          {sortedPicked.length === 0 ? (
+          {picked.length === 0 ? (
             <p className="px-4 py-6 text-[13px] italic text-ink-3">
-              {picked.length === 0
-                ? "No picks yet. Check a ticket below to add it."
-                : "No picks match the current filters."}
+              No picks yet. Check a ticket below to add it.
             </p>
           ) : (
             <SortableList
@@ -376,7 +263,7 @@ export default function PicklistPage() {
         </div>
       </div>
 
-      {/* Unpicked candidates */}
+      {/* Available backlog — search · filter · sort all live in the table header itself */}
       <div>
         <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2 flex items-center gap-2">
           <span>Available backlog</span>
@@ -384,9 +271,42 @@ export default function PicklistPage() {
           <span className="text-ink-4">
             {sortedUnpicked.length} shown{filtersActive && unpicked.length !== sortedUnpicked.length ? ` of ${unpicked.length}` : ""}
           </span>
+          {filtersActive && (
+            <button
+              onClick={clearFilters}
+              className="ml-auto font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep normal-case tracking-normal"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
         <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
-          <PickRowHeader />
+          <BacklogSortHeader sortBy={sortBy} sortDir={sortDir} onSort={(k) => {
+            if (sortBy === k) {
+              setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+            } else {
+              setSortBy(k);
+              setSortDir("asc");
+            }
+          }} />
+          <BacklogFilterRow
+            keyQuery={keyQuery}
+            onKeyQuery={setKeyQuery}
+            titleQuery={titleQuery}
+            onTitleQuery={setTitleQuery}
+            typeFilter={typeFilter}
+            onTypeFilter={setTypeFilter}
+            projectFilter={projectFilter}
+            onProjectFilter={setProjectFilter}
+            authorFilter={authorFilter}
+            onAuthorFilter={setAuthorFilter}
+            priorityFilter={priorityFilter}
+            onPriorityFilter={setPriorityFilter}
+            carryOnly={carryOnly}
+            onCarryOnly={setCarryOnly}
+            projects={projects}
+            authors={candidateAuthors}
+          />
           {sortedUnpicked.length === 0 ? (
             <p className="px-4 py-6 text-[13px] italic text-ink-3">
               {unpicked.length === 0
@@ -409,10 +329,158 @@ export default function PicklistPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="text-[12px] text-ink-3 font-mono mt-3">
-        Picked: {picked.length} · Carry-over: {candidates.filter((t) => t.carryOver).length}
+// ─── Available backlog: sortable column headers ─────────────────────
+function BacklogSortHeader({
+  sortBy,
+  sortDir,
+  onSort,
+}: {
+  sortBy: SortKey;
+  sortDir: SortDir;
+  onSort: (k: SortKey) => void;
+}) {
+  const arrow = (k: SortKey) =>
+    sortBy === k ? (sortDir === "asc" ? "↑" : "↓") : "";
+
+  const cell = (k: SortKey, label: string, align: "left" | "right" = "left") => (
+    <button
+      type="button"
+      onClick={() => onSort(k)}
+      className={cn(
+        "inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] hover:text-ink transition-colors duration-100",
+        sortBy === k ? "text-ink" : "text-ink-3",
+        align === "right" && "justify-end w-full"
+      )}
+      aria-sort={sortBy === k ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+    >
+      <span>{label}</span>
+      <span className="text-ink-4 w-2 text-[9px]">{arrow(k)}</span>
+    </button>
+  );
+
+  return (
+    <div className="grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-3 bg-bg-elevated border-b border-rule items-center">
+      <span />
+      <span />
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">#</span>
+      {cell("key", "Key")}
+      {cell("title", "Title")}
+      {cell("parent", "Parent")}
+      {cell("author", "Author")}
+      {cell("created", "Created")}
+      {cell("priority", "Priority")}
+    </div>
+  );
+}
+
+// ─── Available backlog: per-column filter row ───────────────────────
+function BacklogFilterRow({
+  keyQuery, onKeyQuery,
+  titleQuery, onTitleQuery,
+  typeFilter, onTypeFilter,
+  projectFilter, onProjectFilter,
+  authorFilter, onAuthorFilter,
+  priorityFilter, onPriorityFilter,
+  carryOnly, onCarryOnly,
+  projects, authors,
+}: {
+  keyQuery: string;
+  onKeyQuery: (v: string) => void;
+  titleQuery: string;
+  onTitleQuery: (v: string) => void;
+  typeFilter: TicketType | "all";
+  onTypeFilter: (v: TicketType | "all") => void;
+  projectFilter: string;
+  onProjectFilter: (v: string) => void;
+  authorFilter: string;
+  onAuthorFilter: (v: string) => void;
+  priorityFilter: Priority | "all";
+  onPriorityFilter: (v: Priority | "all") => void;
+  carryOnly: boolean;
+  onCarryOnly: (v: boolean) => void;
+  projects: import("@/lib/types").Project[];
+  authors: import("@/lib/types").User[];
+}) {
+  return (
+    <div className="grid grid-cols-[40px_40px_40px_100px_1fr_140px_140px_100px_80px] gap-3 px-4 py-2 bg-bg-elevated/60 border-b border-rule-soft items-center">
+      <span />
+      <span />
+      <span />
+      <input
+        type="text"
+        value={keyQuery}
+        onChange={(e) => onKeyQuery(e.target.value)}
+        placeholder="key…"
+        aria-label="Filter by key"
+        className="h-7 px-2 text-[12px] font-mono rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 min-w-0"
+      />
+      <div className="flex items-center gap-1.5 min-w-0">
+        <input
+          type="text"
+          value={titleQuery}
+          onChange={(e) => onTitleQuery(e.target.value)}
+          placeholder="search title, tags, description…"
+          aria-label="Search title"
+          className="h-7 px-2 text-[12px] rounded-[4px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 flex-1 min-w-0"
+        />
+        <Select value={typeFilter} onValueChange={(v) => onTypeFilter(v as TicketType | "all")}>
+          <SelectTrigger size="sm" className="h-7 w-24 shrink-0"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="bug">Bug</SelectItem>
+            <SelectItem value="engineering">Ticket</SelectItem>
+            <SelectItem value="tech_task">Tech task</SelectItem>
+          </SelectContent>
+        </Select>
+        <label
+          title="Show carry-over tickets only"
+          className={cn(
+            "inline-flex items-center gap-1 px-1.5 h-7 rounded-[4px] border text-[11px] font-mono uppercase tracking-[0.06em] cursor-pointer select-none shrink-0",
+            carryOnly ? "border-warn text-warn bg-warn-soft" : "border-rule text-ink-3 bg-bg-card hover:border-ink-4"
+          )}
+        >
+          <input
+            type="checkbox"
+            checked={carryOnly}
+            onChange={(e) => onCarryOnly(e.target.checked)}
+            className="sr-only"
+          />
+          Carry
+        </label>
       </div>
+      <Select value={projectFilter} onValueChange={onProjectFilter}>
+        <SelectTrigger size="sm" className="h-7 min-w-0"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          <SelectItem value="ad-hoc">Ad-hoc</SelectItem>
+          {projects.map((p) => (
+            <SelectItem key={p.id} value={p.id}>{p.key}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={authorFilter} onValueChange={onAuthorFilter}>
+        <SelectTrigger size="sm" className="h-7 min-w-0"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          {authors.map((u) => (
+            <SelectItem key={u.id} value={u.id}>{u.displayName}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <span />
+      <Select value={priorityFilter} onValueChange={(v) => onPriorityFilter(v as Priority | "all")}>
+        <SelectTrigger size="sm" className="h-7 min-w-0"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          <SelectItem value="P0">P0</SelectItem>
+          <SelectItem value="P1">P1</SelectItem>
+          <SelectItem value="P2">P2</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
