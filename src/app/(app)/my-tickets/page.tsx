@@ -126,7 +126,7 @@ export default function MyTicketsPage() {
       {/* Filter strip */}
       <div className="bg-bg-card border border-rule rounded-[8px] p-3 mb-4 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 min-w-[220px]">
+          <div className="relative basis-[60%] grow shrink min-w-0">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-4 pointer-events-none" />
             <input
               type="text"
@@ -142,7 +142,7 @@ export default function MyTicketsPage() {
             )}
           </div>
           <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
-            <SelectTrigger size="sm" className="w-[180px] shrink-0"><SelectValue /></SelectTrigger>
+            <SelectTrigger size="sm" className="basis-[20%] grow shrink min-w-0"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
               <SelectItem value="engineering">Engineering</SelectItem>
@@ -151,7 +151,7 @@ export default function MyTicketsPage() {
             </SelectContent>
           </Select>
           <Select value={stateFilter} onValueChange={(v) => setStateFilter(v as StateFilter)}>
-            <SelectTrigger size="sm" className="w-[180px] shrink-0"><SelectValue /></SelectTrigger>
+            <SelectTrigger size="sm" className="basis-[20%] grow shrink min-w-0"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All states</SelectItem>
               <SelectItem value="open">Open</SelectItem>
