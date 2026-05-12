@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -108,31 +109,50 @@ export function Sidebar() {
       )}
     >
       {/* Brand */}
-      <div className={cn("border-b border-rule-soft relative", collapsed ? "px-3 pt-5 pb-3" : "px-5 pt-6 pb-5")}>
-        <Link href="/" className="block">
-          {collapsed ? (
-            <div className="flex justify-center">
+      <div className={cn("border-b border-rule-soft relative", collapsed ? "px-2 pt-3 pb-2" : "px-5 pt-6 pb-5")}>
+        {collapsed ? (
+          // Collapsed: 64px wide is too tight for the wordmark — show the
+          // square favicon S-mark instead. The chevron is the only other
+          // affordance.
+          <div className="flex flex-col items-center gap-2">
+            <Link href="/" className="block w-9 h-9 rounded-md overflow-hidden border border-rule-soft" aria-label="Home">
+              <Image
+                src="/icon.svg"
+                alt="SPX"
+                width={36}
+                height={36}
+                priority
+              />
+            </Link>
+            <button
+              onClick={toggleSidebar}
+              aria-label="Expand sidebar"
+              title="Expand sidebar (⌘\)"
+              className="w-6 h-6 inline-flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-rule-soft transition-colors duration-100"
+            >
+              <ChevronsRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <Link href="/" className="block">
               <SpxLogo size="sm" />
-            </div>
-          ) : (
-            <>
-              <SpxLogo size="sm" showExpress />
               <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-2 flex items-center gap-2">
                 <span className="block w-4 h-px bg-rule" />
-                <span className="display italic text-ink text-[14px] leading-none normal-case tracking-normal">Cadence</span>
+                <span className="text-ink text-[13px] leading-none normal-case tracking-normal font-semibold">Cadence</span>
                 <span>· {roleLabel[user.role]}</span>
               </div>
-            </>
-          )}
-        </Link>
-        <button
-          onClick={toggleSidebar}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar (⌘\\)" : "Collapse sidebar (⌘\\)"}
-          className="absolute top-3 right-2 w-6 h-6 inline-flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-rule-soft transition-colors duration-100"
-        >
-          {collapsed ? <ChevronsRight className="h-3.5 w-3.5" /> : <ChevronsLeft className="h-3.5 w-3.5" />}
-        </button>
+            </Link>
+            <button
+              onClick={toggleSidebar}
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar (⌘\)"
+              className="absolute top-3 right-2 w-6 h-6 inline-flex items-center justify-center rounded-[4px] text-ink-3 hover:text-ink hover:bg-rule-soft transition-colors duration-100"
+            >
+              <ChevronsLeft className="h-3.5 w-3.5" />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Scrollable nav body */}

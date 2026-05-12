@@ -415,7 +415,22 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "cadence-v1",
+      // Bumped when the persisted shape grew (theme + sidebarCollapsed
+      // were added). Old payloads are simply ignored — we keep defaults.
+      version: 3,
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage))),
+      // Defensive merge: if the persisted blob is malformed (different shape
+      // from a previous build), fall back to current defaults instead of
+      // crashing the app on hydration.
+      merge: (persisted, current) => {
+        if (!persisted || typeof persisted !== "object") return current;
+        try {
+          return { ...current, ...(persisted as Partial<AppState>) };
+        } catch {
+          return current;
+        }
+      },
+      migrate: (persisted) => persisted as Partial<AppState>,
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
       },
