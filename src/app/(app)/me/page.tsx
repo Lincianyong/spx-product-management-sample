@@ -313,7 +313,7 @@ function RoleStatsStrip({
   lastSprintShipped: number | null;
   authoredOpen: Ticket[];
 }) {
-  // Engineer — eng-centric strip
+  // Engineer - eng-centric strip
   if (role === "engineer") {
     return (
       <div className="grid grid-cols-4 gap-3 mb-6">
@@ -336,11 +336,11 @@ function RoleStatsStrip({
           label="Days remaining"
           value={String(daysRemaining)}
           unit={daysRemaining === 1 ? "day" : "days"}
-          caption={activeSprint?.key ?? "—"}
+          caption={activeSprint?.key ?? "-"}
         />
         <StatCard
           label="Last sprint"
-          value={lastSprintShipped != null ? String(lastSprintShipped) : "—"}
+          value={lastSprintShipped != null ? String(lastSprintShipped) : "-"}
           unit={lastSprintShipped != null ? "pt shipped" : ""}
           caption={
             lastSprintShipped != null && committedPts > 0
@@ -354,7 +354,7 @@ function RoleStatsStrip({
     );
   }
 
-  // PM (and admin/guest fall back to this) — picks-driven view
+  // PM (and admin/guest fall back to this) - picks-driven view
   if (role === "pm" || role === "admin" || role === "guest") {
     const pmChoke = tickets.filter((t) => t.pickedForSprint && t.storyPoints == null).length;
     const mineOpenAuthored = authoredOpen.length;
@@ -385,7 +385,7 @@ function RoleStatsStrip({
           label="Days remaining"
           value={String(daysRemaining)}
           unit={daysRemaining === 1 ? "day" : "days"}
-          caption={activeSprint?.key ?? "—"}
+          caption={activeSprint?.key ?? "-"}
         />
         <StatCard
           label="Team progress"
@@ -398,7 +398,7 @@ function RoleStatsStrip({
     );
   }
 
-  // Fallback (shouldn't hit — only PM + Engineer roles exist)
+  // Fallback (shouldn't hit - only PM + Engineer roles exist)
   return null;
 }
 

@@ -18,7 +18,7 @@ export interface DatePickerProps {
   className?: string;
   /** Match Select trigger sizing. Defaults to "md". */
   size?: "sm" | "md";
-  /** Optional bounds — disables days outside the range. */
+  /** Optional bounds - disables days outside the range. */
   fromDate?: string;
   toDate?: string;
 }

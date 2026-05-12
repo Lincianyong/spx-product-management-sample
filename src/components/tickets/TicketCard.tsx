@@ -54,7 +54,7 @@ export function TicketCard({ ticket, onOpen, compact, dragHandleProps, className
     e?.stopPropagation();
     if (typeof window !== "undefined") {
       navigator.clipboard?.writeText(`${window.location.origin}/t/${ticket.key}`);
-      toast(`Link copied — ${ticket.key}`);
+      toast(`Link copied - ${ticket.key}`);
     }
   };
 

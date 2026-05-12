@@ -54,7 +54,7 @@ const COLUMNS: { status: TicketStatus; label: string }[] = [
   { status: "done", label: "Done" },
 ];
 
-// "done" column also surfaces "verified" tickets — both terminal states.
+// "done" column also surfaces "verified" tickets - both terminal states.
 function ticketColumnKey(s: TicketStatus): TicketStatus | null {
   if (s === "verified") return "done";
   if (COLUMNS.find((c) => c.status === s)) return s;
@@ -139,7 +139,7 @@ export default function SprintBoardPage() {
   // ─── Drag handling: combined status-change + intra-column reorder ──
   // The board acts as a multi-container sortable. The dragged ticket's
   // source column is derived from its current status; the destination
-  // column is derived from `over` — either a column header (drop on
+  // column is derived from `over` - either a column header (drop on
   // empty area) or another ticket (drop next to a sibling).
   const onDragStart = (e: DragStartEvent) => setDraggingId(e.active.id as string);
 
@@ -231,7 +231,7 @@ export default function SprintBoardPage() {
       ticket.acceptanceCriteria.length > 0 &&
       !ticket.acceptanceCriteria.every((ac) => ac.done)
     ) {
-      toast(`Can't move ${ticket.key} to Done — acceptance criteria are unchecked.`, { kind: "error" });
+      toast(`Can't move ${ticket.key} to Done - acceptance criteria are unchecked.`, { kind: "error" });
       return;
     }
     const isRegression = TRANSITIONS_REQUIRING_CONFIRM.some(

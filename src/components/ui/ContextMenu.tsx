@@ -65,7 +65,7 @@ export function ContextMenu({ open, position, items, onClose }: Props) {
 
   if (!open) return null;
 
-  // Edge handling — flip if near right/bottom
+  // Edge handling - flip if near right/bottom
   const w = 220;
   const h = items.length * 36 + 8;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1280;

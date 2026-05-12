@@ -21,7 +21,7 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import type { Sprint, Ticket, TicketStatus } from "@/lib/types";
 
 const DAY_MS = 86400000;
-const HOUR_PX = 6; // ~144 px per day — sprint-week is ~1000 px wide
+const HOUR_PX = 6; // ~144 px per day - sprint-week is ~1000 px wide
 const LABEL_W = 320;
 const ROW_H = 32;
 

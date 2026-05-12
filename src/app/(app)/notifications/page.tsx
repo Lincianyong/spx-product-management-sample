@@ -29,7 +29,7 @@ export default function NotificationsPage() {
   const snooze = useAppStore((s) => s.snoozeNotification);
   const user = useCurrentUser();
 
-  // Triage SLA signals were removed with the Triage surface — there's no
+  // Triage SLA signals were removed with the Triage surface - there's no
   // longer a "ticket awaiting acknowledgement" state to age out.
   const slaSignals: (import("@/lib/types").Notification & { virtual?: boolean })[] = [];
 

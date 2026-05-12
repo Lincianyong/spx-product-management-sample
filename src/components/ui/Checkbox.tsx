@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 /**
  * Theme-aware checkbox built on Radix.  Replaces the native
  * `<input type="checkbox" className="accent-accent">` we used to scatter
- * around — that pattern can't restyle its check-mark in dark mode and
+ * around - that pattern can't restyle its check-mark in dark mode and
  * the box never lines up with the rest of the SPX DS form controls.
  *
  * - Light mode: white box, neutral-200 rule, brand-orange when checked.

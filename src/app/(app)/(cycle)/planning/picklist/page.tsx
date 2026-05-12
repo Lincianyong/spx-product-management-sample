@@ -75,7 +75,7 @@ export default function PicklistPage() {
       .filter((u): u is NonNullable<typeof u> => Boolean(u));
   }, [candidates, users]);
 
-  // Filter predicate — scoped to the Available backlog table.
+  // Filter predicate - scoped to the Available backlog table.
   const matches = (t: Ticket) => {
     if (typeFilter !== "all" && t.type !== typeFilter) return false;
     if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
@@ -125,7 +125,7 @@ export default function PicklistPage() {
     return sortDir === "asc" ? v : -v;
   };
 
-  // Picked list — always rank-sorted (drag order is the source of truth).
+  // Picked list - always rank-sorted (drag order is the source of truth).
   // Filters are scoped to the Available backlog table only.
   const sortedPicked = useMemo(() => {
     return [...picked].sort((a, b) => (a.picklistRank ?? 99) - (b.picklistRank ?? 99));
@@ -192,7 +192,7 @@ export default function PicklistPage() {
   return (
     <div>
       <PageHeader
-        eyebrow={`S-04 · Stage 4a · ${planningSprint?.key ?? "—"}`}
+        eyebrow={`S-04 · Stage 4a · ${planningSprint?.key ?? "-"}`}
         title={
           <>
             <em className="text-accent">Pick</em> what matters.
@@ -210,7 +210,7 @@ export default function PicklistPage() {
         />
       )}
 
-      {/* Slim top action strip — Last sprint context + Send CTA */}
+      {/* Slim top action strip - Last sprint context + Send CTA */}
       <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-2.5 mb-4 flex items-center gap-3 flex-wrap">
         <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
           Picked {picked.length} · Carry-over {candidates.filter((t) => t.carryOver).length}
@@ -228,7 +228,7 @@ export default function PicklistPage() {
         </div>
       </div>
 
-      {/* Picked list (drag-ranked, no inline filters — picks are the user's hand-curated set) */}
+      {/* Picked list (drag-ranked, no inline filters - picks are the user's hand-curated set) */}
       <div className="mb-6">
         <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2 flex items-center gap-2">
           <span>Picked · drag (⠿) to re-rank</span>
@@ -262,7 +262,7 @@ export default function PicklistPage() {
         </div>
       </div>
 
-      {/* Available backlog — search · filter · sort all live in the table header itself */}
+      {/* Available backlog - search · filter · sort all live in the table header itself */}
       <div>
         <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-2 flex items-center gap-2">
           <span>Available backlog</span>
@@ -551,7 +551,7 @@ function PickRow({
         title={disabled ? "Only PM can modify the picklist" : undefined}
         aria-label={picked ? "Remove from picks" : "Add to picks"}
       />
-      <span className="font-mono text-[12px] text-ink-3">{rank ?? "—"}</span>
+      <span className="font-mono text-[12px] text-ink-3">{rank ?? "-"}</span>
       <span className="font-mono text-[12px] text-ink">{t.key}</span>
       <span className="text-[14px] text-ink truncate flex items-center gap-2">
         <TypePill t={t.type} />

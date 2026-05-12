@@ -22,7 +22,7 @@ export function LinkedWorkGraph({ ticketKey }: { ticketKey: string }) {
   // Outbound edges from this ticket
   const outbound = ticket.linkedWork;
 
-  // Inbound edges — other tickets that link TO this one
+  // Inbound edges - other tickets that link TO this one
   const inbound: { type: string; from: string }[] = [];
   for (const other of tickets) {
     for (const edge of other.linkedWork) {

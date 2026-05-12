@@ -426,10 +426,10 @@ function ParentSelect({ value, onChange }: { value: string; onChange: (v: string
       </span>
       <Select value={value || PARENT_NONE} onValueChange={(v) => onChange(v === PARENT_NONE ? "" : v)}>
         <SelectTrigger>
-          <SelectValue placeholder="Ad-hoc — no parent Epic" />
+          <SelectValue placeholder="Ad-hoc - no parent Epic" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={PARENT_NONE}>Ad-hoc — no parent Epic</SelectItem>
+          <SelectItem value={PARENT_NONE}>Ad-hoc - no parent Epic</SelectItem>
           {epics.map((e) => (
             <SelectItem key={e.id} value={e.key}>{e.key} · {e.title}</SelectItem>
           ))}

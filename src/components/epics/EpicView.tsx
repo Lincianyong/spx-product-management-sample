@@ -73,7 +73,7 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
   const copyLink = () => {
     if (typeof window === "undefined") return;
     navigator.clipboard?.writeText(`${window.location.origin}/e/${epic.key}`);
-    toast(`Link copied — ${epic.key}`);
+    toast(`Link copied - ${epic.key}`);
   };
 
   const TICKET_LIMIT = 12;
@@ -125,10 +125,10 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
         <Stat label="PM" value={
           <span className="flex items-center gap-1.5">
             {pm && <Avatar user={pm} size="xs" />}
-            <span className="truncate">{pm?.displayName ?? "—"}</span>
+            <span className="truncate">{pm?.displayName ?? "-"}</span>
           </span>
         } />
-        <Stat label="Programs" value={(epic.programs ?? []).length > 0 ? (epic.programs ?? []).join(" · ") : "—"} />
+        <Stat label="Programs" value={(epic.programs ?? []).length > 0 ? (epic.programs ?? []).join(" · ") : "-"} />
         <Stat label="Target" value={formatDate(epic.targetEndDate)} />
       </div>
 

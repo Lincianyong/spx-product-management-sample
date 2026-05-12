@@ -210,7 +210,7 @@ export function CommentComposer({ placeholder = "Write a comment…", initial = 
 export function UnsavedPill({ label = "Unsaved" }: { label?: string }) {
   return (
     <span
-      title="You have unsaved changes — click the submit button to save."
+      title="You have unsaved changes - click the submit button to save."
       className="inline-flex items-center gap-1 px-1.5 h-5 rounded-[4px] bg-warn-soft text-warn font-mono text-[10px] uppercase tracking-[0.06em]"
     >
       <span className="w-1 h-1 rounded-full bg-warn animate-pulse" />

@@ -76,7 +76,7 @@ export default function JointPlanningPage() {
   return (
     <div>
       <PageHeader
-        eyebrow={`S-06 · Stage 4c · ${planningSprint?.key ?? "—"}`}
+        eyebrow={`S-06 · Stage 4c · ${planningSprint?.key ?? "-"}`}
         title={
           <>
             <em className="text-accent">Commit</em>, together.
@@ -131,8 +131,8 @@ export default function JointPlanningPage() {
 
         <div className="mt-3 flex items-center gap-3 text-[12px] font-mono text-ink-3">
           <span>Sprint total · {totalPoints} / {totalCapacity} pts · {Math.round(ratio * 100)}%</span>
-          {overCapacity && !capacityOk && <Pill variant="danger">Over 125% — commit blocked</Pill>}
-          {overCapacity && capacityOk && <Pill variant="warn">Over 100% — soft warn</Pill>}
+          {overCapacity && !capacityOk && <Pill variant="danger">Over 125% - commit blocked</Pill>}
+          {overCapacity && capacityOk && <Pill variant="warn">Over 100% - soft warn</Pill>}
         </div>
       </section>
 
@@ -158,7 +158,7 @@ export default function JointPlanningPage() {
                   <td className="px-4 py-3 text-[14px] text-ink max-w-md truncate">{t.title}</td>
                   <td className="px-4 py-3"><TypePill t={t.type} /></td>
                   <td className="px-4 py-3"><PriorityPill p={t.priority} /></td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-ink">{t.storyPoints ?? "—"}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-ink">{t.storyPoints ?? "-"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <select

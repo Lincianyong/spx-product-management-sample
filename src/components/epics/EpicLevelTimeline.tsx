@@ -17,7 +17,7 @@ const PX_PER_DAY = 6; // month-density default
 function isoToMs(iso: string): number { return new Date(iso).getTime(); }
 
 /**
- * Epic-Level Timeline — Epic Board's "timeline" view.
+ * Epic-Level Timeline - Epic Board's "timeline" view.
  *
  * One row per Epic with its quarter-spanning bar. A chevron expands the
  * row to show the child projects + their tickets as nested mini-bars so

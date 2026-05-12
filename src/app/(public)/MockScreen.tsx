@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * MockScreen — a styled "browser window" frame used by the guideline
+ * MockScreen - a styled "browser window" frame used by the guideline
  * pages to show a captioned, low-fidelity rendering of a real app
  * surface. We render mock UI inline (no real screenshots) so the
  * visuals stay in sync with the design tokens as they evolve.

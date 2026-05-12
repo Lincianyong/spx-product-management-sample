@@ -1,7 +1,7 @@
 // Minimal GFM-style renderer to a structured tree.
 // Subset: headings (## ###), bold/italic, inline code, links,
 // ordered/unordered lists, blockquote, fenced code, horizontal rules,
-// task lists ([x] / [ ]). All output is plain JSX — no `dangerouslySetInnerHTML`.
+// task lists ([x] / [ ]). All output is plain JSX - no `dangerouslySetInnerHTML`.
 
 export type MdNode =
   | { type: "h2"; children: MdInline[] }

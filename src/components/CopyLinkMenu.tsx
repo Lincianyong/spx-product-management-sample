@@ -50,7 +50,7 @@ export function CopyLinkButton({ ticketKey, ticketTitle, origin }: Props) {
       case "short":
         return `/${ticketKey}`;
       case "markdown":
-        return `[${ticketKey}](${url}) — ${ticketTitle}`;
+        return `[${ticketKey}](${url}) - ${ticketTitle}`;
       case "lark":
         return `<a href="${url}">${ticketKey}</a> ${ticketTitle}`;
     }
@@ -63,7 +63,7 @@ export function CopyLinkButton({ ticketKey, ticketTitle, origin }: Props) {
     }
     setLastFormat(f);
     if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, f);
-    toast(`Link copied — ${ticketKey} · ${LABELS[f]}`);
+    toast(`Link copied - ${ticketKey} · ${LABELS[f]}`);
     setOpen(false);
   };
 

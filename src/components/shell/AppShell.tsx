@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === ",") {
         e.preventDefault();
         navigator.clipboard?.writeText(window.location.href);
-        toast("Link copied — current page");
+        toast("Link copied - current page");
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "\\") {

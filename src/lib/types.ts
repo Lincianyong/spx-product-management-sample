@@ -11,7 +11,7 @@ export type Health = "on_track" | "at_risk" | "blocked" | "not_started";
 export type TicketType = "engineering" | "bug" | "tech_task";
 
 /**
- * Program — a soft, multi-select tag that groups work by initiative.
+ * Program - a soft, multi-select tag that groups work by initiative.
  * Lives on both Epic and Ticket. When a ticket has its own programs[],
  * those override the parent epic's programs for allocation reporting.
  */
@@ -32,7 +32,7 @@ export type TicketStatus =
   | "cancelled";
 
 // Allowed forward (and select backward) transitions per type. Triage was
-// removed (two-role app, no untrusted reporters to filter) — new tickets
+// removed (two-role app, no untrusted reporters to filter) - new tickets
 // land in `backlog` directly.
 export const STATUS_TRANSITIONS: Record<string, Record<TicketStatus, TicketStatus[]>> = {
   engineering: {

@@ -4,10 +4,10 @@ import type { Sprint } from "./types";
  * Single source of truth for the sprint cycle calendar.
  *
  * Cadence (per the spec):
- *   Mon 09:00 — 4a Picklist (PM alone)     → PM hands off by Mon 14:00
- *   Mon 14:00 — 4b Estimation (Engineers)  → Eng finishes by Tue 10:00
- *   Tue 10:00 — 4c Joint Planning          → Sprint commits by Tue 10:30
- *   Tue 10:30 — Sprint active until next Monday
+ *   Mon 09:00 - 4a Picklist (PM alone)     → PM hands off by Mon 14:00
+ *   Mon 14:00 - 4b Estimation (Engineers)  → Eng finishes by Tue 10:00
+ *   Tue 10:00 - 4c Joint Planning          → Sprint commits by Tue 10:30
+ *   Tue 10:30 - Sprint active until next Monday
  */
 export interface CycleCalendar {
   picklistStart: Date; // Mon 09:00

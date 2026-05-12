@@ -21,7 +21,7 @@ export default function GuidelineEngPage() {
 
       <SurfaceCard
         eyebrow="Daily · /me"
-        title="My Work — your queue, today."
+        title="My Work - your queue, today."
         body="Tickets assigned to you, grouped by sprint state. The cycle scrubber at the top shows you when the next estimation or joint planning is."
         bullets={[
           "Active sprint tickets sorted by status (In Progress → Review → Scheduled).",
@@ -32,10 +32,10 @@ export default function GuidelineEngPage() {
 
       <SurfaceCard
         eyebrow="Plan · /planning/estimation"
-        title="Estimation — story points on Friday."
+        title="Estimation - story points on Friday."
         body="Engineers + EM. ~45 min. The picklist from earlier shows up here for sizing. Add story points, flag concerns, hand back."
         bullets={[
-          "Add story points per ticket — the input is yours, free-typed.",
+          "Add story points per ticket - the input is yours, free-typed.",
           "Concern flags ('needs decomposition', 'unclear scope') are visible to the PM at Joint.",
           "Tickets you flag get pulled out of the sprint slice if they can't be resolved by Joint.",
         ]}
@@ -68,11 +68,11 @@ export default function GuidelineEngPage() {
 
       <SurfaceCard
         eyebrow="Plan · /sprint"
-        title="Sprint board — your delivery surface."
+        title="Sprint board - your delivery surface."
         body="A five-lane kanban for the active sprint. You move cards as work progresses. Card-wide drag is supported (no grip-only handle)."
         bullets={[
           "Backlog → Scheduled → In Progress → Review → Done.",
-          "Card-wide drag — grab anywhere on the card.",
+          "Card-wide drag - grab anywhere on the card.",
           "Reorder within a lane to signal priority within your own queue.",
         ]}
       />
@@ -114,12 +114,12 @@ export default function GuidelineEngPage() {
       <SurfaceCard
         eyebrow="Filing bugs"
         title="What a good bug carries."
-        body="Bug is the universal lane — anyone files. The form enforces the fields that make reproduction fast."
+        body="Bug is the universal lane - anyone files. The form enforces the fields that make reproduction fast."
         bullets={[
-          "Repro steps — numbered, reproducible from a clean state.",
-          "Expected vs Actual — two short paragraphs.",
-          "Affected scope — which devices, regions, % of users.",
-          "Severity (S1 · S2 · S3) — drives priority on the board.",
+          "Repro steps - numbered, reproducible from a clean state.",
+          "Expected vs Actual - two short paragraphs.",
+          "Affected scope - which devices, regions, % of users.",
+          "Severity (S1 · S2 · S3) - drives priority on the board.",
         ]}
       />
 
@@ -146,16 +146,16 @@ export default function GuidelineEngPage() {
         title="Tech debt with a reversal plan."
         body="Tech tasks are platform / infra / refactor work. They carry two extra fields the PM and EM read at Joint."
         bullets={[
-          "Blast radius — what breaks if this goes sideways.",
-          "Rollback plan — concrete steps to revert.",
-          "Migration window — optional; for tasks needing a cutover.",
+          "Blast radius - what breaks if this goes sideways.",
+          "Rollback plan - concrete steps to revert.",
+          "Migration window - optional; for tasks needing a cutover.",
         ]}
       />
 
       <SurfaceCard
         eyebrow="Capture · /my-tickets"
         title="Your authored history."
-        body="Every ticket you've authored — engineering, bug, tech task — in one searchable list."
+        body="Every ticket you've authored - engineering, bug, tech task - in one searchable list."
         bullets={[
           "Search hits key, title, description, tags.",
           "Type and state filters pinned to 180px each.",
@@ -165,10 +165,10 @@ export default function GuidelineEngPage() {
 
       <SurfaceCard
         eyebrow="Plan · /backlog"
-        title="Backlog — what's queued, next sprint and beyond."
-        body="A flat table of every ticket that isn't yet in a sprint. As an engineer, this is your read-ahead — what's likely to land on your plate at the next Picklist, and which bugs are stacking up."
+        title="Backlog - what's queued, next sprint and beyond."
+        body="A flat table of every ticket that isn't yet in a sprint. As an engineer, this is your read-ahead - what's likely to land on your plate at the next Picklist, and which bugs are stacking up."
         bullets={[
-          "Use when: you want a heads-up on what's getting picked Friday — read it earlier in the week so estimation isn't cold.",
+          "Use when: you want a heads-up on what's getting picked Friday - read it earlier in the week so estimation isn't cold.",
           "Reads at a glance: which epics are queueing tickets, how many P0/P1 bugs are unscheduled, what's been sitting longest.",
           "Filters: type · status · program · author. Search hits key, title, tags.",
         ]}
@@ -176,11 +176,11 @@ export default function GuidelineEngPage() {
 
       <SurfaceCard
         eyebrow="Portfolio · /epics"
-        title="Epic Board — the parent context for your tickets."
+        title="Epic Board - the parent context for your tickets."
         body="The kanban view of every Epic in the workspace. Engineers use it to find the parent of the ticket you're working on, read its thesis, and see sibling tickets under the same bet."
         bullets={[
-          "Use when: you want a one-line answer to 'why are we doing this?' — open the Epic, read the thesis.",
-          "Reads at a glance: which epics are at-risk or blocked (health pill) — useful if you're about to commit to a ticket under one.",
+          "Use when: you want a one-line answer to 'why are we doing this?' - open the Epic, read the thesis.",
+          "Reads at a glance: which epics are at-risk or blocked (health pill) - useful if you're about to commit to a ticket under one.",
           "Click any card to drop into /e/CDN for thesis · linked tickets · timeline.",
         ]}
       />
@@ -188,7 +188,7 @@ export default function GuidelineEngPage() {
       <MockScreen
         title="Epic Board · find the parent context"
         url="/epics"
-        caption="Engineers usually open this from a ticket detail page via the parent epic chip — then read the thesis and the sibling tickets."
+        caption="Engineers usually open this from a ticket detail page via the parent epic chip - then read the thesis and the sibling tickets."
         className="mb-8"
       >
         <EpicBoardMock />
@@ -196,11 +196,11 @@ export default function GuidelineEngPage() {
 
       <SurfaceCard
         eyebrow="Portfolio · /timeline"
-        title="Timeline — when does this epic ship?"
-        body="A horizontal Gantt of epics across the quarter. As an engineer, the timeline tells you whether your parent epic has slack or is already running long — and whether dependent epics will be ready when you need them."
+        title="Timeline - when does this epic ship?"
+        body="A horizontal Gantt of epics across the quarter. As an engineer, the timeline tells you whether your parent epic has slack or is already running long - and whether dependent epics will be ready when you need them."
         bullets={[
-          "Use when: your ticket depends on another epic's output — read its bar to know if it'll land before your sprint slot.",
-          "Use when: you want to argue for a tech task — show that the epic timeline has slack to absorb a refactor.",
+          "Use when: your ticket depends on another epic's output - read its bar to know if it'll land before your sprint slot.",
+          "Use when: you want to argue for a tech task - show that the epic timeline has slack to absorb a refactor.",
           "Reads at a glance: 'today' tick, epic health colour on the bar (green / amber / red), overlap density per week.",
         ]}
       />

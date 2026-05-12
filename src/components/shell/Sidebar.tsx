@@ -108,7 +108,7 @@ export function Sidebar() {
       {/* Brand */}
       <div className={cn("border-b border-rule-soft relative", collapsed ? "px-2 pt-3 pb-2" : "px-5 pt-6 pb-5")}>
         {collapsed ? (
-          // Collapsed: 64px wide is too tight for the wordmark — show the
+          // Collapsed: 64px wide is too tight for the wordmark - show the
           // square favicon S-mark instead. The chevron is the only other
           // affordance.
           <div className="flex flex-col items-center gap-2">

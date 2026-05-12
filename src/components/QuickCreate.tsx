@@ -123,10 +123,10 @@ export function QuickCreate({ open, onClose }: Props) {
               onValueChange={(v) => setParent(v === "__none__" ? "" : v)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Ad-hoc — no parent Epic" />
+                <SelectValue placeholder="Ad-hoc - no parent Epic" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">Ad-hoc — no parent Epic</SelectItem>
+                <SelectItem value="__none__">Ad-hoc - no parent Epic</SelectItem>
                 {projects.map((p) => (
                   <SelectItem key={p.id} value={p.key}>{p.key} · {p.title}</SelectItem>
                 ))}

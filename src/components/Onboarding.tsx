@@ -10,13 +10,13 @@ const SEEN_KEY = "cadence:onboarded";
 
 const STEPS_BY_ROLE: Record<string, { title: string; body: string }[]> = {
   pm: [
-    { title: "You're the PM.", body: "Epic Board is your home. New work lands directly in Backlog — no triage step." },
+    { title: "You're the PM.", body: "Epic Board is your home. New work lands directly in Backlog - no triage step." },
     { title: "Three planning stages.", body: "Stage 4a (Monday, alone) you Picklist. 4b (Tuesday, with engineers) they Estimate. 4c (Tuesday, together) you Commit." },
     { title: "Health is computed.", body: "Deviation = time-burn minus progress-burn. Hover any health pill to see the math. AI suggestions show a confidence chip." },
   ],
   engineer: [
     { title: "Welcome, Engineer.", body: "My Work is your home. Two work lanes (This sprint · In queue) and a collapsible Dependencies strip." },
-    { title: "Drag on Sprint Board.", body: "Move your own cards across columns. AC items gate Done — check every box before the column flips." },
+    { title: "Drag on Sprint Board.", body: "Move your own cards across columns. AC items gate Done - check every box before the column flips." },
     { title: "AI is evidence, not author.", body: "Story-point suggestions show confidence + reasoning. Click ✦ to accept, ignore otherwise." },
   ],
 };

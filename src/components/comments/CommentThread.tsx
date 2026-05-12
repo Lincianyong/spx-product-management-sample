@@ -52,7 +52,7 @@ export function CommentThread({ comment, replies }: ThreadProps) {
       <div className="border border-rule-soft rounded-[8px] p-3 bg-bg-elevated">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[12px] text-ink-3">
-            <span>✓ Resolved by {resolver?.displayName ?? "—"}</span>
+            <span>✓ Resolved by {resolver?.displayName ?? "-"}</span>
           </div>
           <button onClick={() => setShowReplies(true)} className="text-[12px] text-accent hover:underline">
             Show thread
@@ -177,7 +177,7 @@ function CommentItem({ comment, editing, onEditStart, onEditCancel, onEditSave, 
   const quote = () => {
     const text = `> ${comment.body.split("\n").join("\n> ")}\n\n`;
     navigator.clipboard?.writeText(text);
-    toast("Quote copied — paste in reply");
+    toast("Quote copied - paste in reply");
   };
 
   return (

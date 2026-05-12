@@ -93,7 +93,7 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
   const advance = () => {
     if (!user || !next) return;
     if (next === "done" && !canAdvanceToDone) {
-      toast("Can't mark Done — some acceptance criteria are unchecked.", { kind: "error" });
+      toast("Can't mark Done - some acceptance criteria are unchecked.", { kind: "error" });
       return;
     }
     const prev = ticket.status;
@@ -166,32 +166,35 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
                   </Link>
                 )}
                 {user && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     type="button"
                     onClick={() => {
                       setTicketBlocked(ticket.id, null, user.id);
                       toast(`${ticket.key} unblocked`, { kind: "success" });
                     }}
-                    className="font-mono text-[10px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep ml-0.5"
+                    className="ml-0.5"
                   >
                     Unblock
-                  </button>
+                  </Button>
                 )}
               </span>
             ) : user ? (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 type="button"
                 onClick={() => {
                   setBlockReason("");
                   setBlockerKey("");
                   setBlockOpen(true);
                 }}
-                className="inline-flex items-center gap-1 px-2 h-6 rounded-[4px] border border-rule text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-danger hover:border-danger transition-colors duration-100"
                 title="Mark this ticket as blocked"
               >
                 <Ban className="h-3 w-3" />
                 Mark blocked
-              </button>
+              </Button>
             ) : null}
           </div>
           <h1 className="display text-display-m text-ink leading-tight">{ticket.title}</h1>
@@ -205,14 +208,22 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
             </Button>
           )}
           {variant === "slide-over" && (
-            <Link href={`/t/${ticket.key}`} className="text-[12px] text-ink-3 hover:text-ink underline">
-              Full page →
+            <Link href={`/t/${ticket.key}`}>
+              <Button variant="secondary" size="sm" type="button">
+                Full page →
+              </Button>
             </Link>
           )}
           {onClose && (
-            <button onClick={onClose} aria-label="Close" className="text-ink-3 hover:text-ink text-[18px]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              aria-label="Close"
+              className="px-2"
+            >
               ✕
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -464,10 +475,10 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
               </div>
             )}
           </SidePanel>
-          <SidePanel title="Sprint">{sprint?.key ?? "—"}</SidePanel>
+          <SidePanel title="Sprint">{sprint?.key ?? "-"}</SidePanel>
           <SidePanel title="Story points">
             <div className="flex items-center gap-2">
-              <span className="text-[14px] text-ink">{ticket.storyPoints ?? "—"}</span>
+              <span className="text-[14px] text-ink">{ticket.storyPoints ?? "-"}</span>
               {ticket.aiSuggestedPoints && ticket.storyPoints == null && (
                 <AiTag
                   label={String(ticket.aiSuggestedPoints.value)}
@@ -584,7 +595,7 @@ function AcItem({
   const copyAcLink = () => {
     if (typeof window === "undefined") return;
     navigator.clipboard?.writeText(`${window.location.origin}/t/${ticketKey}#ac-${ac.id}`);
-    toast(`Link copied — ${ticketKey} · AC`);
+    toast(`Link copied - ${ticketKey} · AC`);
   };
 
   const addLink = () => {
@@ -619,19 +630,23 @@ function AcItem({
           className="mt-1"
         />
         <span className={cn("flex-1 text-[14px]", ac.done && "line-through text-ink-4")}>{ac.text}</span>
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-100">
-          <button
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-100">
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
             onClick={() => setLinkOpen((s) => !s)}
-            className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink"
           >
             Link
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
             onClick={() => setAcCommentFor(acCommentForId === ac.id ? null : ac.id)}
-            className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink"
           >
             {acCommentsCount > 0 ? `${acCommentsCount} comment${acCommentsCount === 1 ? "" : "s"}` : "Comment"}
-          </button>
+          </Button>
         </div>
       </div>
       {linked.length > 0 && (

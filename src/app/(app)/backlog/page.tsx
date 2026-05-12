@@ -117,7 +117,7 @@ export default function BacklogPage() {
                   </div>
                   <TypePill t={t.type} />
                   <PriorityPill p={t.priority} />
-                  <span className="font-mono text-[12px] text-ink-3">{project?.key ?? "—"}</span>
+                  <span className="font-mono text-[12px] text-ink-3">{project?.key ?? "-"}</span>
                   <span className="font-mono text-[12px] text-ink-3">{formatDate(t.createdAt)}</span>
                   <span className="font-mono text-[12px] text-ink-3">{age}d</span>
                 </div>

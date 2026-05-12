@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 /* ===========================================================
- * SPX Express Design System v1 — token bridge
+ * SPX Express Design System v1 - token bridge
  * Source: github.com/Lincianyong/spx-ds (tokens/tokens.css)
  * Cadence-specific tokens (--ai*) are kept for AI vs human distinction.
  * =========================================================== */
 
 :root {
-  /* SPX DS — Brand · Orange */
+  /* SPX DS - Brand · Orange */
   --brand-50:  #FFF3F0;
   --brand-100: #FFE0D7;
   --brand-200: #FFC1AE;
@@ -21,7 +21,7 @@
   --brand-800: #82220C;
   --brand-900: #4D1408;
 
-  /* SPX DS — Neutrals · Cool Gray */
+  /* SPX DS - Neutrals · Cool Gray */
   --neutral-0:    #FFFFFF;
   --neutral-25:   #FAFAFB;
   --neutral-50:   #F4F5F7;
@@ -36,7 +36,7 @@
   --neutral-900:  #11141A;
   --neutral-1000: #06080C;
 
-  /* SPX DS — Semantic · Success / Warning / Danger / Info */
+  /* SPX DS - Semantic · Success / Warning / Danger / Info */
   --success-50:  #ECFDF3;
   --success-100: #D1FADF;
   --success-500: #12B76A;
@@ -61,7 +61,7 @@
   --info-600: #1570EF;
   --info-700: #175CD3;
 
-  /* SPX DS — Data viz */
+  /* SPX DS - Data viz */
   --dv-1: #EE4D2D;
   --dv-2: #FB7B53;
   --dv-3: #B12D11;
@@ -69,7 +69,7 @@
   --dv-5: #94A3B8;
   --dv-6: #CBD5E1;
 
-  /* SPX DS — Radius */
+  /* SPX DS - Radius */
   --radius-none: 0;
   --radius-sm:   4px;
   --radius-md:   6px;
@@ -78,7 +78,7 @@
   --radius-2xl:  16px;
   --radius-full: 9999px;
 
-  /* SPX DS — Elevation */
+  /* SPX DS - Elevation */
   --shadow-1: 0 1px 2px 0 rgba(17, 20, 26, 0.05);
   --shadow-2: 0 1px 3px 0 rgba(17, 20, 26, 0.08), 0 1px 2px -1px rgba(17, 20, 26, 0.06);
   --shadow-3: 0 4px 8px -2px rgba(17, 20, 26, 0.08), 0 2px 4px -2px rgba(17, 20, 26, 0.04);
@@ -86,7 +86,7 @@
   --shadow-5: 0 20px 32px -8px rgba(17, 20, 26, 0.14), 0 8px 16px -4px rgba(17, 20, 26, 0.06);
 
   /* ===========================================================
-   * Cadence semantic aliases — point legacy names at SPX DS tokens.
+   * Cadence semantic aliases - point legacy names at SPX DS tokens.
    * Lets every existing component (Pill, Card, Button…) inherit
    * the SPX palette without editing each file.
    * =========================================================== */
@@ -109,7 +109,7 @@
   --accent-soft:  var(--brand-50);
   --accent-deep:  var(--brand-700);
 
-  /* AI lane — Cadence-specific (no SPX DS counterpart). Kept violet. */
+  /* AI lane - Cadence-specific (no SPX DS counterpart). Kept violet. */
   --ai:       #5B3FB8;
   --ai-soft:  #E8E1F5;
 
@@ -127,7 +127,7 @@
 }
 
 /* ===========================================================
- * DARK MODE — "Newsprint Dark"
+ * DARK MODE - "Newsprint Dark"
  *
  * Reference: warm-paper editorial dark (Stripe Press dark, Are.na's
  * studio mode, classic linotype night reading). The default "AI"
@@ -142,27 +142,27 @@
  * Activated by data-theme="dark" on <html>.
  * =========================================================== */
 [data-theme="dark"] {
-  --bg:           #16110D;   /* coffee black — page canvas */
-  --bg-elevated:  #1F1813;   /* warmed surface — striped rows, toolbars */
-  --bg-card:      #281F19;   /* card surface — slide-overs, cards */
+  --bg:           #16110D;   /* coffee black - page canvas */
+  --bg-elevated:  #1F1813;   /* warmed surface - striped rows, toolbars */
+  --bg-card:      #281F19;   /* card surface - slide-overs, cards */
   --rule:         #3A2D24;   /* warm divider */
   --rule-soft:    #2B221B;
 
-  --ink:    #F5ECDF;         /* warm cream — titles, big numbers */
-  --ink-2:  #E0D4C2;         /* parchment — body text */
-  --ink-3:  #A0917D;         /* muted clay — helper / metadata */
-  --ink-4:  #6B5F4F;         /* dim sepia — placeholder / disabled */
+  --ink:    #F5ECDF;         /* warm cream - titles, big numbers */
+  --ink-2:  #E0D4C2;         /* parchment - body text */
+  --ink-3:  #A0917D;         /* muted clay - helper / metadata */
+  --ink-4:  #6B5F4F;         /* dim sepia - placeholder / disabled */
 
   --accent:       #FF6B45;   /* brand orange, warmed for dark surfaces */
   --accent-soft:  rgba(238, 77, 45, 0.16);
   --accent-deep:  #FFB199;
 
-  /* AI lane — warm amber instead of violet; reads like marginalia
+  /* AI lane - warm amber instead of violet; reads like marginalia
      ink, not a chatbot bubble. */
   --ai:       #D9B26A;
   --ai-soft:  rgba(217, 178, 106, 0.16);
 
-  /* Semantic — pulled toward the warm palette (no neon greens / blues) */
+  /* Semantic - pulled toward the warm palette (no neon greens / blues) */
   --warn:        #E8A24E;
   --warn-soft:   rgba(232, 162, 78, 0.16);
   --danger:      #E66A5C;
@@ -210,7 +210,7 @@ html, body {
   color: var(--ink);
 }
 
-/* Focus rings — SPX DS focus token */
+/* Focus rings - SPX DS focus token */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -241,7 +241,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   top: 16px;
 }
 
-/* Display heading — Geist 700, NOT italic serif anymore.
+/* Display heading - Geist 700, NOT italic serif anymore.
    The historical .display class kept its name for back-compat across the codebase. */
 .display {
   font-family: var(--font-display), 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;

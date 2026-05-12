@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * Lives on Epic + Ticket create forms (and editing surfaces later). One
  * chip per Program enum value; click toggles inclusion in the array.
  * Six is small enough that a popover with checkboxes would be more
- * affordance than this is — chips are the right size.
+ * affordance than this is - chips are the right size.
  */
 export function ProgramPicker({
   value,

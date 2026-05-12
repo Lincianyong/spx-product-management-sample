@@ -57,7 +57,7 @@ function EpicBoardInner() {
   const initialGroup = (params.get("groupBy") as GroupBy) ?? "health";
   const [view, setView] = useState<View>(initialView);
   const [groupBy, setGroupBy] = useState<GroupBy>(initialGroup);
-  // Baseline snapshot of the view config — set on mount + whenever a saved
+  // Baseline snapshot of the view config - set on mount + whenever a saved
   // view is applied or saved. When the current view diverges, the toolbar
   // shows an "Edited" pill so the user knows they have unsaved changes.
   const [baseline, setBaseline] = useState<{ view: View; groupBy: GroupBy }>({
@@ -270,7 +270,7 @@ function EpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) => void })
   const childTickets = tickets.filter((t) => t.epicId === epic.id);
 
   // Native <button> mirrors TicketCard so clicks reliably register inside a
-  // dnd-kit listener'd parent — the browser fires `click` on pointerup with
+  // dnd-kit listener'd parent - the browser fires `click` on pointerup with
   // no movement, even when the parent preventDefaults the pointerdown.
   return (
     <button

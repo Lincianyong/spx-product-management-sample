@@ -1,6 +1,6 @@
 # Cadence
 
-Editorial product-management tool for SPX Express AI Engineering — built in Next.js as a UI-first sample (no database, all state in localStorage via Zustand).
+Editorial product-management tool for SPX Express AI Engineering - built in Next.js as a UI-first sample (no database, all state in localStorage via Zustand).
 
 ## Run
 
@@ -24,7 +24,7 @@ npm run dev
 - **Sprint loop**: `/sprint` (drag-drop kanban + ad-hoc lane + sprint progress)
 - **Engineer daily home**: `/me` (four panels)
 - **Ticket detail**: `/t/[key]` (also opens as slide-over from boards)
-- **Epic Board**: `/epics` (5 view modes — Kanban / List / Table / Timeline / Backlog)
+- **Epic Board**: `/epics` (5 view modes - Kanban / List / Table / Timeline / Backlog)
 - **Project & Epic detail**: `/p/[key]`, `/e/[key]`
 - **Three-stage planning**: `/planning/picklist` → `/estimation` → `/joint` (sprint commit with VR validation gate)
 - **Triage Inbox**: `/triage` (AI parent + dedupe suggestions with reasoning tooltips)
@@ -44,9 +44,9 @@ npm run dev
 ## Design system
 
 Three families, three altitudes:
-- **Instrument Serif (italic, ≥22px)** — display headlines
-- **Inter** — body (Geist would be the closer match per spec; substituted for Next-bundled availability)
-- **JetBrains Mono** — captions, pills, IDs, technical strings
+- **Instrument Serif (italic, ≥22px)** - display headlines
+- **Inter** - body (Geist would be the closer match per spec; substituted for Next-bundled availability)
+- **JetBrains Mono** - captions, pills, IDs, technical strings
 
 Surface: warm cream `#F6F2EB` · Accent: deep forest green `#1E3A2E` · AI: violet `#5B3FB8`
 
@@ -59,4 +59,4 @@ Surface: warm cream `#F6F2EB` · Accent: deep forest green `#1E3A2E` · AI: viol
 
 ## Demo data reset
 
-Avatar menu → "Reset demo data" — restores seed Epics, Projects, Tickets, Sprints, Users, Comments, Notifications.
+Avatar menu → "Reset demo data" - restores seed Epics, Projects, Tickets, Sprints, Users, Comments, Notifications.

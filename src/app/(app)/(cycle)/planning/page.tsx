@@ -8,7 +8,7 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { cn, formatDate } from "@/lib/utils";
 
 /**
- * /planning — index page above the cycle bar.
+ * /planning - index page above the cycle bar.
  *
  * Two cards stacked: a quick "what happens next" rolodex of the cycle's
  * five stages (each click-thru), and a history card listing the last
@@ -68,7 +68,7 @@ export default function PlanningIndexPage() {
         lede={
           cycleActive
             ? "Use the bar above to jump to the stage that's yours."
-            : `Next Picklist opens ${weekday(cal.picklistStart)} ${time(cal.picklistStart)} — ${nextPicklistDays === 0 ? "today" : nextPicklistDays === 1 ? "tomorrow" : `${nextPicklistDays} days from now`}.`
+            : `Next Picklist opens ${weekday(cal.picklistStart)} ${time(cal.picklistStart)} - ${nextPicklistDays === 0 ? "today" : nextPicklistDays === 1 ? "tomorrow" : `${nextPicklistDays} days from now`}.`
         }
       />
 
@@ -86,7 +86,7 @@ export default function PlanningIndexPage() {
         </ol>
       </section>
 
-      {/* Sprint history — last 10 closed */}
+      {/* Sprint history - last 10 closed */}
       <section className="bg-bg-card border border-rule rounded-[8px] p-5">
         <div className="flex items-end justify-between mb-3">
           <div>

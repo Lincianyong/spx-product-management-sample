@@ -13,7 +13,24 @@ interface ModalProps {
 
 const sizeCls = { sm: "max-w-md", md: "max-w-xl", lg: "max-w-3xl" };
 
+/**
+ * Body-scroll lock shared between Modal and SlideOver. Restores the
+ * caller's previous overflow value on unmount so multiple stacked
+ * overlays don't unlock the body prematurely.
+ */
+function useBodyScrollLock(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [active]);
+}
+
 export function Modal({ open, onClose, children, title, size = "md" }: ModalProps) {
+  useBodyScrollLock(open);
   useEffect(() => {
     if (!open) return;
     const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -42,6 +59,7 @@ export function Modal({ open, onClose, children, title, size = "md" }: ModalProp
 }
 
 export function SlideOver({ open, onClose, children, widthClass = "w-[640px]" }: { open: boolean; onClose: () => void; children: React.ReactNode; widthClass?: string }) {
+  useBodyScrollLock(open);
   useEffect(() => {
     if (!open) return;
     const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();

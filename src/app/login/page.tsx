@@ -64,7 +64,7 @@ export default function LoginPage() {
             Ship in <span className="text-accent">cadence</span>.
           </h1>
           <p className="font-body text-body-l text-ink-2 max-w-md mt-6">
-            Three altitudes — Epic, Project, Ticket. Three planning stages — picklist, estimation,
+            Three altitudes - Epic, Project, Ticket. Three planning stages - picklist, estimation,
             joint commit. One weekly cycle, every team on the same beat.
           </p>
           <Link

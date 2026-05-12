@@ -29,11 +29,11 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://cadence.spx-express.com"),
   title: {
-    default: "Cadence — SPX Express AI Engineering",
+    default: "Cadence - SPX Express AI Engineering",
     template: "%s · Cadence",
   },
   description:
-    "Editorial product management for SPX Express AI Engineering. Three altitudes — Epic, Project, Ticket. Three planning stages — Picklist, Estimation, Joint Commit. AI as evidence, never author.",
+    "Editorial product management for SPX Express AI Engineering. Three altitudes - Epic, Project, Ticket. Three planning stages - Picklist, Estimation, Joint Commit. AI as evidence, never author.",
   applicationName: "Cadence",
   authors: [{ name: "SPX Express · AI Engineering" }],
   generator: "Next.js",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "Cadence — SPX Express AI Engineering",
+    title: "Cadence - SPX Express AI Engineering",
     description: "Plan with conviction. Ship in cadence.",
     url: "https://cadence.spx-express.com",
     siteName: "Cadence",
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Cadence — SPX Express AI Engineering",
+    title: "Cadence - SPX Express AI Engineering",
     description: "Plan with conviction. Ship in cadence.",
   },
   // Icons are auto-detected from src/app/icon.png + src/app/apple-icon.png

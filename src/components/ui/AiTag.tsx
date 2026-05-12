@@ -14,7 +14,7 @@ interface Props {
 export function AiTag({ label, confidence, reasoning, onAccept, className }: Props) {
   const [open, setOpen] = useState(false);
 
-  // Confidence threshold — below 60% we say nothing
+  // Confidence threshold - below 60% we say nothing
   if (confidence != null && confidence < 0.6) return null;
 
   return (

@@ -1,7 +1,7 @@
 import { PublicNav } from "./PublicNav";
 
 /**
- * Public layout — renders OUTSIDE the (app) AppShell. No sidebar,
+ * Public layout - renders OUTSIDE the (app) AppShell. No sidebar,
  * no auth redirect, no onboarding modal. A docs-style top-nav on
  * top, a constrained centered column for the page body, and a
  * minimal footer.

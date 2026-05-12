@@ -554,7 +554,7 @@ export const seedTickets: Ticket[] = [
     rollbackPlan: "Re-enable cron job; Argo DAG paused",
     migrationWindow: "Sun 03:00–05:00 SGT",
   },
-  // Ad-hoc P1 bug (no project) — for ad-hoc lane demo
+  // Ad-hoc P1 bug (no project) - for ad-hoc lane demo
   {
     id: "t_4500",
     key: "BUG-4500",
@@ -820,7 +820,7 @@ export const seedTickets: Ticket[] = [
   // tally and a couple of carry-overs to surface. Numbers line up with
   // the matching Sprint.committedPoints / shippedPoints in seedSprints.
 
-  // W19 — 6 shipped (27 pts), 2 carry-over (4 pts); committed = 31
+  // W19 - 6 shipped (27 pts), 2 carry-over (4 pts); committed = 31
   closedTicket({ id: "t_w19_1", key: "RTE-852",  type: "engineering", title: "Ferry timetable v1 loader",         epicId: "ep_rte", sprintId: "sp_w19", authorId: "u_albert",  assigneeId: "u_devi",   storyPoints: 8, closedDaysAgo: 2, priority: "P1", tags: ["routing", "4pl"] }),
   closedTicket({ id: "t_w19_2", key: "MAD-310",  type: "engineering", title: "Madura cutoff alert v1",            epicId: "ep_mad", sprintId: "sp_w19", authorId: "u_albert",  assigneeId: "u_sari",   storyPoints: 5, closedDaysAgo: 2, tags: ["4pl", "alerts"] }),
   closedTicket({ id: "t_w19_3", key: "HUB-104",  type: "engineering", title: "Hourly throughput ingest",          epicId: "ep_hub", sprintId: "sp_w19", authorId: "u_diana",   assigneeId: "u_mira",   storyPoints: 5, closedDaysAgo: 3, tags: ["sorting"] }),
@@ -830,14 +830,14 @@ export const seedTickets: Ticket[] = [
   closedTicket({ id: "t_w19_7", key: "RTE-855",  type: "engineering", title: "Reroute scoring (pre-cutoff)",      epicId: "ep_rte", sprintId: "sp_w19", authorId: "u_albert",  assigneeId: "u_mira",   storyPoints: 2, closedDaysAgo: 0, priority: "P1", tags: ["routing"], status: "in_progress", carryOver: true }),
   closedTicket({ id: "t_w19_8", key: "BUG-4402", type: "bug",         title: "Stuck 'delivered' sync state",       epicId: "ep_drv", sprintId: "sp_w19", authorId: "u_ronaldo", assigneeId: "u_devi",   storyPoints: 2, closedDaysAgo: 0, priority: "P1", tags: ["mobile"], status: "review", carryOver: true, severity: "S2" }),
 
-  // W18 — 5 shipped (29 pts); committed = 30 (1 pt slipped silently)
+  // W18 - 5 shipped (29 pts); committed = 30 (1 pt slipped silently)
   closedTicket({ id: "t_w18_1", key: "CDN-3475", type: "engineering", title: "Daily MAPE baseline calc",          epicId: "ep_cdn", sprintId: "sp_w18", authorId: "u_albert",  assigneeId: "u_andre",  storyPoints: 5, closedDaysAgo: 9, tags: ["ml"] }),
   closedTicket({ id: "t_w18_2", key: "HUB-090",  type: "engineering", title: "Sortation-line API integration",    epicId: "ep_hub", sprintId: "sp_w18", authorId: "u_diana",   assigneeId: "u_mira",   storyPoints: 8, closedDaysAgo: 9, tags: ["sorting", "platform"] }),
   closedTicket({ id: "t_w18_3", key: "BUG-4385", type: "bug",         title: "Map tile failure when offline",     epicId: "ep_drv", sprintId: "sp_w18", authorId: "u_ronaldo", assigneeId: "u_devi",   storyPoints: 5, closedDaysAgo: 10, priority: "P1", tags: ["mobile"], status: "verified", severity: "S2" }),
   closedTicket({ id: "t_w18_4", key: "RTE-840",  type: "engineering", title: "Static feed schema spike",          epicId: "ep_rte", sprintId: "sp_w18", authorId: "u_albert",  assigneeId: "u_sari",   storyPoints: 8, closedDaysAgo: 11, tags: ["routing"] }),
   closedTicket({ id: "t_w18_5", key: "CDN-3478", type: "tech_task",   title: "Promotion rollback hook",           epicId: "ep_cdn", sprintId: "sp_w18", authorId: "u_andre",   assigneeId: "u_andre",  storyPoints: 3, closedDaysAgo: 8, tags: ["ml", "platform"] }),
 
-  // W17 — 4 shipped (26 pts); committed = 28 (2 pt slip)
+  // W17 - 4 shipped (26 pts); committed = 28 (2 pt slip)
   closedTicket({ id: "t_w17_1", key: "MAD-300",  type: "engineering", title: "Madura station onboarding API",     epicId: "ep_mad", sprintId: "sp_w17", authorId: "u_albert",  assigneeId: "u_sari",   storyPoints: 8, closedDaysAgo: 16, priority: "P1", tags: ["4pl"] }),
   closedTicket({ id: "t_w17_2", key: "HUB-080",  type: "engineering", title: "Capacity signal contract",          epicId: "ep_hub", sprintId: "sp_w17", authorId: "u_diana",   assigneeId: "u_mira",   storyPoints: 5, closedDaysAgo: 17, tags: ["sorting"] }),
   closedTicket({ id: "t_w17_3", key: "BUG-4368", type: "bug",         title: "Auth refresh race on token rotate", epicId: null,     sprintId: "sp_w17", authorId: "u_ronaldo", assigneeId: "u_andre",  storyPoints: 5, closedDaysAgo: 18, priority: "P0", tags: ["auth"], status: "verified", severity: "S1" }),
@@ -852,7 +852,7 @@ export const seedComments: Comment[] = [
     entityId: "t_3504",
     parentCommentId: null,
     authorId: "u_sari",
-    body: "Heads up @andre.halim — let's land the alert channel before drift gate flips on. Saves a noisy night.",
+    body: "Heads up @andre.halim - let's land the alert channel before drift gate flips on. Saves a noisy night.",
     mentions: ["u_andre"],
     createdAt: isoDate(addDays(today, -2)),
     editedAt: null,
@@ -917,7 +917,7 @@ export const seedNotifications: Notification[] = [
     id: "n_4",
     userId: "u_albert",
     kind: "sprint_commit",
-    body: "Sprint W20 committed — 34 pts across 5 engineers",
+    body: "Sprint W20 committed - 34 pts across 5 engineers",
     entityType: "sprint",
     entityKey: "W20-2026",
     createdAt: isoDate(addDays(today, -1)),
@@ -970,7 +970,7 @@ export const seedActivity: ActivityEntry[] = [
     actorId: "u_albert",
     action: "points_set",
     field: "story_points",
-    beforeValue: "—",
+    beforeValue: "-",
     afterValue: "8",
     timestamp: isoDate(addDays(today, -2)),
     aiInfluenced: true,

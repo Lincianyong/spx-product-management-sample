@@ -11,9 +11,9 @@ export type Capability =
   | "create_ticket"
   | "create_tech_task"
   | "create_bug"
-  | "pick_for_sprint" // Stage 4a — PM lane
-  | "set_points"      // Stage 4b — Eng lane
-  | "commit_sprint"   // Stage 4c — PM commits
+  | "pick_for_sprint" // Stage 4a - PM lane
+  | "set_points"      // Stage 4b - Eng lane
+  | "commit_sprint"   // Stage 4c - PM commits
   | "edit_epic"
   | "assign_ticket"
   | "comment"

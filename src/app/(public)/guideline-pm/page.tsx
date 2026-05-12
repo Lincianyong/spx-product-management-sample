@@ -21,10 +21,10 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Daily · /me"
-        title="My Work — the dashboard for today."
+        title="My Work - the dashboard for today."
         body="Mentions awaiting reply, status alerts (tickets stalled past their threshold), the live cycle scrubber for the planning sprint, and your assigned tickets. Open this first thing every morning."
         bullets={[
-          "Cycle scrubber shows where the week is right now — Picklist, Estimation, Joint, or Sprint.",
+          "Cycle scrubber shows where the week is right now - Picklist, Estimation, Joint, or Sprint.",
           "Mentions card highlights @mentions you haven't replied to.",
           "Status alerts surface tickets stuck longer than the lane allows.",
         ]}
@@ -45,7 +45,7 @@ export default function GuidelinePmPage() {
       <MockScreen
         title="Create · selector"
         url="/create"
-        caption="Three creation lanes in one row — Bug · Epic · Engineering Ticket. Tech Task wraps to the next row."
+        caption="Three creation lanes in one row - Bug · Epic · Engineering Ticket. Tech Task wraps to the next row."
         className="mb-8"
       >
         <div className="grid grid-cols-3 gap-2">
@@ -69,7 +69,7 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Plan · /planning/picklist"
-        title="Picklist — Friday 09:00."
+        title="Picklist - Friday 09:00."
         body="Drag tickets into rank order. The slice you send is the slice engineers will estimate that afternoon."
         bullets={[
           "Drag the whole row (no grip-only handle).",
@@ -81,7 +81,7 @@ export default function GuidelinePmPage() {
       <MockScreen
         title="Picklist · drag to rank"
         url="/planning/picklist"
-        caption="Drag any row by the row body itself. Numbers on the left are the picklist rank — top is highest priority."
+        caption="Drag any row by the row body itself. Numbers on the left are the picklist rank - top is highest priority."
         className="mb-8"
       >
         <div className="space-y-1">
@@ -105,7 +105,7 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Plan · /planning/joint"
-        title="Joint planning — Monday 10:00."
+        title="Joint planning - Monday 10:00."
         body="The whole team. Assign tickets to engineers, watch capacity, commit the sprint. The sprint starts when you commit."
         bullets={[
           "Capacity bar per engineer turns red as you over-assign.",
@@ -116,7 +116,7 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Plan · /sprint"
-        title="Sprint board — watch the funnel."
+        title="Sprint board - watch the funnel."
         body="During the sprint week the board is a kanban. You don't move cards (engineers do), but you watch for tickets stuck in Review, scope creep, and bugs entering during the week."
         bullets={[
           "Backlog · Scheduled · In Progress · Review · Done lanes.",
@@ -158,7 +158,7 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Plan · /sprint-close"
-        title="Retro — 15 minutes Monday morning."
+        title="Retro - 15 minutes Monday morning."
         body="Sprint Close captures velocity automatically and shows what shipped vs what carried over. Pick a prior sprint with the dropdown to compare."
         bullets={[
           "Stats grid: Committed pts · Shipped pts · Completion % · Carry-over count.",
@@ -217,7 +217,7 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Plan · /backlog"
-        title="Backlog — the table of work waiting to be picked."
+        title="Backlog - the table of work waiting to be picked."
         body="A flat, searchable table of every Engineering ticket, Bug, and Tech Task that isn't yet in a sprint. This is where you groom: re-rank, change priority, retag programs, or kill stale items before Picklist on Friday."
         bullets={[
           "Use when: you want to see the full unscheduled queue across epics in one column.",
@@ -257,8 +257,8 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Portfolio · /epics"
-        title="Epic Board — the conviction kanban."
-        body="A kanban of every epic in the workspace, lanes for each status. This is the room you walk into when leadership asks 'what's actually in flight?' — at the epic altitude, not the ticket altitude."
+        title="Epic Board - the conviction kanban."
+        body="A kanban of every epic in the workspace, lanes for each status. This is the room you walk into when leadership asks 'what's actually in flight?' - at the epic altitude, not the ticket altitude."
         bullets={[
           "Use when: you want one screen showing every bet currently funded.",
           "Reads at a glance: how many epics per lane, which are at-risk vs on-track (health pill on each card), which PMs own which.",
@@ -278,11 +278,11 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Portfolio · /timeline"
-        title="Timeline — when each epic actually lands."
+        title="Timeline - when each epic actually lands."
         body="A horizontal Gantt-style view: epics on the Y axis, weeks on the X. Each bar runs from startDate to targetEndDate so you can see at a glance where work is bunched, which epics overlap, and where the quarter has slack."
         bullets={[
-          "Use when: you want to forecast capacity by week — 'do we have anything shipping in W22?'",
-          "Use when: scheduling a cross-team dependency — see if the upstream epic finishes before yours starts.",
+          "Use when: you want to forecast capacity by week - 'do we have anything shipping in W22?'",
+          "Use when: scheduling a cross-team dependency - see if the upstream epic finishes before yours starts.",
           "Reads at a glance: quarter banding behind the bars, today's vertical hairline, hover-tooltip with health + PM.",
           "Clicking a bar opens the epic detail (/e/CDN).",
         ]}
@@ -299,7 +299,7 @@ export default function GuidelinePmPage() {
 
       <SurfaceCard
         eyebrow="Portfolio · /portfolio"
-        title="Portfolio Health — the leadership read."
+        title="Portfolio Health - the leadership read."
         body="One screen that answers 'how is the quarter going?'. Stat tiles at the top (in-flight epic count, at-risk count, programs covered) and the 'Allocation by program' bar chart for portfolio shape."
         bullets={[
           "Use when: prepping leadership review, weekly portfolio sync, or before a hiring/headcount conversation.",

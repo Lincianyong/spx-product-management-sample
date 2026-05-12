@@ -28,7 +28,7 @@ export default function GuidelineOverviewPage() {
       <Section
         eyebrow="What it is"
         title="A weekly product cadence on top of a tracker."
-        body="Cadence is an editorial product-management surface for SPX Express AI Engineering. Work moves on a fixed weekly cycle — pick it Friday, estimate it Friday, commit it Monday, ship it Mon–Fri, retro Mon. The same data shows up where each role needs it; the rest stays out of the way."
+        body="Cadence is an editorial product-management surface for SPX Express AI Engineering. Work moves on a fixed weekly cycle - pick it Friday, estimate it Friday, commit it Monday, ship it Mon–Fri, retro Mon. The same data shows up where each role needs it; the rest stays out of the way."
       />
 
       <MockScreen
@@ -99,7 +99,7 @@ export default function GuidelineOverviewPage() {
         </ol>
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 mt-3">
           Note · times above are a tentative sample. The cadence is fixed (one cycle per week)
-          but the exact day-of-week and time-of-day are flexible per team — set them at your
+          but the exact day-of-week and time-of-day are flexible per team - set them at your
           first kickoff, not in code.
         </p>
       </Section>
@@ -140,7 +140,7 @@ export default function GuidelineOverviewPage() {
       >
         <Cards>
           <Card title="Epic" body="Conviction-level bet. Quarter altitude. Title + thesis + PM owner. Lives on /epics and /timeline." />
-          <Card title="Project" body="A unit of work under an epic — multiple tickets that share a single shippable outcome. Implicit; surfaces through linked tickets." />
+          <Card title="Project" body="A unit of work under an epic - multiple tickets that share a single shippable outcome. Implicit; surfaces through linked tickets." />
           <Card title="Ticket" body="What actually gets done in a sprint. Engineering · Bug · Tech task. Lands in Backlog, gets picked, gets shipped." />
         </Cards>
       </Section>
@@ -148,7 +148,7 @@ export default function GuidelineOverviewPage() {
       <Section
         eyebrow="Programs"
         title="Configurable axes the portfolio rolls up."
-        body="Every Epic (and optionally each Ticket) is tagged with one or more programs. The Portfolio view bucket-sums epics by program so leadership can see allocation at a glance. The set below is the current sample configuration — programs are workspace-level and can be added, renamed, or retired without code changes."
+        body="Every Epic (and optionally each Ticket) is tagged with one or more programs. The Portfolio view bucket-sums epics by program so leadership can see allocation at a glance. The set below is the current sample configuration - programs are workspace-level and can be added, renamed, or retired without code changes."
       >
         <div className="flex flex-wrap gap-2 mb-1">
           {["LM", "FM", "Expansion", "BPOM", "CCTV", "FINOPS"].map((p) => (

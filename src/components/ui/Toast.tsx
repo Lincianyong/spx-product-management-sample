@@ -30,7 +30,7 @@ export const useToastStore = create<ToastStore>((set) => ({
         id: `t_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         ttl: t.ttl ?? DEFAULT_TTL,
       };
-      // Cap at MAX_TOASTS — drop the oldest if we'd exceed.
+      // Cap at MAX_TOASTS - drop the oldest if we'd exceed.
       const queue = [...s.toasts, next];
       const trimmed = queue.length > MAX_TOASTS ? queue.slice(queue.length - MAX_TOASTS) : queue;
       return { toasts: trimmed };
@@ -64,7 +64,7 @@ export function ToastViewport() {
 
 function ToastItem({ entry, onClose }: { entry: ToastEntry; onClose: () => void }) {
   useEffect(() => {
-    // All toasts auto-dismiss (including errors) — user requested 3s blanket.
+    // All toasts auto-dismiss (including errors) - user requested 3s blanket.
     const id = setTimeout(onClose, entry.ttl);
     return () => clearTimeout(id);
   }, [entry, onClose]);

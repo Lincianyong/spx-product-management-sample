@@ -40,7 +40,7 @@ export default function PortfolioPage() {
   const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("health");
 
-  // Scope filter — applied first
+  // Scope filter - applied first
   const epics = useMemo(() => {
     if (!currentUser || scope === "all") return allEpics;
     return allEpics.filter((e) => e.pmPicId === currentUser.id);

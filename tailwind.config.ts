@@ -31,7 +31,7 @@ const config: Config = {
         neutral: "var(--neutral)",
         "neutral-soft": "var(--neutral-soft)",
 
-        // SPX DS — Brand orange scale
+        // SPX DS - Brand orange scale
         brand: {
           50: "var(--brand-50)",
           100: "var(--brand-100)",
@@ -44,7 +44,7 @@ const config: Config = {
           800: "var(--brand-800)",
           900: "var(--brand-900)",
         },
-        // SPX DS — Cool gray neutrals
+        // SPX DS - Cool gray neutrals
         gray: {
           0: "var(--neutral-0)",
           25: "var(--neutral-25)",
@@ -60,7 +60,7 @@ const config: Config = {
           900: "var(--neutral-900)",
           1000: "var(--neutral-1000)",
         },
-        // SPX DS — Data viz
+        // SPX DS - Data viz
         dv: {
           1: "var(--dv-1)",
           2: "var(--dv-2)",
@@ -90,7 +90,7 @@ const config: Config = {
         "spx-mono": ["13px", { lineHeight: "20px" }],
         "spx-numeric": ["28px", { lineHeight: "33px", fontWeight: "600" }],
 
-        // Legacy aliases used across components — keep working
+        // Legacy aliases used across components - keep working
         "display-xl": ["48px", { lineHeight: "53px", letterSpacing: "-0.025em" }],
         "display-l": ["32px", { lineHeight: "38px", letterSpacing: "-0.02em" }],
         "display-m": ["24px", { lineHeight: "31px", letterSpacing: "-0.015em" }],

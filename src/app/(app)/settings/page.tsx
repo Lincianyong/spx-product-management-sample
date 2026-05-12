@@ -10,13 +10,13 @@ import { useDocumentTitle } from "@/lib/useDocumentTitle";
 const TABS = ["workspace", "sso", "roles", "integrations", "notifications"] as const;
 type Tab = (typeof TABS)[number];
 
-const ROLE_MATRIX: Record<string, Record<string, "✓" | "—" | "PIC" | "Read">> = {
+const ROLE_MATRIX: Record<string, Record<string, "✓" | "-" | "PIC" | "Read">> = {
   "Create Ticket":      { pm: "✓",   engineer: "✓" },
-  "Create Epic":        { pm: "✓",   engineer: "—" },
-  "Edit Epic":          { pm: "PIC", engineer: "—" },
-  "Commit Sprint":      { pm: "✓",   engineer: "—" },
-  "Set Story Points":   { pm: "—",   engineer: "✓" },
-  "Assign Ticket":      { pm: "✓",   engineer: "—" },
+  "Create Epic":        { pm: "✓",   engineer: "-" },
+  "Edit Epic":          { pm: "PIC", engineer: "-" },
+  "Commit Sprint":      { pm: "✓",   engineer: "-" },
+  "Set Story Points":   { pm: "-",   engineer: "✓" },
+  "Assign Ticket":      { pm: "✓",   engineer: "-" },
   "Comment":            { pm: "✓",   engineer: "✓" },
   "View Portfolio":     { pm: "✓",   engineer: "✓" },
 };

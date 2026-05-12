@@ -13,7 +13,7 @@ const LINKS = [
 
 /**
  * Top-nav for the public guideline surface. Renders outside the
- * AppShell — no sidebar, no search header, no onboarding modal. The
+ * AppShell - no sidebar, no search header, no onboarding modal. The
  * brand + tab strip on the left; an 'Open the app' CTA on the right.
  */
 export function PublicNav() {

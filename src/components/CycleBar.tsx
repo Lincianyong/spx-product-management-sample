@@ -8,7 +8,7 @@ import { calendarFor, cycleStageNow, type CycleStage } from "@/lib/cycle";
 import { cn } from "@/lib/utils";
 
 /**
- * CycleBar — persistent header rendered by the (cycle) route group
+ * CycleBar - persistent header rendered by the (cycle) route group
  * (the /planning module). Four milestones laid out as connected dots,
  * each click-navigable. Mirrors the PlanningCalendarMini scrubber on
  * /me so the visual idiom is shared across the app.
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
  * - Future dot → muted
  *
  * Sprint Close lives as its own sidebar entry and intentionally is not
- * a stage in this bar — close is a retro, not a scrubber position.
+ * a stage in this bar - close is a retro, not a scrubber position.
  */
 
 type StageKey = "picklist" | "estimation" | "joint" | "sprint";

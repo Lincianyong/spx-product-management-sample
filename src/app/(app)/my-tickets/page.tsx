@@ -38,7 +38,7 @@ type StateFilter = "all" | "open" | "closed";
 const CLOSED_STATUSES = new Set(["done", "verified", "cancelled", "cannot_reproduce"]);
 
 /**
- * /my-tickets — every ticket the signed-in user authored, regardless of
+ * /my-tickets - every ticket the signed-in user authored, regardless of
  * type. Replaces the previous /my-bugs surface (which only showed bugs).
  * Filters cover type · open/closed · program. Search hits key + title + tags.
  */
@@ -199,7 +199,7 @@ export default function MyTicketsPage() {
         mine.length === 0 ? (
           <EmptyState
             title="Nothing filed yet."
-            body="Anything you create from this account lands here — engineering tickets, bugs, tech tasks."
+            body="Anything you create from this account lands here - engineering tickets, bugs, tech tasks."
             action={
               <Link href="/create">
                 <Button variant="primary" size="sm">Create your first ticket</Button>

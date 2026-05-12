@@ -49,20 +49,20 @@ function useRealtimeSim() {
     const next = !enabled;
     setEnabled(next);
     if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, next ? "on" : "off");
-    toast(next ? "Realtime sim on — expect random card flashes" : "Realtime sim off", { kind: "info" });
+    toast(next ? "Realtime sim on - expect random card flashes" : "Realtime sim off", { kind: "info" });
   };
 
   return { enabled, toggle };
 }
 
-/** Sidebar-bottom variant — full-width row with label + dot indicator. */
+/** Sidebar-bottom variant - full-width row with label + dot indicator. */
 export function RealtimeSimToggle({ compact = false }: { compact?: boolean }) {
   const { enabled, toggle } = useRealtimeSim();
   if (compact) {
     return (
       <button
         onClick={toggle}
-        title={`Realtime sim ${enabled ? "on" : "off"} — toggle simulated other-user activity`}
+        title={`Realtime sim ${enabled ? "on" : "off"} - toggle simulated other-user activity`}
         className="w-full h-9 flex items-center justify-center rounded-[6px] hover:bg-rule-soft transition-colors duration-100"
       >
         <span className={`w-2 h-2 rounded-full ${enabled ? "bg-ok animate-pulse" : "bg-rule"}`} />
@@ -73,7 +73,7 @@ export function RealtimeSimToggle({ compact = false }: { compact?: boolean }) {
     <button
       onClick={toggle}
       className="w-full flex items-center gap-2 px-3 py-2 rounded-[6px] text-[12px] font-mono uppercase tracking-[0.06em] text-ink-3 hover:text-ink hover:bg-rule-soft transition-colors duration-100"
-      title="Toggle realtime simulation — fires occasional card flashes simulating other users"
+      title="Toggle realtime simulation - fires occasional card flashes simulating other users"
     >
       <span className={`w-2 h-2 rounded-full ${enabled ? "bg-ok animate-pulse" : "bg-rule"}`} />
       <span className="flex-1 text-left">Realtime sim</span>

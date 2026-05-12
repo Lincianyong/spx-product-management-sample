@@ -72,7 +72,7 @@ export default function EpicDetailPage({ params }: { params: { key: string } }) 
             <p className="font-body text-body-l text-ink-2 mt-4 max-w-2xl">{epic.thesis}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="secondary" size="sm" onClick={() => { navigator.clipboard?.writeText(window.location.href); toast(`Link copied — ${epic.key}`); }}>
+            <Button variant="secondary" size="sm" onClick={() => { navigator.clipboard?.writeText(window.location.href); toast(`Link copied - ${epic.key}`); }}>
               Copy link
             </Button>
           </div>
@@ -157,7 +157,7 @@ export default function EpicDetailPage({ params }: { params: { key: string } }) 
 
       {tab === "timeline" && (
         <div className="bg-bg-card border border-rule rounded-[8px] p-5">
-          <p className="text-[13px] text-ink-3 italic">Timeline view of this epic's tickets — see the standalone /timeline page for the sprint-level Gantt.</p>
+          <p className="text-[13px] text-ink-3 italic">Timeline view of this epic's tickets - see the standalone /timeline page for the sprint-level Gantt.</p>
         </div>
       )}
 
@@ -179,7 +179,7 @@ export default function EpicDetailPage({ params }: { params: { key: string } }) 
                 replies={epicComments.filter((x) => x.parentCommentId === c.id)}
               />
             ))}
-          <CommentComposer placeholder="Comment at the Epic level — leadership and PMs see this." onSubmit={submit} submitLabel="Post" />
+          <CommentComposer placeholder="Comment at the Epic level - leadership and PMs see this." onSubmit={submit} submitLabel="Post" />
         </div>
       )}
     </div>
