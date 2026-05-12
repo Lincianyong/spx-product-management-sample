@@ -27,7 +27,7 @@ export default function GuidelineOverviewPage() {
 
       <Section
         eyebrow="What it is"
-        title="A weekly product cadence, not a tracker."
+        title="A weekly product cadence on top of a tracker."
         body="Cadence is an editorial product-management surface for SPX Express AI Engineering. Work moves on a fixed weekly cycle — pick it Friday, estimate it Friday, commit it Monday, ship it Mon–Fri, retro Mon. The same data shows up where each role needs it; the rest stays out of the way."
       />
 
