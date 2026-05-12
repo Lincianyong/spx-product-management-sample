@@ -53,7 +53,7 @@ export function CycleBar() {
   const activeIdx = STAGES.findIndex((s) => s.clockStages.includes(clock));
 
   return (
-    <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-6 flex items-center justify-between gap-6">
+    <div className="bg-bg-card border border-rule rounded-[8px] px-4 py-3 mb-6 flex items-center justify-between gap-12">
       <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 shrink-0">
         Cycle for {anchor.key} · Now {weekday(now)} {time(now)}
       </div>
