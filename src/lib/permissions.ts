@@ -19,14 +19,14 @@ export type Capability =
   | "comment"
   // View-level (kept for back-compat in URL guards / older sidebar items)
   | "view_create"
-  | "view_my_bugs";
+  | "view_my_tickets";
 
 const FLAT_ACTIONS: Capability[] = [
   "edit_epic",
   "assign_ticket",
   "comment",
   "view_create",
-  "view_my_bugs",
+  "view_my_tickets",
 ];
 
 export const PERMISSIONS: Record<Role, Capability[]> = {
@@ -51,10 +51,10 @@ export function can(role: Role | undefined, cap: Capability): boolean {
   return PERMISSIONS[role].includes(cap);
 }
 
-// Only /create + /my-bugs are URL-gated by capability; everything else is open.
+// Only /create + /my-tickets are URL-gated by capability; everything else is open.
 const URL_GUARD: { prefix: string; cap: Capability }[] = [
   { prefix: "/create", cap: "view_create" },
-  { prefix: "/my-bugs", cap: "view_my_bugs" },
+  { prefix: "/my-tickets", cap: "view_my_tickets" },
 ];
 
 export function pathRequiresCap(pathname: string): Capability | null {

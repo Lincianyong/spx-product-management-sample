@@ -82,7 +82,7 @@ export default function EpicDetailPage({ params }: { params: { key: string } }) 
       {/* Health rollup */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <Stat label="PM" value={<span className="flex items-center gap-2"><Avatar user={pm} size="xs" /><span>{pm?.displayName}</span></span>} />
-        <Stat label="Program" value={epic.program ?? "Ungrouped"} />
+        <Stat label="Programs" value={(epic.programs ?? []).length > 0 ? (epic.programs ?? []).join(" · ") : "Ungrouped"} />
         <Stat label="Tickets" value={`${doneTickets} / ${allTickets.length} done`} />
         <Stat label="Target end" value={formatDate(epic.targetEndDate)} />
       </div>

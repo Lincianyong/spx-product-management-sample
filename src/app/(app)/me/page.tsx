@@ -587,7 +587,7 @@ function FiledPanel({ tickets, onOpen }: { tickets: Ticket[]; onOpen: (k: string
         </div>
       )}
       {tickets.length > 6 && (
-        <Link href="/my-bugs" className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep mt-3 inline-block">
+        <Link href="/my-tickets" className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep mt-3 inline-block">
           + {tickets.length - 6} more →
         </Link>
       )}

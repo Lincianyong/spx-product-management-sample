@@ -14,7 +14,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
@@ -29,6 +29,7 @@ import { Plus } from "lucide-react";
 import { EpicLevelTimeline } from "@/components/epics/EpicLevelTimeline";
 import { DRAG_SOURCE_OPACITY, DRAG_OVERLAY_CLASS } from "@/lib/drag-styles";
 import { UnsavedPill } from "@/components/comments/CommentComposer";
+import { ProgramPicker } from "@/components/ProgramPicker";
 
 const VIEWS = ["kanban", "list", "table", "timeline", "backlog"] as const;
 type View = (typeof VIEWS)[number];
@@ -238,11 +239,21 @@ function useGroups(epics: Epic[], groupBy: GroupBy) {
     return quarters.map((q) => ({ key: q, label: q, items: epics.filter((e) => e.quarter === q) }));
   }
   if (groupBy === "program") {
-    const programs = Array.from(new Set(epics.map((e) => e.program ?? "Ungrouped")));
-    return programs.map((p) => ({
+    // Each epic can sit in multiple program columns; an epic with no
+    // programs[] falls into the "Ungrouped" bucket.
+    const all = new Set<string>();
+    for (const e of epics) {
+      if (!e.programs || e.programs.length === 0) all.add("Ungrouped");
+      else for (const p of e.programs) all.add(p);
+    }
+    return Array.from(all).map((p) => ({
       key: p,
       label: p,
-      items: epics.filter((e) => (e.program ?? "Ungrouped") === p),
+      items: epics.filter((e) =>
+        p === "Ungrouped"
+          ? !e.programs || e.programs.length === 0
+          : (e.programs ?? []).includes(p as import("@/lib/types").Program)
+      ),
     }));
   }
   const pmIds = Array.from(new Set(epics.map((e) => e.pmPicId)));
@@ -321,7 +332,7 @@ function KanbanView({ epics, groupBy, onOpen }: ViewProps) {
               <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{g.label}</span>
               <span className="font-mono text-[11px] text-ink-3">{g.items.length}</span>
             </div>
-            <SortableContext id={String(g.key)} items={g.items.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext id={String(g.key)} items={g.items.map((e) => e.id)} strategy={rectSortingStrategy}>
               <div className="flex flex-col gap-3 min-h-[40px]">
                 {g.items.length === 0 && (
                   <div className="text-[12px] text-ink-4 italic px-1 py-2">Drop epics here.</div>
@@ -348,7 +359,7 @@ function ListView({ epics, groupBy, onOpen }: ViewProps) {
             <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3 flex items-center gap-2">
               {g.label} <span className="text-ink-4">·</span> <span className="text-ink-4">{g.items.length}</span>
             </div>
-            <SortableContext id={String(g.key)} items={g.items.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext id={String(g.key)} items={g.items.map((e) => e.id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-2 gap-4 items-start min-h-[40px]">
                 {g.items.map((e) => <SortableEpicCard key={e.id} epic={e} onOpen={onOpen} />)}
                 {g.items.length === 0 && <p className="text-[12px] text-ink-4 italic">Drop epics here.</p>}
@@ -410,7 +421,21 @@ function EpicDndContext({
       if (groupBy === "health") patch.health = destKey as Health;
       else if (groupBy === "quarter") patch.quarter = destKey;
       else if (groupBy === "pic") patch.pmPicId = destKey;
-      else if (groupBy === "program") patch.program = destKey === "Ungrouped" ? undefined : destKey;
+      else if (groupBy === "program") {
+        // Replace the source-program tag with the destination one; other
+        // tags this epic carries are preserved.
+        const current = epic.programs ?? [];
+        const without = current.filter(
+          (p) => p !== (sourceKey as import("@/lib/types").Program)
+        );
+        if (destKey === "Ungrouped") {
+          patch.programs = without;
+        } else {
+          patch.programs = Array.from(
+            new Set([...without, destKey as import("@/lib/types").Program])
+          );
+        }
+      }
       useAppStore.setState((s) => ({
         epics: s.epics.map((x) => (x.id === activeId ? { ...x, ...patch } : x)),
       }));
@@ -571,6 +596,7 @@ function CreateEpicModal({
   const [quarter, setQuarter] = useState("Q2 2026");
   const [pmPicId, setPmPicId] = useState(user?.id ?? "");
   const [tags, setTags] = useState<string[]>([]);
+  const [programs, setPrograms] = useState<import("@/lib/types").Program[]>([]);
   const [tagDraft, setTagDraft] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [targetEndDate, setTargetEndDate] = useState(
@@ -587,6 +613,7 @@ function CreateEpicModal({
     setQuarter("Q2 2026");
     setPmPicId(user?.id ?? "");
     setTags([]);
+    setPrograms([]);
     setTagDraft("");
     setShowPreview(false);
   };
@@ -623,6 +650,7 @@ function CreateEpicModal({
       targetEndDate,
       tags,
       position: epics.length,
+      programs: programs.length > 0 ? programs : undefined,
     };
     useAppStore.setState((s) => ({ epics: [...s.epics, newEpic] }));
     toast(`Created ${newEpic.key} · ${newEpic.title}`, { kind: "success" });
@@ -705,6 +733,8 @@ function CreateEpicModal({
             </label>
           </div>
         </div>
+
+        <ProgramPicker value={programs} onChange={setPrograms} />
 
         <div>
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Tags</span>

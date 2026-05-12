@@ -365,13 +365,18 @@ function OnTimeTrend({ range, setRange }: { range: Range; setRange: (r: Range) =
 }
 
 function AllocationByPod({ className }: { className?: string }) {
-  // Was pod-based; now groups by epic.program label (with "Ungrouped" fallback).
+  // Each epic may carry multiple program tags. An epic in [LM, FM] counts
+  // toward both program bars; column sums therefore exceed the epic count.
   const allEpics = useAppStore((s) => s.epics);
   const data = useMemo(() => {
     const groups = new Map<string, number>();
     for (const e of allEpics) {
-      const key = e.program ?? "Ungrouped";
-      groups.set(key, (groups.get(key) ?? 0) + 1);
+      const programs = e.programs ?? [];
+      if (programs.length === 0) {
+        groups.set("Ungrouped", (groups.get("Ungrouped") ?? 0) + 1);
+      } else {
+        for (const p of programs) groups.set(p, (groups.get(p) ?? 0) + 1);
+      }
     }
     return Array.from(groups.entries()).map(([program, count]) => ({ program, epics: count }));
   }, [allEpics]);

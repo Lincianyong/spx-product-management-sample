@@ -128,7 +128,7 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
             <span className="truncate">{pm?.displayName ?? "—"}</span>
           </span>
         } />
-        <Stat label="Program" value={epic.program ?? "—"} />
+        <Stat label="Programs" value={(epic.programs ?? []).length > 0 ? (epic.programs ?? []).join(" · ") : "—"} />
         <Stat label="Target" value={formatDate(epic.targetEndDate)} />
       </div>
 

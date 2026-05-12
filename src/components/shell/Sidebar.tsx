@@ -62,7 +62,7 @@ export function Sidebar() {
       title: "Capture",
       items: [
         { label: "Create", href: "/create", icon: PlusSquare, requires: "view_create" },
-        { label: "My Bugs", href: "/my-bugs", icon: FileText, requires: "view_my_bugs" },
+        { label: "My Tickets", href: "/my-tickets", icon: FileText, requires: "view_my_tickets" },
       ],
     },
     {

@@ -10,6 +10,15 @@ export type Health = "on_track" | "at_risk" | "blocked" | "not_started";
 
 export type TicketType = "engineering" | "bug" | "tech_task";
 
+/**
+ * Program — a soft, multi-select tag that groups work by initiative.
+ * Lives on both Epic and Ticket. When a ticket has its own programs[],
+ * those override the parent epic's programs for allocation reporting.
+ */
+export type Program = "LM" | "FM" | "Expansion" | "BPOM" | "CCTV" | "FINOPS";
+
+export const ALL_PROGRAMS: Program[] = ["LM", "FM", "Expansion", "BPOM", "CCTV", "FINOPS"];
+
 export type TicketStatus =
   | "draft"
   | "backlog"
@@ -118,8 +127,8 @@ export interface Epic {
   targetEndDate: string;
   tags: string[];
   position: number;
-  /** Optional soft grouping — e.g. all epics in a "Forecasting v2" program. */
-  program?: string;
+  /** Multi-select program tags for portfolio allocation reporting. */
+  programs?: Program[];
 }
 
 export interface AcceptanceCriterion {
@@ -176,6 +185,11 @@ export interface Ticket {
   aiSuggestedAssignee?: { userId: string; confidence: number; reasoning: string };
   aiDuplicates?: { ticketKey: string; confidence: number }[];
   blocked?: { reason: string; blockerKey?: string };
+  /**
+   * Programs this ticket is tagged with. When set, overrides the parent
+   * epic's programs[] for allocation reporting. Multi-select.
+   */
+  programs?: Program[];
 }
 
 export interface Sprint {

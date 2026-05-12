@@ -24,7 +24,8 @@ import {
 import { cn } from "@/lib/utils";
 import { can, type Capability } from "@/lib/permissions";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
-import type { Epic, Ticket, TicketType } from "@/lib/types";
+import type { Epic, Ticket, TicketType, Program } from "@/lib/types";
+import { ProgramPicker } from "@/components/ProgramPicker";
 
 // ─── Type catalog ────────────────────────────────────────────────────
 type CreateType = "epic" | "ticket" | "tech-task" | "bug";
@@ -325,6 +326,7 @@ function TicketForm() {
   const [parent, setParent] = useState("");
   const [acDraft, setAcDraft] = useState("");
   const [ac, setAc] = useState<string[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
 
   const submit = () => {
     if (!title.trim() || !user) return;
@@ -353,6 +355,7 @@ function TicketForm() {
       linkedWork: [],
       carryOver: false,
       createdAt: new Date().toISOString(),
+      programs: programs.length > 0 ? programs : undefined,
     };
     useAppStore.setState((s) => ({ tickets: [...s.tickets, newTicket] }));
     toast(`Created ${newKey} → Backlog`);
@@ -374,6 +377,11 @@ function TicketForm() {
           </div>
         </div>
         <ParentSelect value={parent} onChange={setParent} />
+        <ProgramPicker
+          value={programs}
+          onChange={setPrograms}
+          hint="Leave blank to inherit programs from the parent Epic."
+        />
         <AcEditor items={ac} onChange={setAc} draft={acDraft} setDraft={setAcDraft} />
         <div className="flex items-center gap-2 pt-4 border-t border-rule">
           <Button variant="primary" onClick={submit} disabled={!title.trim()}>Create → Backlog</Button>
@@ -404,6 +412,7 @@ function TechTaskForm() {
   const [blastRadius, setBlastRadius] = useState("");
   const [rollbackPlan, setRollbackPlan] = useState("");
   const [migrationWindow, setMigrationWindow] = useState("");
+  const [programs, setPrograms] = useState<Program[]>([]);
 
   const canSubmit = title.trim().length >= 8 && blastRadius.trim() && rollbackPlan.trim();
 
@@ -438,6 +447,7 @@ function TechTaskForm() {
         blastRadius,
         rollbackPlan,
         migrationWindow: migrationWindow || undefined,
+        programs: programs.length > 0 ? programs : undefined,
       }],
     }));
     toast(`Created ${newKey} → Backlog`);
@@ -461,6 +471,11 @@ function TechTaskForm() {
           <Input label="Migration window (optional)" value={migrationWindow} onChange={(e) => setMigrationWindow(e.target.value)} placeholder="e.g., Sun 03:00–05:00 SGT" />
         </div>
         <ParentSelect value={parent} onChange={setParent} />
+        <ProgramPicker
+          value={programs}
+          onChange={setPrograms}
+          hint="Leave blank to inherit programs from the parent Epic."
+        />
         <AcEditor items={ac} onChange={setAc} draft={acDraft} setDraft={setAcDraft} />
         <div className="flex items-center gap-2 pt-4 border-t border-rule">
           <Button variant="primary" onClick={submit} disabled={!canSubmit}>Create → Backlog</Button>
@@ -489,6 +504,7 @@ function BugForm() {
   const [actual, setActual] = useState("");
   const [scope, setScope] = useState("");
   const [severity, setSeverity] = useState<"S1" | "S2" | "S3">("S2");
+  const [programs, setPrograms] = useState<Program[]>([]);
 
   const canSubmit = title.trim() && reproSteps.trim() && expected.trim() && actual.trim();
 
@@ -523,6 +539,7 @@ function BugForm() {
         reproSteps,
         expectedVsActual: `Expected:\n${expected}\n\nActual:\n${actual}`,
         affectedScope: scope,
+        programs: programs.length > 0 ? programs : undefined,
       }],
     }));
     toast(`Filed ${newKey} → Backlog`);
@@ -554,6 +571,7 @@ function BugForm() {
             </Select>
           </label>
         </div>
+        <ProgramPicker value={programs} onChange={setPrograms} />
         <div className="flex items-center gap-2 pt-4 border-t border-rule">
           <Button variant="primary" onClick={submit} disabled={!canSubmit}>File bug → Backlog</Button>
           <Pill variant="danger">Bug</Pill>
@@ -585,6 +603,7 @@ function EpicForm() {
   const [quarter, setQuarter] = useState("Q2 2026");
   const [pmPicId, setPmPicId] = useState(user?.id ?? "");
   const [tags, setTags] = useState<string[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [tagDraft, setTagDraft] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [targetEndDate, setTargetEndDate] = useState(
@@ -619,6 +638,7 @@ function EpicForm() {
       targetEndDate,
       tags,
       position: epics.length,
+      programs: programs.length > 0 ? programs : undefined,
     };
     useAppStore.setState((s) => ({ epics: [...s.epics, newEpic] }));
     toast(`Created ${newEpic.key}`, { kind: "success" });
@@ -673,6 +693,8 @@ function EpicForm() {
             </label>
           </div>
         </div>
+
+        <ProgramPicker value={programs} onChange={setPrograms} />
 
         <div>
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Tags</span>
