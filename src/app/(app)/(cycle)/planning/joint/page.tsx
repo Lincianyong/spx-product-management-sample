@@ -2,16 +2,37 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
-import { AiTag, Avatar, Button, Pill, PriorityPill, TypePill, toast } from "@/components/ui";
+import {
+  AiTag,
+  Avatar,
+  Button,
+  Input,
+  Pill,
+  PriorityPill,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  TypePill,
+  toast,
+} from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+import { ALL_PROGRAMS, type Program, type Ticket, type TicketType } from "@/lib/types";
+
+type TypeFilter = "all" | TicketType;
+type AuthorFilter = "all" | string;
+const CLOSED_STATUSES = new Set(["done", "verified", "cancelled", "cannot_reproduce"]);
 
 export default function JointPlanningPage() {
   useDocumentTitle("Joint Planning · Stage 4c");
   const tickets = useAppStore((s) => s.tickets);
+  const epics = useAppStore((s) => s.epics);
   const users = useAppStore((s) => s.users);
   const sprints = useAppStore((s) => s.sprints);
   const setTicketField = useAppStore((s) => s.setTicketField);
@@ -20,6 +41,12 @@ export default function JointPlanningPage() {
   const router = useRouter();
   const [commitOpen, setCommitOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+
+  // Emergency-add filter state
+  const [emQuery, setEmQuery] = useState("");
+  const [emTypeFilter, setEmTypeFilter] = useState<TypeFilter>("all");
+  const [emProgramFilter, setEmProgramFilter] = useState<Program[]>([]);
+  const [emAuthorFilter, setEmAuthorFilter] = useState<AuthorFilter>("all");
 
   const planningSprint = sprints.find((s) => s.state === "planning");
   const picked = useMemo(
@@ -58,6 +85,84 @@ export default function JointPlanningPage() {
 
   const setAssignee = (ticketId: string, userId: string | null) => {
     setTicketField(ticketId, { assigneeId: userId }, user?.id ?? "");
+  };
+
+  const setStoryPoints = (ticketId: string, pts: number | null) => {
+    setTicketField(ticketId, { storyPoints: pts }, user?.id ?? "");
+  };
+
+  // Effective programs for a ticket = ticket.programs OR parent epic.programs
+  const effectiveProgramsOf = (t: Ticket): Program[] => {
+    if (t.programs && t.programs.length > 0) return t.programs;
+    const epic = t.epicId ? epics.find((e) => e.id === t.epicId) : null;
+    return epic?.programs ?? [];
+  };
+
+  // Emergency add candidates: tickets NOT picked for this sprint and
+  // not already in another sprint, and still open. Filtered by the
+  // emergency-add controls below the table.
+  const emergencyCandidates = useMemo(() => {
+    const base = tickets.filter(
+      (t) => !t.pickedForSprint && t.sprintId == null && !CLOSED_STATUSES.has(t.status)
+    );
+    const q = emQuery.trim().toLowerCase();
+    return base.filter((t) => {
+      if (emTypeFilter !== "all" && t.type !== emTypeFilter) return false;
+      if (emAuthorFilter !== "all" && t.authorId !== emAuthorFilter) return false;
+      if (emProgramFilter.length > 0) {
+        const eff = effectiveProgramsOf(t);
+        if (!emProgramFilter.some((p) => eff.includes(p))) return false;
+      }
+      if (q) {
+        const hay = [t.key, t.title, t.description, ...(t.tags ?? [])].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickets, emQuery, emTypeFilter, emProgramFilter, emAuthorFilter]);
+
+  const authorsInPool = useMemo(() => {
+    const ids = new Set<string>();
+    for (const t of tickets) {
+      if (!t.pickedForSprint && t.sprintId == null && !CLOSED_STATUSES.has(t.status)) {
+        ids.add(t.authorId);
+      }
+    }
+    return users.filter((u) => ids.has(u.id));
+  }, [tickets, users]);
+
+  const addEmergencyToSprint = (t: Ticket) => {
+    if (t.storyPoints == null || t.storyPoints <= 0) {
+      toast("Fill in story points before adding.", { kind: "error" });
+      return;
+    }
+    if (!t.assigneeId) {
+      toast("Pick an assignee before adding.", { kind: "error" });
+      return;
+    }
+    const nextRank = picked.length > 0
+      ? Math.max(...picked.map((p) => p.picklistRank ?? 0)) + 1
+      : 1;
+    setTicketField(
+      t.id,
+      { pickedForSprint: true, picklistRank: nextRank },
+      user?.id ?? ""
+    );
+    toast(`${t.key} added to ${planningSprint?.key ?? "sprint"}`, { kind: "success" });
+  };
+
+  const emFiltersActive =
+    Boolean(emQuery.trim()) ||
+    emTypeFilter !== "all" ||
+    emAuthorFilter !== "all" ||
+    emProgramFilter.length > 0;
+
+  const clearEmFilters = () => {
+    setEmQuery("");
+    setEmTypeFilter("all");
+    setEmAuthorFilter("all");
+    setEmProgramFilter([]);
   };
 
   const commit = () => {
@@ -189,6 +294,171 @@ export default function JointPlanningPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Emergency add — bring an unestimated ticket into this sprint */}
+      <section className="mt-8">
+        <div className="flex items-end justify-between mb-3">
+          <div>
+            <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Emergency add</div>
+            <h3 className="display text-display-s text-ink mt-1">Pull an un-estimated ticket into the sprint</h3>
+            <p className="text-[13px] text-ink-3 mt-1 max-w-2xl">
+              For tickets that didn&apos;t make Picklist or Estimation but need to land this week (incoming bugs, escalations, surprise dependencies). Fill in points + assignee, then click <span className="font-mono text-ink-2">Add</span> to fold it into the slice above.
+            </p>
+          </div>
+        </div>
+
+        {/* Filter strip - row 1: search + type + author; row 2: programs */}
+        <div className="bg-bg-card border border-rule rounded-[8px] p-3 mb-3 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="relative basis-[60%] grow shrink min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-4 pointer-events-none" />
+              <input
+                type="text"
+                value={emQuery}
+                onChange={(e) => setEmQuery(e.target.value)}
+                placeholder="Search key, title, tags…"
+                className="w-full h-8 pl-8 pr-8 text-[12px] rounded-[6px] border border-rule bg-bg-card text-ink placeholder:text-ink-4"
+              />
+              {emQuery && (
+                <button
+                  onClick={() => setEmQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-4 hover:text-ink"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <Select value={emTypeFilter} onValueChange={(v) => setEmTypeFilter(v as TypeFilter)}>
+              <SelectTrigger size="sm" className="basis-[20%] grow shrink min-w-0"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="engineering">Engineering</SelectItem>
+                <SelectItem value="bug">Bug</SelectItem>
+                <SelectItem value="tech_task">Tech task</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={emAuthorFilter} onValueChange={(v) => setEmAuthorFilter(v as AuthorFilter)}>
+              <SelectTrigger size="sm" className="basis-[20%] grow shrink min-w-0"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All authors</SelectItem>
+                {authorsInPool.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.displayName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {emFiltersActive && (
+              <button
+                onClick={clearEmFilters}
+                className="font-mono text-[11px] uppercase tracking-[0.06em] text-accent hover:text-accent-deep shrink-0"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="pt-2 border-t border-rule-soft">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 shrink-0">Programs</span>
+              {ALL_PROGRAMS.map((p) => {
+                const active = emProgramFilter.includes(p);
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() =>
+                      setEmProgramFilter(active ? emProgramFilter.filter((x) => x !== p) : [...emProgramFilter, p])
+                    }
+                    className={cn(
+                      "px-2.5 h-7 text-[11px] font-mono uppercase tracking-[0.06em] rounded-[4px] border transition-colors duration-100",
+                      active
+                        ? "bg-accent text-bg-card border-accent"
+                        : "bg-bg-card text-ink-2 border-rule hover:border-ink-4"
+                    )}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {emergencyCandidates.length === 0 ? (
+          <p className="italic text-[13px] text-ink-3 px-1 py-6 bg-bg-card border border-rule rounded-[8px] text-center">
+            {emFiltersActive
+              ? "No tickets match the current filters."
+              : "No un-estimated open tickets sitting outside this sprint."}
+          </p>
+        ) : (
+          <div className="bg-bg-card border border-rule rounded-[8px] overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-bg-elevated">
+                <tr className="border-b border-rule">
+                  {["#", "Key", "Title", "Type", "Priority", "Pts", "Assignee", ""].map((h) => (
+                    <th key={h} className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3 px-4 py-3">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {emergencyCandidates.map((t, idx) => (
+                  <tr key={t.id} className="border-b border-rule-soft hover:bg-bg-elevated">
+                    <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{idx + 1}</td>
+                    <td className="px-4 py-3 font-mono text-[12px] text-ink">{t.key}</td>
+                    <td className="px-4 py-3 text-[14px] text-ink max-w-md truncate">{t.title}</td>
+                    <td className="px-4 py-3"><TypePill t={t.type} /></td>
+                    <td className="px-4 py-3"><PriorityPill p={t.priority} /></td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={t.storyPoints ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") {
+                            setStoryPoints(t.id, null);
+                            return;
+                          }
+                          const n = Math.max(1, Math.min(99, Number(raw) || 0));
+                          setStoryPoints(t.id, n);
+                        }}
+                        placeholder="—"
+                        className="w-16 h-8 px-2 text-[13px] font-mono rounded-[6px] border border-rule bg-bg-card text-ink placeholder:text-ink-4 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={t.assigneeId ?? ""}
+                        onChange={(e) => setAssignee(t.id, e.target.value || null)}
+                        className="h-8 px-2 text-[13px] rounded-[6px] border border-rule bg-bg-card"
+                      >
+                        <option value="">Unassigned</option>
+                        {engineers.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.displayName} · {loadByUser[u.id] ?? 0}/{u.capacityPoints}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => addEmergencyToSprint(t)}
+                        disabled={t.storyPoints == null || t.storyPoints <= 0 || !t.assigneeId}
+                      >
+                        Add →
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Validation bar */}
       <div className="mt-4 grid grid-cols-5 gap-2 text-[11px] font-mono uppercase tracking-[0.06em]">
