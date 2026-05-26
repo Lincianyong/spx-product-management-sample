@@ -475,19 +475,6 @@ export function TicketView({ ticketKey, variant = "page", onClose }: Props) {
               </div>
             )}
           </SidePanel>
-          <SidePanel title="Sprint">{sprint?.key ?? "-"}</SidePanel>
-          <SidePanel title="Story points">
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] text-ink">{ticket.storyPoints ?? "-"}</span>
-              {ticket.aiSuggestedPoints && ticket.storyPoints == null && (
-                <AiTag
-                  label={String(ticket.aiSuggestedPoints.value)}
-                  confidence={ticket.aiSuggestedPoints.confidence}
-                  reasoning={ticket.aiSuggestedPoints.reasoning}
-                />
-              )}
-            </div>
-          </SidePanel>
           <SidePanel title="Priority">
             <PriorityPill p={ticket.priority} />
           </SidePanel>

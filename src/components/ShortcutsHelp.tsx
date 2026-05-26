@@ -23,7 +23,7 @@ const GROUPS = [
   {
     title: "Navigation chords (press G, then…)",
     items: [
-      ["G B", "Sprint Board"],
+      ["G B", "Backlog"],
       ["G M", "My Work"],
       ["G E", "Epic Board"],
       ["G P", "Portfolio Health"],

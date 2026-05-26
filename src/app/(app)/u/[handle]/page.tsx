@@ -109,10 +109,6 @@ export default function ProfilePage({ params }: { params: { handle: string } }) 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <VelocityChart userId={user.id} />
-              <ForwardLoadChart userId={user.id} cap={user.capacityPoints} />
-            </div>
 
             <div>
               <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3 mb-3">Recent PR activity</div>
@@ -154,7 +150,6 @@ export default function ProfilePage({ params }: { params: { handle: string } }) 
           </section>
 
           <aside className="space-y-3">
-            <Stat label="Capacity" value={`${user.capacityPoints} pts/sprint`} />
             <Stat label="Status" value={user.status === "ooo" ? "Out of office" : user.status === "in_meeting" ? "In a meeting" : "Available"} />
           </aside>
         </div>

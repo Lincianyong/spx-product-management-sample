@@ -98,15 +98,7 @@ export function TicketCard({ ticket, onOpen, compact, dragHandleProps, className
           ⏸ Blocked · {ticket.blocked.reason}
         </div>
       )}
-      <div className="flex items-center justify-between gap-2 mt-3">
-        <div className="flex items-center gap-1.5">
-          {ticket.storyPoints != null && (
-            <span className="font-mono text-[11px] text-ink-3 px-1.5 py-0.5 rounded-[4px] bg-bg-elevated">
-              {ticket.storyPoints} pt
-            </span>
-          )}
-          {ticket.carryOver && <Pill variant="warn">Carry-over</Pill>}
-        </div>
+      <div className="flex items-center justify-end gap-2 mt-3">
         <Avatar user={assignee} size="xs" />
       </div>
 

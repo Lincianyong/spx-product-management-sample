@@ -11,12 +11,12 @@ const TABS = ["workspace", "sso", "roles", "integrations", "notifications"] as c
 type Tab = (typeof TABS)[number];
 
 const ROLE_MATRIX: Record<string, Record<string, "✓" | "-" | "PIC" | "Read">> = {
-  "Create Ticket":      { pm: "✓",   engineer: "✓" },
+  "Create Bug":         { pm: "✓",   engineer: "✓" },
   "Create Epic":        { pm: "✓",   engineer: "-" },
   "Edit Epic":          { pm: "PIC", engineer: "-" },
-  "Commit Sprint":      { pm: "✓",   engineer: "-" },
-  "Set Story Points":   { pm: "-",   engineer: "✓" },
-  "Assign Ticket":      { pm: "✓",   engineer: "-" },
+  "Define Milestones":  { pm: "✓",   engineer: "-" },
+  "Complete Milestone": { pm: "✓",   engineer: "-" },
+  "Assign Bug":         { pm: "✓",   engineer: "-" },
   "Comment":            { pm: "✓",   engineer: "✓" },
   "View Portfolio":     { pm: "✓",   engineer: "✓" },
 };
@@ -31,7 +31,7 @@ interface Integration {
 }
 
 const INITIAL_INTEGRATIONS: Integration[] = [
-  { id: "lark", name: "Lark", status: "Connected", body: "Sprint commit + mentions → #cadence.", authType: "OAuth", account: "spxexpress.lark.com" },
+  { id: "lark", name: "Lark", status: "Connected", body: "milestone_at_risk + mentions → #cadence.", authType: "OAuth", account: "spxexpress.lark.com" },
   { id: "slack", name: "Slack", status: "Off", body: "Optional secondary channel for high-signal events.", authType: "OAuth" },
   { id: "github", name: "GitHub", status: "Connected", body: "PR ↔ ticket linking via [CDN-####] in titles.", authType: "OAuth", account: "spx/forecasting" },
   { id: "sentry", name: "Sentry", status: "Connected", body: "Bug reports auto-attach Sentry trace links.", authType: "API key", account: "spx-prod-org" },
@@ -100,7 +100,7 @@ export default function SettingsPage() {
         <div className="max-w-2xl space-y-4">
           <Row label="Workspace name" value="SPX Express · AI Engineering" />
           <Row label="Identity provider" value="SPX SSO (SAML 2.0)" />
-          <Row label="Sprint length" value="1 week (Mon–Sun)" />
+          <Row label="Delivery model" value="Waterfall (Epic + sequential milestones)" />
           <Row label="Pods" value="Routing · Sorting · Forecasting · Platform" />
           <Row label="Markdown subset" value="GitHub-flavored (GFM)" />
           <Row label="AC gates Done" value="Yes" />

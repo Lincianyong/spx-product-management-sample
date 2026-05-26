@@ -158,27 +158,6 @@ export default function MyWorkPage() {
         lede={`${activeSprint?.key ?? "No active sprint"} · ${thisSprint.length} tickets in flight, ${upNext.length} waiting in your queue.`}
       />
 
-      {/* Role-aware stats strip */}
-      <RoleStatsStrip
-        role={user.role}
-        user={user}
-        tickets={tickets}
-        users={users}
-        epics={epics}
-        sprints={sprints}
-        activeSprint={activeSprint ?? null}
-        daysRemaining={daysRemaining}
-        committedPts={committedPts}
-        shippedPts={shippedPts}
-        progressPct={progressPct}
-        loadPct={loadPct}
-        lastSprintShipped={lastSprintShipped}
-        authoredOpen={authoredOpen}
-      />
-
-      {/* Calendar strip */}
-      {sprintForCal && <PlanningCalendarMini sprint={sprintForCal} />}
-
       {/* Inline alerts */}
       {(unrepliedMentions.length > 0 || staleStatus.length > 0) && (
         <div className="space-y-2 mb-6">
