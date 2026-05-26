@@ -16,6 +16,7 @@ const KIND_LABEL: Record<string, string> = {
   sprint_close: "Sprint close",
   blocked: "Blocked",
   health_change: "Health change",
+  milestone_at_risk: "Milestone at risk",
   bug_needs_verify: "Bug needs verify",
   digest: "Digest",
 };

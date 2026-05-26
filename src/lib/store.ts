@@ -98,6 +98,8 @@ export interface AppState {
   resolveComment: (commentId: string, userId: string) => void;
   unresolveComment: (commentId: string) => void;
   reactToComment: (commentId: string, emoji: string, userId: string) => void;
+  /** Idempotently fire milestone_at_risk notifications for milestones <= windowDays from targetDate. */
+  dispatchMilestoneAtRiskNotifications: (windowDays?: number) => void;
   markNotificationRead: (id: string, read?: boolean) => void;
   archiveNotification: (id: string) => void;
   snoozeNotification: (id: string, until: string) => void;
@@ -521,6 +523,46 @@ export const useAppStore = create<AppState>()(
             return { ...c, reactions };
           }),
         })),
+
+      /**
+       * Idempotently dispatch `milestone_at_risk` notifications for any
+       * incomplete milestone whose targetDate is within `windowDays`
+       * days from now. Each (milestoneId, "milestone_at_risk") tuple
+       * fires at most once. PRD § 9.9, § 10.5, § 13.2.
+       */
+      dispatchMilestoneAtRiskNotifications: (windowDays = 7) =>
+        set((s) => {
+          const now = Date.now();
+          const cutoff = now + windowDays * 86_400_000;
+          const fresh: Notification[] = [];
+          for (const m of s.milestones) {
+            if (m.status === "complete") continue;
+            const target = new Date(m.targetDate).getTime();
+            if (target < now || target > cutoff) continue;
+            // Idempotency: skip if a milestone_at_risk for this milestone
+            // already exists in the store (matched on entityKey=milestone.id).
+            const already = s.notifications.some(
+              (n) => n.kind === "milestone_at_risk" && n.entityKey === m.id
+            );
+            if (already) continue;
+            const epic = s.epics.find((e) => e.id === m.epicId);
+            if (!epic) continue;
+            fresh.push({
+              id: `n_mar_${m.id}`,
+              userId: epic.pmPicId,
+              kind: "milestone_at_risk",
+              body: `${epic.key} · '${m.name}' targets ${m.targetDate.slice(0, 10)} (in ${Math.max(1, Math.round((target - now) / 86_400_000))}d) and isn't complete.`,
+              entityType: "epic",
+              entityKey: m.id,
+              actorId: undefined,
+              createdAt: new Date().toISOString(),
+              read: false,
+              archived: false,
+            });
+          }
+          if (fresh.length === 0) return s;
+          return { notifications: [...s.notifications, ...fresh] };
+        }),
 
       markNotificationRead: (id, read = true) =>
         set((s) => ({

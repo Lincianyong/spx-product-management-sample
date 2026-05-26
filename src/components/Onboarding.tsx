@@ -8,16 +8,17 @@ import { landingForRole, roleLabel } from "@/lib/utils";
 
 const SEEN_KEY = "cadence:onboarded";
 
+// PRD § 9.1 — role-specific onboarding for the waterfall edition.
 const STEPS_BY_ROLE: Record<string, { title: string; body: string }[]> = {
   pm: [
-    { title: "You're the PM.", body: "Epic Board is your home. New work lands directly in Backlog - no triage step." },
-    { title: "Three planning stages.", body: "Stage 4a (Monday, alone) you Picklist. 4b (Tuesday, with engineers) they Estimate. 4c (Tuesday, together) you Commit." },
-    { title: "Health is computed.", body: "Deviation = time-burn minus progress-burn. Hover any health pill to see the math. AI suggestions show a confidence chip." },
+    { title: "Epic Board is your home.", body: "Every Epic in the workspace sits on the board. Five view modes - Kanban, List, Table, Timeline, Backlog - shift altitude without leaving the surface." },
+    { title: "Define waterfall phases per Epic.", body: "Open any Epic → Milestones tab → Add phase. Typical waterfall sequence: Requirements → Design → Build → Test → Deploy. Each phase carries a target date and exit criteria; the next phase unlocks when the current one is marked complete." },
+    { title: "Health is computed - no manual entry.", body: "deviation = time-burn − progress-burn. Hover any health pill for the math. At T-7 days before an incomplete milestone targetDate, Cadence fires a milestone_at_risk notification to you automatically." },
   ],
   engineer: [
-    { title: "Welcome, Engineer.", body: "My Work is your home. Two work lanes (This sprint · In queue) and a collapsible Dependencies strip." },
-    { title: "Drag on Sprint Board.", body: "Move your own cards across columns. AC items gate Done - check every box before the column flips." },
-    { title: "AI is evidence, not author.", body: "Story-point suggestions show confidence + reasoning. Click ✦ to accept, ignore otherwise." },
+    { title: "My Work is your home.", body: "Four panels show your day: assigned Bugs, queued Bugs, Bugs you're blocking on others, and Bugs blocked. Mentions awaiting reply surface at the top." },
+    { title: "Bug status flows in one direction.", body: "scheduled → in_progress → review → verifying → verified. Acceptance Criteria gate the move to verified - check every box first. Mark-blocked requires a reason; the audit trail records it." },
+    { title: "Epic context, one click away.", body: "Every Bug's header carries a breadcrumb to its parent Epic. Click it to read the thesis, see sibling Bugs, and check the current milestone phase before you ship." },
   ],
 };
 

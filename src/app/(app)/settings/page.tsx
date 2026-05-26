@@ -210,7 +210,8 @@ function NotificationPrefsTable() {
     { key: "mention", label: "Mention" },
     { key: "assignment", label: "Assigned to me" },
     { key: "status_change", label: "Status on watched" },
-    { key: "sprint_commit", label: "Sprint commit" },
+    { key: "milestone_at_risk", label: "Milestone at risk · T-7" },
+    { key: "health_change", label: "Epic health change" },
     { key: "bug_needs_verify", label: "Bug needs verification" },
     { key: "digest", label: "Daily digest" },
   ];

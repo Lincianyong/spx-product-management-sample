@@ -30,6 +30,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebarW = collapsed ? 64 : 240;
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
+  const dispatchMilestoneAtRiskNotifications = useAppStore((s) => s.dispatchMilestoneAtRiskNotifications);
+
+  // PRD § 13.2 / § 9.9: fire milestone_at_risk notifications on every
+  // shell hydration. The action is idempotent (dedupes by milestone id).
+  useEffect(() => {
+    if (!hydrated) return;
+    dispatchMilestoneAtRiskNotifications(7);
+  }, [hydrated, dispatchMilestoneAtRiskNotifications]);
 
   // Apply theme to document
   useEffect(() => {

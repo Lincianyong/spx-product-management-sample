@@ -262,6 +262,7 @@ export interface Notification {
     | "sprint_close"
     | "blocked"
     | "health_change"
+    | "milestone_at_risk"
     | "bug_needs_verify"
     | "digest";
   body: string;

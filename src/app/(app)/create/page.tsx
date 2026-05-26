@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bug, Compass, FileText, ImagePlus, Plus, Wrench, X } from "lucide-react";
+import { Bug, Compass, ImagePlus, Plus, X } from "lucide-react";
 import { Markdown } from "@/components/Markdown";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppStore, useCurrentUser } from "@/lib/store";
@@ -29,7 +29,10 @@ import type { Epic, Ticket, TicketType, Program } from "@/lib/types";
 import { ProgramPicker } from "@/components/ProgramPicker";
 
 // ─── Type catalog ────────────────────────────────────────────────────
-type CreateType = "epic" | "ticket" | "tech-task" | "bug";
+// PRD § 10.3: waterfall model has two creation types only.
+// Bug is universal; Epic is PM-only. Engineering Ticket + Tech Task
+// dropped - work is tracked at Epic + milestone altitude.
+type CreateType = "epic" | "bug";
 
 const TYPES: {
   id: CreateType;
@@ -40,10 +43,8 @@ const TYPES: {
   blurb: string;
   prefix: string;
 }[] = [
-  { id: "bug",       label: "Bug",                   lane: "All", cap: "create_bug",       icon: Bug,     blurb: "Something broken. Repro / Expected / Actual required. Anyone can file.",                              prefix: "BUG" },
-  { id: "epic",      label: "Epic",                  lane: "PM",  cap: "create_epic",      icon: Compass, blurb: "Conviction-level bet. Quarter altitude. Title + thesis + PM owner.",                                  prefix: "EPC" },
-  { id: "ticket",    label: "Engineering Ticket",    lane: "PM",  cap: "create_ticket",    icon: FileText, blurb: "A unit of engineering work. Lands in Backlog; PM picks it during the next sprint planning.",          prefix: "CDN" },
-  { id: "tech-task", label: "Tech Task",             lane: "Eng", cap: "create_tech_task", icon: Wrench,  blurb: "Internal infra, migration, refactor. Requires blast radius + rollback plan.",                       prefix: "TCH" },
+  { id: "bug",  label: "Bug",  lane: "All", cap: "create_bug",  icon: Bug,     blurb: "Something broken. Repro / Expected / Actual required. Anyone can file.", prefix: "BUG" },
+  { id: "epic", label: "Epic", lane: "PM",  cap: "create_epic", icon: Compass, blurb: "Conviction-level bet. Quarter altitude. Title + thesis + waterfall milestones.", prefix: "EPC" },
 ];
 
 // ─── Page ────────────────────────────────────────────────────────────
@@ -111,8 +112,6 @@ function CreatePageInner() {
       />
 
       {type === "epic" && <EpicForm />}
-      {type === "ticket" && <TicketForm />}
-      {type === "tech-task" && <TechTaskForm />}
       {type === "bug" && <BugForm />}
     </div>
   );
@@ -145,7 +144,7 @@ function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: Crea
           Your role doesn't have a creation lane assigned.
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 max-w-3xl">
           {allowed.map((t) => {
             const Icon = t.icon;
             return (
@@ -182,13 +181,13 @@ function Selector({ allowed, onPick }: { allowed: typeof TYPES; onPick: (t: Crea
 function laneFooter(allowed: typeof TYPES): React.ReactNode {
   const has = (id: CreateType) => allowed.some((t) => t.id === id);
   const parts: React.ReactNode[] = [];
-  if (has("epic")) parts.push("Epics enter the backlog directly.");
-  if (has("ticket") || has("tech-task") || has("bug")) {
+  if (has("epic")) parts.push("Epics enter the Epic Board with health=not_started until startDate is reached.");
+  if (has("bug")) {
     parts.push(
       <>
-        Tickets, Tech Tasks, and Bugs land in{" "}
+        Bugs land in{" "}
         <Link href="/backlog" className="text-accent hover:underline">Backlog</Link>{" "}
-        directly. The PM picks from there at the next sprint planning.
+        as draft → backlog. They're then triaged onto an Epic phase or fixed directly.
       </>
     );
   }
@@ -567,184 +566,6 @@ function useGoToTicket() {
 }
 
 // ─── Engineering Ticket ──────────────────────────────────────────────
-function TicketForm() {
-  const projects = useAppStore((s) => s.epics);
-  const user = useCurrentUser();
-  const goTo = useGoToTicket();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [parent, setParent] = useState("");
-  const [acDraft, setAcDraft] = useState("");
-  const [ac, setAc] = useState<string[]>([]);
-  const [programs, setPrograms] = useState<Program[]>([]);
-
-  const submit = () => {
-    if (!title.trim() || !user) return;
-    const proj = projects.find((p) => p.key === parent);
-    const newKey = makeKey("CDN");
-    const newTicket: Ticket = {
-      id: `t_${Date.now()}`,
-      key: newKey,
-      type: "engineering",
-      title: title.trim(),
-      description,
-      acceptanceCriteria: ac.map((it) => ({ id: `ac_${Math.random().toString(36).slice(2, 8)}`, text: it, done: false })),
-      epicId: proj?.id ?? null,
-      priority: "P2",
-      status: "backlog",
-      authorId: user.id,
-      tags: [],
-      pickedForSprint: false,
-      picklistRank: null,
-      storyPoints: null,
-      concernFlags: [],
-      assigneeId: null,
-      sprintId: null,
-      startedAt: null,
-      closedAt: null,
-      linkedWork: [],
-      carryOver: false,
-      createdAt: new Date().toISOString(),
-      programs: programs.length > 0 ? programs : undefined,
-    };
-    useAppStore.setState((s) => ({ tickets: [...s.tickets, newTicket] }));
-    toast(`Created ${newKey} → Backlog`);
-    goTo(newKey);
-  };
-
-  return (
-    <div className="grid grid-cols-3 gap-8">
-      <div className="col-span-2 space-y-4">
-        <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What needs to happen?" />
-        <div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Description (markdown)</span>
-          <div className="mt-1.5">
-            <MarkdownArea
-              value={description}
-              onChange={setDescription}
-              placeholder="## What&#10;&#10;## Why&#10;&#10;## How&#10;&#10;## Out of scope"
-            />
-          </div>
-        </div>
-        <ParentSelect value={parent} onChange={setParent} />
-        <ProgramPicker
-          value={programs}
-          onChange={setPrograms}
-          hint="Leave blank to inherit programs from the parent Epic."
-        />
-        <AcEditor items={ac} onChange={setAc} draft={acDraft} setDraft={setAcDraft} />
-        <div className="flex items-center gap-2 pt-4 border-t border-rule">
-          <Button variant="primary" onClick={submit} disabled={!title.trim()}>Create → Backlog</Button>
-          <Pill variant="info">Engineering Ticket</Pill>
-        </div>
-      </div>
-      <Aside title="Engineering checklist">
-        <ul className="space-y-1.5 text-[13px] text-ink-2">
-          <li className={title.length >= 8 ? "text-ok" : ""}>{title.length >= 8 ? "✓" : "○"} Title (≥ 8 chars)</li>
-          <li className={description.length > 0 ? "text-ok" : ""}>{description.length > 0 ? "✓" : "○"} Description filled</li>
-          <li className={ac.length > 0 ? "text-ok" : ""}>{ac.length > 0 ? "✓" : "○"} ≥ 1 AC item</li>
-        </ul>
-      </Aside>
-    </div>
-  );
-}
-
-// ─── Tech Task ───────────────────────────────────────────────────────
-function TechTaskForm() {
-  const projects = useAppStore((s) => s.epics);
-  const user = useCurrentUser();
-  const goTo = useGoToTicket();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("## Why now\n\n## Plan\n\n## Blast radius\n\n## Rollback plan");
-  const [parent, setParent] = useState("");
-  const [acDraft, setAcDraft] = useState("");
-  const [ac, setAc] = useState<string[]>(["Canary 24h green", "Rollback documented", "Owner signed off"]);
-  const [blastRadius, setBlastRadius] = useState("");
-  const [rollbackPlan, setRollbackPlan] = useState("");
-  const [migrationWindow, setMigrationWindow] = useState("");
-  const [programs, setPrograms] = useState<Program[]>([]);
-
-  const canSubmit = title.trim().length >= 8 && blastRadius.trim() && rollbackPlan.trim();
-
-  const submit = () => {
-    if (!canSubmit || !user) return;
-    const proj = projects.find((p) => p.key === parent);
-    const newKey = makeKey("TCH");
-    useAppStore.setState((s) => ({
-      tickets: [...s.tickets, {
-        id: `t_${Date.now()}`,
-        key: newKey,
-        type: "tech_task" as const,
-        title: title.trim(),
-        description,
-        acceptanceCriteria: ac.map((it) => ({ id: `ac_${Math.random().toString(36).slice(2, 8)}`, text: it, done: false })),
-        epicId: proj?.id ?? null,
-        priority: "P2" as const,
-        status: "backlog" as const,
-        authorId: user.id,
-        tags: [],
-        pickedForSprint: false,
-        picklistRank: null,
-        storyPoints: null,
-        concernFlags: [],
-        assigneeId: null,
-        sprintId: null,
-        startedAt: null,
-        closedAt: null,
-        linkedWork: [],
-        carryOver: false,
-        createdAt: new Date().toISOString(),
-        blastRadius,
-        rollbackPlan,
-        migrationWindow: migrationWindow || undefined,
-        programs: programs.length > 0 ? programs : undefined,
-      }],
-    }));
-    toast(`Created ${newKey} → Backlog`);
-    goTo(newKey);
-  };
-
-  return (
-    <div className="grid grid-cols-3 gap-8">
-      <div className="col-span-2 space-y-4">
-        <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Migrate retrain orchestrator from cron to Argo" />
-        <div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Description (markdown)</span>
-          <div className="mt-1.5">
-            <MarkdownArea value={description} onChange={setDescription} />
-          </div>
-        </div>
-        <div className="bg-bg-elevated border border-rule rounded-[8px] p-4 space-y-3">
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">Tech context · required</div>
-          <Input label="Blast radius" value={blastRadius} onChange={(e) => setBlastRadius(e.target.value)} placeholder="e.g., Retrain pipeline in all regions" />
-          <Input label="Rollback plan" value={rollbackPlan} onChange={(e) => setRollbackPlan(e.target.value)} placeholder="e.g., Re-enable cron job; pause Argo DAG" />
-          <Input label="Migration window (optional)" value={migrationWindow} onChange={(e) => setMigrationWindow(e.target.value)} placeholder="e.g., Sun 03:00–05:00 SGT" />
-        </div>
-        <ParentSelect value={parent} onChange={setParent} />
-        <ProgramPicker
-          value={programs}
-          onChange={setPrograms}
-          hint="Leave blank to inherit programs from the parent Epic."
-        />
-        <AcEditor items={ac} onChange={setAc} draft={acDraft} setDraft={setAcDraft} />
-        <div className="flex items-center gap-2 pt-4 border-t border-rule">
-          <Button variant="primary" onClick={submit} disabled={!canSubmit}>Create → Backlog</Button>
-          <Pill variant="neutral">Tech Task</Pill>
-        </div>
-      </div>
-      <Aside title="Tech Task checklist">
-        <ul className="space-y-1.5 text-[13px] text-ink-2">
-          <li className={title.length >= 8 ? "text-ok" : ""}>{title.length >= 8 ? "✓" : "○"} Title (≥ 8 chars)</li>
-          <li className={blastRadius.trim() ? "text-ok" : ""}>{blastRadius.trim() ? "✓" : "○"} Blast radius</li>
-          <li className={rollbackPlan.trim() ? "text-ok" : ""}>{rollbackPlan.trim() ? "✓" : "○"} Rollback plan</li>
-          <li className={ac.length > 0 ? "text-ok" : ""}>{ac.length > 0 ? "✓" : "○"} ≥ 1 AC item</li>
-        </ul>
-      </Aside>
-    </div>
-  );
-}
-
-// ─── Bug ─────────────────────────────────────────────────────────────
 function BugForm() {
   const user = useCurrentUser();
   const goTo = useGoToTicket();
