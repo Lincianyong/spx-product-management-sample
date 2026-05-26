@@ -296,7 +296,7 @@ export default function SprintBoardPage() {
     return (
       <EmptyState
         title="No sprint to show."
-        body="Once a sprint is committed (Stage 4c), it lands here. Until then, /planning is where the action is."
+        body="No active or planning sprint right now. Bugs sit in /backlog until one is opened."
       />
     );
   }

@@ -7,7 +7,6 @@ import {
   Activity,
   BookOpen,
   CheckCircle2,
-  CheckSquare,
   ChevronsLeft,
   ChevronsRight,
   Columns3,
@@ -75,7 +74,6 @@ export function Sidebar() {
     {
       title: "Plan",
       items: [
-        { label: "Planning", href: "/planning", icon: CheckSquare, prefix: "/planning" },
         { label: "Sprint Board", href: "/sprint", icon: Columns3 },
         { label: "Sprint Close", href: "/sprint-close", icon: CheckCircle2 },
         { label: "Backlog", href: "/backlog", icon: List },
