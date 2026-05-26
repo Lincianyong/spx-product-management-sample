@@ -1,0 +1,2599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Cadence · SPX Express AI Engineering</title>
+<meta name="description" content="Editorial Epic + Milestone management for SPX Express AI Engineering. Waterfall model." />
+<style>
+/* ─── Design tokens (PRD § 21.3) ───────────────────────────── */
+:root {
+  --bg:           #F6F2EB;
+  --bg-card:      #FFFFFF;
+  --bg-elevated:  #FAF6EE;
+  --rule:         #E5DDD0;
+  --rule-soft:    #ECE6DA;
+  --ink:          #1A1A1A;
+  --ink-2:        #3A3A3A;
+  --ink-3:        #6B6B6B;
+  --ink-4:        #9A9A9A;
+  --accent:       #1E3A2E;
+  --accent-deep:  #122C20;
+  --accent-soft:  #E2EBE5;
+  --ai:           #5B3FB8;
+  --ai-soft:      #ECE6FA;
+  --ok:           #2E7D32;
+  --ok-soft:      #E5F0E5;
+  --warn:         #C97A1F;
+  --warn-soft:    #FAEDD8;
+  --danger:       #B23A2B;
+  --danger-soft:  #F5DCD7;
+  --shadow:       0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+  --font-display: 'Instrument Serif', 'Times New Roman', serif;
+  --font-body:    'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+[data-theme="dark"] {
+  --bg:           #1A1818;
+  --bg-card:      #232020;
+  --bg-elevated:  #2A2625;
+  --rule:         #3A3636;
+  --rule-soft:    #2F2C2C;
+  --ink:          #F2EDE3;
+  --ink-2:        #D0C9BF;
+  --ink-3:        #908A82;
+  --ink-4:        #5F5A55;
+  --accent-soft:  #1F2D26;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+.display { font-family: var(--font-display); font-weight: 400; }
+.mono { font-family: var(--font-mono); }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); }
+
+/* ─── Layout primitives ────────────────────────────────────── */
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--rule);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+}
+.sidebar.collapsed { width: 64px; }
+.sidebar-brand { padding: 20px 18px 16px; border-bottom: 1px solid var(--rule-soft); }
+.sidebar-brand .logo { font-family: var(--font-display); font-style: italic; font-size: 28px; line-height: 1; }
+.sidebar-brand .logo .x { color: var(--accent); }
+.sidebar-brand .sub { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+.sidebar-brand .sub::before { content: ""; width: 16px; height: 1px; background: var(--rule); }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 14px 10px; }
+.nav-group { margin-bottom: 14px; }
+.nav-group-title { padding: 4px 12px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); margin-bottom: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 6px;
+  font-size: 13px; color: var(--ink-2);
+  position: relative; cursor: pointer;
+  margin-bottom: 1px;
+}
+.nav-item:hover { background: var(--rule-soft); color: var(--ink); }
+.nav-item.active { background: var(--accent-soft); color: var(--ink); font-weight: 500; }
+.nav-item.active::before {
+  content: ""; position: absolute; left: 0; top: 4px; bottom: 4px;
+  width: 3px; border-radius: 0 2px 2px 0; background: var(--accent);
+}
+.nav-item .ico { font-size: 14px; width: 16px; text-align: center; opacity: 0.75; }
+.nav-item .count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.sidebar-foot { border-top: 1px solid var(--rule-soft); padding: 10px 12px; }
+.user-chip { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; }
+.user-chip:hover { background: var(--rule-soft); }
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #FFF;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  flex-shrink: 0;
+}
+.avatar.sm { width: 22px; height: 22px; font-size: 10px; }
+.avatar.xs { width: 16px; height: 16px; font-size: 8px; }
+.avatar.lg { width: 48px; height: 48px; font-size: 16px; }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  height: 56px; padding: 0 24px;
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 16px;
+  background: var(--bg-card);
+  position: sticky; top: 0; z-index: 20;
+}
+.search-input {
+  flex: 1; max-width: 520px;
+  height: 36px; padding: 0 12px 0 36px;
+  border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--bg-elevated);
+  font-size: 13px; color: var(--ink);
+  position: relative;
+}
+.search-wrap { position: relative; flex: 1; max-width: 520px; }
+.search-wrap::before { content: "⌘K"; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.search-wrap .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-3); font-size: 14px; pointer-events: none; }
+
+.page-body { flex: 1; padding: 32px 32px; max-width: 1280px; width: 100%; margin: 0 auto; }
+.page-header { margin-bottom: 28px; }
+.page-header .eyebrow { margin-bottom: 8px; }
+.page-header h1 { font-family: var(--font-display); font-size: 44px; line-height: 1.05; font-weight: 400; margin-bottom: 8px; }
+.page-header h1 em { font-style: italic; color: var(--accent); }
+.page-header .lede { color: var(--ink-2); max-width: 640px; line-height: 1.5; }
+.page-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ─── UI primitives ────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px; border-radius: 6px;
+  font-size: 13px; font-weight: 500;
+  border: 1px solid transparent;
+  background: var(--bg-card); color: var(--ink);
+  transition: background .1s, border-color .1s, color .1s;
+}
+.btn:hover { background: var(--rule-soft); }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #FFF; }
+.btn.primary:hover { background: var(--accent-deep); }
+.btn.secondary { background: var(--bg-card); border-color: var(--rule); }
+.btn.ghost { background: transparent; }
+.btn.ghost:hover { background: var(--rule-soft); }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: #FFF; }
+.btn.danger:hover { opacity: 0.92; }
+.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+.btn .ico { font-size: 13px; }
+
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid var(--rule); background: var(--bg-card); color: var(--ink-3); }
+.pill.ok { color: var(--ok); background: var(--ok-soft); border-color: var(--ok-soft); }
+.pill.warn { color: var(--warn); background: var(--warn-soft); border-color: var(--warn-soft); }
+.pill.danger { color: var(--danger); background: var(--danger-soft); border-color: var(--danger-soft); }
+.pill.accent { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-soft); }
+.pill.ai { color: var(--ai); background: var(--ai-soft); border-color: var(--ai-soft); }
+.pill.dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+.card { background: var(--bg-card); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; }
+.card.flat { box-shadow: none; }
+.card-tight { padding: 14px; }
+
+.input, .select, .textarea {
+  width: 100%; padding: 8px 12px;
+  border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--bg-card); color: var(--ink);
+  font-size: 13px;
+}
+.input:focus, .select:focus, .textarea:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.textarea { font-family: var(--font-mono); min-height: 120px; resize: vertical; }
+.label { display: block; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); margin-bottom: 6px; }
+
+/* ─── Tables ────────────────────────────────────────────────── */
+.table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.table thead { background: var(--bg-elevated); }
+.table th { text-align: left; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); padding: 12px 14px; border-bottom: 1px solid var(--rule); }
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--rule-soft); font-size: 13px; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr:hover { background: var(--bg-elevated); cursor: pointer; }
+
+/* ─── Health pill ──────────────────────────────────────────── */
+.health-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid transparent; cursor: help; position: relative; }
+.health-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.health-pill.on_track { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-soft); }
+.health-pill.on_track::before { background: var(--ok); }
+.health-pill.at_risk { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-soft); }
+.health-pill.at_risk::before { background: var(--warn); }
+.health-pill.blocked { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
+.health-pill.blocked::before { background: var(--danger); }
+.health-pill.not_started { background: var(--rule-soft); color: var(--ink-3); border-color: var(--rule); }
+.health-pill.not_started::before { background: var(--ink-4); }
+
+.tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  white-space: nowrap; padding: 6px 10px; border-radius: 6px;
+  background: var(--ink); color: var(--bg-card);
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.4;
+  z-index: 50; opacity: 0; pointer-events: none; transition: opacity .15s;
+}
+.health-pill:hover .tooltip { opacity: 1; }
+
+/* ─── Login page ───────────────────────────────────────────── */
+.login-page { display: flex; min-height: 100vh; }
+.login-left { flex: 1; padding: 64px; background: var(--bg-elevated); border-right: 1px solid var(--rule); display: flex; flex-direction: column; justify-content: space-between; }
+.login-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 64px; }
+.login-form { width: 100%; max-width: 360px; }
+.brand-logo { font-family: var(--font-display); font-size: 56px; line-height: 1; font-style: italic; }
+.brand-logo .x { color: var(--accent); }
+.brand-tag { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); margin-top: 12px; display: flex; align-items: center; gap: 10px; }
+.brand-tag::before { content: ""; width: 28px; height: 1px; background: var(--rule); }
+.login-headline { font-family: var(--font-display); font-size: 56px; line-height: 1.05; margin-top: 48px; }
+.login-headline em { color: var(--accent); font-style: italic; }
+.login-lede { color: var(--ink-2); max-width: 460px; margin-top: 24px; line-height: 1.6; }
+.sample-accounts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sample-account { padding: 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--bg-card); text-align: left; }
+.sample-account:hover { border-color: var(--accent); }
+.sample-account .role { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+.sample-account .name { font-size: 13px; color: var(--ink); margin-top: 2px; }
+.sample-account .email { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+/* ─── Grids & specifics ────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+.section { margin-bottom: 28px; }
+
+/* ─── Epic kanban ──────────────────────────────────────────── */
+.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.lane { background: var(--bg-elevated); border: 1px solid var(--rule); border-radius: 8px; padding: 10px; min-height: 200px; }
+.lane-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.lane-title { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); }
+.lane-count { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.epic-card { background: var(--bg-card); border: 1px solid var(--rule-soft); border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
+.epic-card:hover { border-color: var(--accent); }
+.epic-card .key { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.epic-card .title { font-size: 13px; color: var(--ink); margin: 4px 0 8px; line-height: 1.3; }
+.epic-card .meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* ─── Milestone Gantt ──────────────────────────────────────── */
+.milestone-row { display: grid; grid-template-columns: 200px 1fr 80px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule-soft); }
+.milestone-row:last-child { border-bottom: 0; }
+.milestone-name { font-size: 13px; }
+.milestone-name .num { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); }
+.gantt-track { height: 16px; background: var(--bg-elevated); border-radius: 3px; position: relative; }
+.gantt-bar { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.gantt-bar.planned { background: var(--rule); top: 2px; height: 5px; }
+.gantt-bar.actual { background: var(--accent); bottom: 2px; height: 5px; }
+.gantt-bar.slipped { background: var(--danger); }
+.gantt-bar.in-progress { background: var(--accent-soft); border: 1px dashed var(--accent); }
+.gantt-today { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--accent); z-index: 2; }
+
+/* ─── Tabs ─────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+.tab { padding: 10px 16px; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.tab:hover { color: var(--ink-2); }
+.tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* ─── Modal ────────────────────────────────────────────────── */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(26,26,26,0.4); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; }
+.modal { background: var(--bg-card); border-radius: 8px; box-shadow: var(--shadow); width: 100%; max-width: 560px; max-height: 80vh; overflow-y: auto; }
+.modal.sm { max-width: 420px; }
+.modal.lg { max-width: 760px; }
+.modal-head { padding: 18px 22px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
+.modal-head h2 { font-family: var(--font-display); font-size: 22px; line-height: 1.2; }
+.modal-body { padding: 22px; }
+.modal-foot { padding: 14px 22px; border-top: 1px solid var(--rule); display: flex; justify-content: flex-end; gap: 8px; background: var(--bg-elevated); }
+
+/* ─── Slide-over ───────────────────────────────────────────── */
+.slideover-backdrop { position: fixed; inset: 0; background: rgba(26,26,26,0.3); z-index: 90; }
+.slideover { position: fixed; top: 0; right: 0; bottom: 0; width: 760px; max-width: 95vw; background: var(--bg-card); box-shadow: var(--shadow); overflow-y: auto; z-index: 95; }
+.slideover-content { padding: 28px; }
+
+/* ─── Progress bar ─────────────────────────────────────────── */
+.progress { height: 6px; background: var(--rule-soft); border-radius: 3px; overflow: hidden; }
+.progress-bar { height: 100%; transition: width .3s; }
+.progress-bar.on_track { background: var(--ok); }
+.progress-bar.at_risk { background: var(--warn); }
+.progress-bar.blocked { background: var(--danger); }
+.progress-bar.not_started { background: var(--ink-4); }
+
+/* ─── Toast ────────────────────────────────────────────────── */
+.toast-stack { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+.toast { background: var(--ink); color: var(--bg-card); padding: 12px 18px; border-radius: 6px; font-size: 13px; min-width: 240px; box-shadow: var(--shadow); animation: slideIn .2s ease-out; }
+.toast.success { background: var(--ok); }
+.toast.error { background: var(--danger); }
+.toast.warn { background: var(--warn); }
+
+/* ─── Notifications ────────────────────────────────────────── */
+.notif-row { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--rule-soft); align-items: start; }
+.notif-row:hover { background: var(--bg-elevated); }
+.notif-row.unread { background: var(--accent-soft); }
+.notif-row.unread:hover { background: #DDE6E0; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 6px; }
+.notif-row.read .notif-dot { background: transparent; border: 1px solid var(--rule); }
+
+/* ─── Empty state ──────────────────────────────────────────── */
+.empty { padding: 48px; text-align: center; color: var(--ink-3); }
+.empty .ico { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+.empty h3 { font-family: var(--font-display); font-size: 22px; color: var(--ink); margin-bottom: 6px; }
+
+/* ─── Tombstone ────────────────────────────────────────────── */
+.tombstone { padding: 64px 32px; text-align: center; }
+.tombstone .ico { font-size: 48px; opacity: 0.4; margin-bottom: 16px; }
+.tombstone h1 { font-family: var(--font-display); font-size: 36px; line-height: 1.1; margin-bottom: 8px; }
+.tombstone .key { font-family: var(--font-mono); font-size: 14px; color: var(--ink-3); }
+
+/* ─── Animations ───────────────────────────────────────────── */
+@keyframes slideIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+
+/* ─── Sundries ─────────────────────────────────────────────── */
+.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
+.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; } .mt-8 { margin-top: 32px; }
+.mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; } .mb-8 { margin-bottom: 32px; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-ink-3 { color: var(--ink-3); }
+.text-accent { color: var(--accent); }
+.flex-1 { flex: 1; }
+.ml-auto { margin-left: auto; }
+hr { border: 0; border-top: 1px solid var(--rule-soft); margin: 20px 0; }
+.divider { width: 1px; background: var(--rule); align-self: stretch; }
+
+/* hide scrollbar visual noise on macOS-style */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 5px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-4); }
+</style>
+
+<!-- Optional Google fonts; gracefully degrades if offline -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div id="app"></div>
+<div id="toast-stack" class="toast-stack"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+ * CADENCE - Waterfall Edition (per PRD v2.0)
+ * Single-file SPA. State in localStorage. Hash router.
+ * ════════════════════════════════════════════════════════════════ */
+
+// ─── Constants ───────────────────────────────────────────────
+const ALL_PROGRAMS = ["LM", "FM", "Expansion", "BPOM", "CCTV", "FINOPS"];
+const BUG_STATUSES = ["draft", "backlog", "scheduled", "in_progress", "review", "verifying", "verified", "cannot_reproduce", "cancelled"];
+const STATUS_FLOW = {
+  draft: ["backlog", "cancelled"],
+  backlog: ["scheduled", "cannot_reproduce", "cancelled"],
+  scheduled: ["in_progress", "backlog", "cancelled"],
+  in_progress: ["review", "scheduled", "cancelled", "cannot_reproduce"],
+  review: ["verifying", "in_progress"],
+  verifying: ["verified", "in_progress"],
+  verified: ["verifying"],
+  cannot_reproduce: [],
+  cancelled: [],
+};
+const STATUS_LABEL = {
+  draft: "Draft", backlog: "Backlog", scheduled: "Scheduled",
+  in_progress: "In Progress", review: "Review", verifying: "Verifying",
+  verified: "Verified", cannot_reproduce: "Cannot Reproduce", cancelled: "Cancelled",
+};
+const MILESTONE_STATUS_LABEL = {
+  pending: "Pending", in_progress: "In Progress", complete: "Complete", slipped: "Slipped",
+};
+
+// ─── Seed data (PRD § 21.2) ──────────────────────────────────
+const NOW = new Date();
+const DAY = 24*60*60*1000;
+const iso = (d) => new Date(d).toISOString();
+const dShift = (days) => iso(NOW.getTime() + days*DAY);
+
+const SEED_USERS = [
+  { id: "u_albert", email: "pm@spxexpress.com", password: "12345678", role: "pm", displayName: "Albert Halim", handle: "albert.halim", initials: "AH", expertise: ["forecasting","routing"], status: "available" },
+  { id: "u_diana",  email: "pm-lead@spxexpress.com", password: "12345678", role: "pm", displayName: "Diana Wijaya", handle: "diana.wijaya", initials: "DW", expertise: ["portfolio","strategy"], status: "available" },
+  { id: "u_andre",  email: "eng@spxexpress.com", password: "12345678", role: "engineer", displayName: "Andre Halim", handle: "andre.halim", initials: "AN", expertise: ["ml","forecasting"], status: "available" },
+  { id: "u_devi",   email: "devi@spxexpress.com", password: "12345678", role: "engineer", displayName: "Devi Anggraini", handle: "devi.anggraini", initials: "DA", expertise: ["mobile","android"], status: "available" },
+  { id: "u_mira",   email: "mira@spxexpress.com", password: "12345678", role: "engineer", displayName: "Mira Rachman", handle: "mira.rachman", initials: "MR", expertise: ["platform","sorting"], status: "in_meeting" },
+  { id: "u_sari",   email: "sari@spxexpress.com", password: "12345678", role: "engineer", displayName: "Sari Wibowo", handle: "sari.wibowo", initials: "SW", expertise: ["4pl","routing"], status: "available" },
+  { id: "u_ronaldo",email: "ronaldo@spxexpress.com", password: "12345678", role: "engineer", displayName: "Ronaldo Pratama", handle: "ronaldo.pratama", initials: "RP", expertise: ["qa","mobile"], status: "available" },
+];
+
+const SEED_EPICS = [
+  {
+    id: "ep_cdn", key: "CDN", title: "Forecasting model retrain pipeline",
+    thesis: "Replace the brittle daily-batch forecaster with a streaming model that picks up demand shocks within 4 hours. Cuts driver no-show cost by 28%.",
+    description: "Daily retraining pipeline with drift detection, calibration, and automated rollback.",
+    quarter: "Q2 2026", programs: ["FM", "FINOPS", "BPOM"],
+    pmPicId: "u_albert", startDate: dShift(-30), targetEndDate: dShift(30), tags: ["ml","forecasting"],
+  },
+  {
+    id: "ep_rte", key: "RTE", title: "Ferry timetable awareness (Madura routing)",
+    thesis: "Make the router aware of Madura ferry windows; reroute pre-cutoff parcels so 4PL Madura can hit cutoffs reliably.",
+    description: "Static ferry timetable loader + pre-cutoff reroute scoring.",
+    quarter: "Q2 2026", programs: ["LM", "Expansion"],
+    pmPicId: "u_albert", startDate: dShift(-20), targetEndDate: dShift(15), tags: ["routing","4pl"],
+  },
+  {
+    id: "ep_mad", key: "MAD", title: "Madura ops dashboard",
+    thesis: "Stand up a parallel ops dashboard for Madura station so the local team can see cutoff risk before it happens.",
+    description: "Cutoff alerts, parcel-flow visualisation, hourly throughput.",
+    quarter: "Q2 2026", programs: ["LM", "Expansion", "BPOM"],
+    pmPicId: "u_albert", startDate: dShift(-15), targetEndDate: dShift(40), tags: ["4pl","dashboards"],
+  },
+  {
+    id: "ep_hub", key: "HUB", title: "Hub capacity hourly signals",
+    thesis: "Surface hub-level capacity by hour so sorting can flex line balancing pre-emptively instead of reactively.",
+    description: "Ingest hourly throughput from each hub sortation line; surface to sorting leads.",
+    quarter: "Q2 2026", programs: ["LM", "FM", "CCTV"],
+    pmPicId: "u_albert", startDate: dShift(-10), targetEndDate: dShift(45), tags: ["sorting","capacity"],
+  },
+  {
+    id: "ep_drv", key: "DRV", title: "Driver app reliability (Android 14)",
+    thesis: "Reduce driver app friction (taps per delivery, timestamp accuracy, offline fallback) to raise daily completion by 6%.",
+    description: "Fix Android 14 timestamp drift; reduce taps per delivery; offline fallback.",
+    quarter: "Q2 2026", programs: ["LM", "CCTV"],
+    pmPicId: "u_diana", startDate: dShift(-25), targetEndDate: dShift(-2), tags: ["mobile","driver"],
+  },
+  {
+    id: "ep_obs", key: "OBS", title: "Eng observability baseline (Q3 2026)",
+    thesis: "Every service emits the same five golden signals through Sentry + Grafana. Unblocks postmortems and SLAs.",
+    description: "Sentry + Grafana baseline across services. Platform-wide.",
+    quarter: "Q3 2026", programs: ["FINOPS"],
+    pmPicId: "u_diana", startDate: dShift(15), targetEndDate: dShift(90), tags: ["platform"],
+  },
+];
+
+// Milestones per Epic - sequential waterfall phases
+const SEED_MILESTONES = [
+  // CDN - 5 phases, 3 complete
+  { id: "m_cdn_1", epicId: "ep_cdn", name: "Requirements", targetDate: dShift(-25), entryCriteria: "PM signs off on thesis + program tags.", exitCriteria: "Validated training dataset path + governance OK.", actualDate: dShift(-26), status: "complete" },
+  { id: "m_cdn_2", epicId: "ep_cdn", name: "Design", targetDate: dShift(-18), entryCriteria: "Requirements complete.", exitCriteria: "ML system design doc + sign-off from EM.", actualDate: dShift(-17), status: "complete" },
+  { id: "m_cdn_3", epicId: "ep_cdn", name: "Build", targetDate: dShift(-5), entryCriteria: "Design approved.", exitCriteria: "Drift gate + calibration pipeline merged.", actualDate: dShift(-3), status: "complete" },
+  { id: "m_cdn_4", epicId: "ep_cdn", name: "Test", targetDate: dShift(12), entryCriteria: "Build complete.", exitCriteria: "Eval suite shows MAPE +/- 2% vs baseline.", actualDate: null, status: "in_progress" },
+  { id: "m_cdn_5", epicId: "ep_cdn", name: "Deploy", targetDate: dShift(28), entryCriteria: "Test passes.", exitCriteria: "Canary 10% > 48h with no degradation.", actualDate: null, status: "pending" },
+
+  // RTE - 4 phases, 1 complete, currently slipping
+  { id: "m_rte_1", epicId: "ep_rte", name: "Requirements", targetDate: dShift(-15), entryCriteria: "PM signs thesis.", exitCriteria: "Validated PT ASDP feed access.", actualDate: dShift(-13), status: "complete" },
+  { id: "m_rte_2", epicId: "ep_rte", name: "Design", targetDate: dShift(-8), entryCriteria: "Requirements OK.", exitCriteria: "Reroute scoring spec frozen.", actualDate: null, status: "in_progress" },
+  { id: "m_rte_3", epicId: "ep_rte", name: "Build", targetDate: dShift(3), entryCriteria: "Design OK.", exitCriteria: "Loader + scorer merged.", actualDate: null, status: "pending" },
+  { id: "m_rte_4", epicId: "ep_rte", name: "Deploy", targetDate: dShift(14), entryCriteria: "Build complete.", exitCriteria: "Canary OK on Madura traffic.", actualDate: null, status: "pending" },
+
+  // MAD - 5 phases, 2 complete
+  { id: "m_mad_1", epicId: "ep_mad", name: "Requirements", targetDate: dShift(-12), entryCriteria: "PM signs thesis.", exitCriteria: "Station ops sign off on widgets.", actualDate: dShift(-11), status: "complete" },
+  { id: "m_mad_2", epicId: "ep_mad", name: "Design", targetDate: dShift(-4), entryCriteria: "Requirements OK.", exitCriteria: "Dashboard mock approved.", actualDate: dShift(-4), status: "complete" },
+  { id: "m_mad_3", epicId: "ep_mad", name: "Build", targetDate: dShift(15), entryCriteria: "Design OK.", exitCriteria: "Cutoff alerts + parcel-flow shipped.", actualDate: null, status: "in_progress" },
+  { id: "m_mad_4", epicId: "ep_mad", name: "Test", targetDate: dShift(28), entryCriteria: "Build complete.", exitCriteria: "End-to-end UAT pass.", actualDate: null, status: "pending" },
+  { id: "m_mad_5", epicId: "ep_mad", name: "Deploy", targetDate: dShift(38), entryCriteria: "Test passes.", exitCriteria: "Madura station team trained.", actualDate: null, status: "pending" },
+
+  // HUB - 4 phases, 1 complete
+  { id: "m_hub_1", epicId: "ep_hub", name: "Requirements", targetDate: dShift(-6), entryCriteria: "PM signs thesis.", exitCriteria: "Sortation team signs scope.", actualDate: dShift(-5), status: "complete" },
+  { id: "m_hub_2", epicId: "ep_hub", name: "Build", targetDate: dShift(20), entryCriteria: "Requirements OK.", exitCriteria: "Hourly aggregator + UI.", actualDate: null, status: "in_progress" },
+  { id: "m_hub_3", epicId: "ep_hub", name: "Test", targetDate: dShift(35), entryCriteria: "Build complete.", exitCriteria: "Signals match 6h spot checks.", actualDate: null, status: "pending" },
+  { id: "m_hub_4", epicId: "ep_hub", name: "Deploy", targetDate: dShift(43), entryCriteria: "Test passes.", exitCriteria: "Sorting leads onboarded.", actualDate: null, status: "pending" },
+
+  // DRV - 3 phases, behind plan (blocked)
+  { id: "m_drv_1", epicId: "ep_drv", name: "Requirements", targetDate: dShift(-20), entryCriteria: "PM signs thesis.", exitCriteria: "Driver-app reliability scope frozen.", actualDate: dShift(-19), status: "complete" },
+  { id: "m_drv_2", epicId: "ep_drv", name: "Build", targetDate: dShift(-10), entryCriteria: "Requirements OK.", exitCriteria: "Timestamp drift fix + offline fallback merged.", actualDate: null, status: "in_progress" },
+  { id: "m_drv_3", epicId: "ep_drv", name: "Deploy", targetDate: dShift(-2), entryCriteria: "Build complete.", exitCriteria: "Canary cohort 10% drivers Jakarta.", actualDate: null, status: "pending" },
+
+  // OBS - not started
+];
+
+// Bugs (per PRD only Bug tickets remain)
+const SEED_BUGS = [
+  { id: "t_b1", key: "BUG-0042", title: "Driver app push fires twice on Samsung S22", description: "Push handler double-fires when app is in background.", priority: "P0", severity: "S1", status: "in_progress", epicId: "ep_drv", authorId: "u_ronaldo", assigneeId: "u_devi", tags: ["mobile","android-14"], reproSteps: "1. Install v3.14 on S22\n2. Send push\n3. Observe two receipts", expected: "Single notification", actual: "Two notifications fire", affectedScope: "~340 drivers Jakarta", sentryLink: "https://sentry.io/issues/INST-12842", programs: ["LM","CCTV"], createdAt: dShift(-3), startedAt: dShift(-2), closedAt: null, blocked: null, acceptanceCriteria: [{id:"ac1",text:"Repro confirmed",done:true},{id:"ac2",text:"Root cause documented",done:true},{id:"ac3",text:"Patch in staging",done:false},{id:"ac4",text:"Verified on Pixel 8 + S22",done:false}] },
+  { id: "t_b2", key: "BUG-0043", title: "Android 14 driver timestamps drift by ~3 min", description: "Timestamps on A14 devices consistently ahead of server.", priority: "P0", severity: "S1", status: "review", epicId: "ep_drv", authorId: "u_ronaldo", assigneeId: "u_andre", tags: ["mobile","android"], reproSteps: "1. Pixel 8 A14\n2. Mark delivery\n3. Compare timestamps", expected: "Within +/- 10s", actual: "~3 min ahead", affectedScope: "All A14 devices", sentryLink: null, programs: ["LM"], createdAt: dShift(-6), startedAt: dShift(-4), closedAt: null, blocked: null, acceptanceCriteria: [{id:"ac1",text:"Repro confirmed",done:true},{id:"ac2",text:"Server-time sync added",done:true},{id:"ac3",text:"Reviewer sign-off",done:false}] },
+  { id: "t_b3", key: "BUG-0044", title: "Stuck 'delivered' sync state", description: "Drivers report deliveries staying in syncing state.", priority: "P1", severity: "S2", status: "scheduled", epicId: "ep_drv", authorId: "u_ronaldo", assigneeId: "u_devi", tags: ["mobile","sync"], reproSteps: "1. Mark delivery\n2. Lose connection\n3. Reopen app", expected: "Sync completes silently", actual: "Stays in syncing", affectedScope: "~60 drivers", sentryLink: null, programs: ["LM"], createdAt: dShift(-4), startedAt: null, closedAt: null, blocked: { reason: "Waiting on backend retry policy", blockerKey: null }, acceptanceCriteria: [{id:"ac1",text:"Repro on 4G drop",done:false},{id:"ac2",text:"Retry policy applied",done:false}] },
+  { id: "t_b4", key: "BUG-0045", title: "Forecast UI hangs on initial render", description: "Dashboard hangs ~2s on first load.", priority: "P1", severity: "S2", status: "backlog", epicId: "ep_cdn", authorId: "u_andre", assigneeId: null, tags: ["ui","forecasting"], reproSteps: "1. Open /forecast\n2. Wait for first paint", expected: "<500ms", actual: "~2s", affectedScope: "All PMs", sentryLink: null, programs: ["FM"], createdAt: dShift(-2), startedAt: null, closedAt: null, blocked: null, acceptanceCriteria: [] },
+  { id: "t_b5", key: "BUG-0046", title: "Hub capacity widget shows stale 30m data", description: "Hourly widget shows last hour's data for 30 mins.", priority: "P1", severity: "S2", status: "verifying", epicId: "ep_hub", authorId: "u_diana", assigneeId: "u_mira", tags: ["sorting"], reproSteps: "1. Open hub widget\n2. Compare to live source", expected: "Refresh every 10min", actual: "Stale up to 30 min", affectedScope: "Hub leads", sentryLink: null, programs: ["LM","FM"], createdAt: dShift(-7), startedAt: dShift(-5), closedAt: null, blocked: null, acceptanceCriteria: [{id:"ac1",text:"Repro confirmed",done:true},{id:"ac2",text:"Refresh interval shipped",done:true},{id:"ac3",text:"QA verifies in canary",done:false}] },
+  { id: "t_b6", key: "BUG-0047", title: "Ferry timetable feed returns 500", description: "PT ASDP endpoint returning 500 since yesterday.", priority: "P0", severity: "S1", status: "verified", epicId: "ep_rte", authorId: "u_sari", assigneeId: "u_sari", tags: ["routing","integration"], reproSteps: "1. Trigger pull\n2. Observe 500", expected: "200 OK + payload", actual: "500 Internal", affectedScope: "Madura routing", sentryLink: "https://sentry.io/issues/RTE-451", programs: ["LM","Expansion"], createdAt: dShift(-10), startedAt: dShift(-9), closedAt: dShift(-4), blocked: null, acceptanceCriteria: [{id:"ac1",text:"Repro confirmed",done:true},{id:"ac2",text:"Retry + alert added",done:true},{id:"ac3",text:"Verified by QA",done:true}] },
+  { id: "t_b7", key: "BUG-0048", title: "Cutoff alert missing on Madura dashboard", description: "Alert badge not rendering after deploy.", priority: "P2", severity: "S3", status: "backlog", epicId: "ep_mad", authorId: "u_sari", assigneeId: null, tags: ["dashboard"], reproSteps: "1. Open dashboard\n2. Hit cutoff threshold", expected: "Red alert pill", actual: "No alert", affectedScope: "Madura ops", sentryLink: null, programs: ["LM"], createdAt: dShift(-1), startedAt: null, closedAt: null, blocked: null, acceptanceCriteria: [] },
+  { id: "t_b8", key: "BUG-0049", title: "Calibration script throws on edge regions", description: "Regions with <100 samples cause exception.", priority: "P2", severity: "S3", status: "cannot_reproduce", epicId: "ep_cdn", authorId: "u_andre", assigneeId: "u_andre", tags: ["ml"], reproSteps: "1. Run on edge region", expected: "Skip or log", actual: "Crashes", affectedScope: "3 regions", sentryLink: null, programs: ["FM"], createdAt: dShift(-15), startedAt: dShift(-14), closedAt: dShift(-12), blocked: null, acceptanceCriteria: [] },
+];
+
+const SEED_COMMENTS = [
+  { id: "c1", entityType: "bug", entityId: "t_b1", parentId: null, authorId: "u_devi", body: "Repro confirmed on Pixel 8 (A14) + S22 (OneUI 6.0). Patch up shortly.", createdAt: dShift(-1.5), mentions: [] },
+  { id: "c2", entityType: "bug", entityId: "t_b2", parentId: null, authorId: "u_andre", body: "Server-time sync added. Once @ronaldo.pratama signs off, moving to verifying.", createdAt: dShift(-1), mentions: ["u_ronaldo"] },
+];
+
+const SEED_NOTIFICATIONS = [
+  { id: "n1", userId: "u_albert", kind: "milestone_at_risk", entityType: "milestone", entityId: "m_cdn_4", title: "Milestone 'Test' at risk", body: "CDN · Test target 12 days; behind plan.", read: false, archived: false, createdAt: dShift(-0.5) },
+  { id: "n2", userId: "u_albert", kind: "health_change", entityType: "epic", entityId: "ep_drv", title: "DRV health changed to blocked", body: "Past target end with work remaining.", read: false, archived: false, createdAt: dShift(-1) },
+  { id: "n3", userId: "u_devi", kind: "assignment", entityType: "bug", entityId: "t_b1", title: "Assigned BUG-0042", body: "Driver app push fires twice on Samsung S22", read: false, archived: false, createdAt: dShift(-2) },
+  { id: "n4", userId: "u_andre", kind: "mention", entityType: "bug", entityId: "t_b2", title: "@ronaldo.pratama mentioned you", body: "Once @ronaldo.pratama signs off, moving to verifying.", read: true, archived: false, createdAt: dShift(-1) },
+  { id: "n5", userId: "u_albert", kind: "milestone_at_risk", entityType: "milestone", entityId: "m_rte_2", title: "Milestone 'Design' overdue", body: "RTE · Design target passed.", read: false, archived: false, createdAt: dShift(-7) },
+];
+
+// ─── State ───────────────────────────────────────────────────
+const STORAGE_KEY = "cadence-waterfall-v1";
+
+function defaultState() {
+  return {
+    currentUserId: null,
+    theme: "light",
+    sidebarCollapsed: false,
+    onboardingSeen: {},
+    users: SEED_USERS,
+    epics: SEED_EPICS.map(e => ({...e})),
+    milestones: SEED_MILESTONES.map(m => ({...m})),
+    bugs: SEED_BUGS.map(b => ({...b})),
+    comments: SEED_COMMENTS.map(c => ({...c})),
+    notifications: SEED_NOTIFICATIONS.map(n => ({...n})),
+    channelPrefs: {
+      mention: { inApp: true, lark: true, email: false },
+      assignment: { inApp: true, lark: true, email: false },
+      status_change: { inApp: true, lark: false, email: false },
+      sla_breach: { inApp: true, lark: true, email: true },
+      milestone_at_risk: { inApp: true, lark: true, email: true },
+      health_change: { inApp: true, lark: false, email: false },
+      blocked: { inApp: true, lark: true, email: false },
+      bug_needs_verify: { inApp: true, lark: false, email: false },
+      digest: { inApp: false, lark: false, email: true },
+    },
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    // Defensive: hydrate missing keys
+    const def = defaultState();
+    return { ...def, ...parsed };
+  } catch {
+    return defaultState();
+  }
+}
+
+let state = loadState();
+
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+function setState(patch) {
+  state = { ...state, ...patch };
+  persist();
+  render();
+}
+
+function resetMockData() {
+  if (!confirm("Reset all demo data? This restores seed Epics, Milestones, Bugs, etc.")) return;
+  state = defaultState();
+  state.currentUserId = null;
+  persist();
+  toast("Demo data reset", "success");
+  navigate("/login");
+}
+
+// ─── Utilities ───────────────────────────────────────────────
+const $  = (sel, el = document) => el.querySelector(sel);
+const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const fmtDate = (s) => s ? new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const fmtShortDate = (s) => s ? new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—";
+const relTime = (s) => {
+  if (!s) return "";
+  const diff = (new Date(s).getTime() - Date.now()) / 1000;
+  const abs = Math.abs(diff);
+  const sign = diff > 0 ? "in " : "";
+  const suf = diff > 0 ? "" : " ago";
+  if (abs < 60) return "just now";
+  if (abs < 3600) return `${sign}${Math.round(abs/60)}m${suf}`;
+  if (abs < 86400) return `${sign}${Math.round(abs/3600)}h${suf}`;
+  if (abs < 30*86400) return `${sign}${Math.round(abs/86400)}d${suf}`;
+  return fmtShortDate(s);
+};
+const findUser = (id) => state.users.find(u => u.id === id);
+const findEpic = (id) => state.epics.find(e => e.id === id);
+const findEpicByKey = (key) => state.epics.find(e => e.key === key);
+const findBug = (id) => state.bugs.find(b => b.id === id);
+const findBugByKey = (key) => state.bugs.find(b => b.key === key);
+const milestonesForEpic = (epicId) => state.milestones.filter(m => m.epicId === epicId);
+const bugsForEpic = (epicId) => state.bugs.filter(b => b.epicId === epicId);
+const currentUser = () => state.currentUserId ? findUser(state.currentUserId) : null;
+const CLOSED_BUG = new Set(["verified", "cancelled", "cannot_reproduce"]);
+const isClosed = (b) => CLOSED_BUG.has(b.status);
+
+function avatar(user, size = "sm") {
+  if (!user) return `<span class="avatar ${size}" style="background:var(--rule)">?</span>`;
+  return `<span class="avatar ${size}" title="${esc(user.displayName)}">${esc(user.initials)}</span>`;
+}
+
+// ─── Epic health (PRD § 13.3, § 12) ──────────────────────────
+function computeEpicHealth(epic) {
+  if (!epic) return { health: "not_started", timeBurn: 0, progressBurn: 0, deviation: 0 };
+  const now = Date.now();
+  const start = new Date(epic.startDate).getTime();
+  const end = new Date(epic.targetEndDate).getTime();
+
+  if (now < start) return { health: "not_started", timeBurn: 0, progressBurn: 0, deviation: 0 };
+
+  const timeBurn = Math.max(0, Math.min(1, (now - start) / Math.max(1, end - start)));
+
+  const ms = milestonesForEpic(epic.id);
+  let progressBurn;
+  if (ms.length > 0) {
+    const done = ms.filter(m => m.status === "complete").length;
+    progressBurn = done / ms.length;
+  } else {
+    const bugs = bugsForEpic(epic.id);
+    const done = bugs.filter(b => b.status === "verified").length;
+    progressBurn = bugs.length === 0 ? 0 : done / bugs.length;
+  }
+
+  const deviation = timeBurn - progressBurn;
+
+  let health;
+  if (now > end && progressBurn < 1) health = "blocked";
+  else if (deviation >= 0.25) health = "blocked";
+  else if (deviation >= 0.10) health = "at_risk";
+  else health = "on_track";
+
+  return { health, timeBurn, progressBurn, deviation };
+}
+
+function healthPill(epic) {
+  const h = computeEpicHealth(epic);
+  const tip = h.health === "not_started"
+    ? `Starts ${fmtShortDate(epic.startDate)}`
+    : (h.health === "blocked" && Date.now() > new Date(epic.targetEndDate).getTime())
+      ? `Past target end · ${Math.round((1 - h.progressBurn) * 100)}% remaining`
+      : `time-burn ${Math.round(h.timeBurn*100)}% · progress-burn ${Math.round(h.progressBurn*100)}%`;
+  return `<span class="health-pill ${h.health}">${h.health.replace("_"," ")}<span class="tooltip">${esc(tip)}</span></span>`;
+}
+
+// ─── Router ──────────────────────────────────────────────────
+function currentPath() {
+  const h = location.hash || "#/login";
+  const path = h.slice(1).split("?")[0];
+  const query = h.includes("?") ? Object.fromEntries(new URLSearchParams(h.slice(h.indexOf("?") + 1))) : {};
+  return { path, query };
+}
+
+function navigate(path) {
+  location.hash = "#" + path;
+}
+
+window.addEventListener("hashchange", () => render());
+
+// ─── Toast ───────────────────────────────────────────────────
+function toast(msg, kind = "") {
+  const stack = $("#toast-stack");
+  const el = document.createElement("div");
+  el.className = `toast ${kind}`;
+  el.textContent = msg;
+  stack.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .2s"; }, 2400);
+  setTimeout(() => el.remove(), 2700);
+}
+
+// ─── Modal helpers ───────────────────────────────────────────
+function openModal(html) {
+  const m = document.createElement("div");
+  m.className = "modal-backdrop";
+  m.innerHTML = html;
+  m.addEventListener("click", (e) => { if (e.target === m) closeModal(m); });
+  document.body.appendChild(m);
+  document.body.style.overflow = "hidden";
+  return m;
+}
+function closeModal(m) {
+  if (m && m.parentNode) m.parentNode.removeChild(m);
+  document.body.style.overflow = "";
+}
+function closeAllModals() {
+  $$(".modal-backdrop, .slideover-backdrop").forEach(m => m.remove());
+  document.body.style.overflow = "";
+}
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllModals(); });
+
+/* ════════════════════════════════════════════════════════════════
+ * VIEWS - one render function per route
+ * ════════════════════════════════════════════════════════════════ */
+
+function render() {
+  const u = currentUser();
+  const { path, query } = currentPath();
+
+  // Public routes
+  if (path === "/login" || path === "/" || path === "") {
+    if (u) {
+      navigate(u.role === "pm" ? "/epics" : "/me");
+      return;
+    }
+    document.body.innerHTML = `<div id="app"></div><div id="toast-stack" class="toast-stack"></div>`;
+    $("#app").innerHTML = viewLogin();
+    bindLogin();
+    return;
+  }
+
+  if (path.startsWith("/guideline")) {
+    document.body.innerHTML = `<div id="app"></div><div id="toast-stack" class="toast-stack"></div>`;
+    $("#app").innerHTML = viewGuideline(path);
+    return;
+  }
+
+  // Authed gate
+  if (!u) {
+    navigate("/login");
+    return;
+  }
+
+  // Authed shell
+  document.body.innerHTML = `<div id="app"></div><div id="toast-stack" class="toast-stack"></div>`;
+  let body = "";
+  let routeKey = "";
+  if (path === "/me")              { body = viewMe();       routeKey = "/me"; }
+  else if (path === "/epics")      { body = viewEpics(query); routeKey = "/epics"; }
+  else if (path.startsWith("/e/")) { body = viewEpicDetail(path.slice(3), query); routeKey = "/epics"; }
+  else if (path === "/create")     { body = viewCreate(query); routeKey = "/create"; }
+  else if (path.startsWith("/t/")) { body = viewBug(path.slice(3)); routeKey = "/t"; }
+  else if (path === "/backlog")    { body = viewBacklog();  routeKey = "/backlog"; }
+  else if (path === "/my-tickets") { body = viewMyBugs();   routeKey = "/my-tickets"; }
+  else if (path === "/portfolio")  { body = viewPortfolio(); routeKey = "/portfolio"; }
+  else if (path === "/notifications") { body = viewNotifications(); routeKey = "/notifications"; }
+  else if (path === "/settings")   { body = viewSettings(query); routeKey = "/settings"; }
+  else if (path.startsWith("/u/")) { body = viewUser(path.slice(3)); routeKey = "/u"; }
+  else                              { body = viewNotFound(path); routeKey = ""; }
+
+  $("#app").innerHTML = `
+    <div class="app-shell">
+      ${sidebar(routeKey)}
+      <div class="main">
+        ${topbar()}
+        <div class="page-body">${body}</div>
+      </div>
+    </div>
+  `;
+  bindCommon();
+  bindRoute(routeKey, path, query);
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────
+function sidebar(activeKey) {
+  const u = currentUser();
+  const unread = state.notifications.filter(n => n.userId === u.id && !n.read && !n.archived).length;
+  const myBugs = state.bugs.filter(b => b.assigneeId === u.id && !isClosed(b)).length;
+
+  const Plan = u.role === "pm" ? [
+    { key: "/epics", label: "Epic Board", href: "/epics", ico: "▦" },
+    { key: "/portfolio", label: "Portfolio Health", href: "/portfolio", ico: "❤" },
+    { key: "/backlog", label: "Backlog", href: "/backlog", ico: "≡" },
+  ] : [
+    { key: "/epics", label: "Epic Board", href: "/epics", ico: "▦" },
+    { key: "/backlog", label: "Backlog", href: "/backlog", ico: "≡" },
+    { key: "/portfolio", label: "Portfolio Health", href: "/portfolio", ico: "❤" },
+  ];
+
+  const groups = [
+    { title: "Daily", items: [
+      { key: "/me", label: "My Work", href: "/me", ico: "◐", count: myBugs > 0 ? myBugs : 0 },
+    ]},
+    { title: "Capture", items: [
+      { key: "/create", label: "Create", href: "/create", ico: "✚" },
+      { key: "/my-tickets", label: "My Bugs", href: "/my-tickets", ico: "❍" },
+    ]},
+    { title: "Plan", items: Plan },
+    { title: "Workspace", items: [
+      { key: "/notifications", label: "Notifications", href: "/notifications", ico: "✦", count: unread > 0 ? unread : 0 },
+      { key: "/settings", label: "Settings", href: "/settings", ico: "⚙" },
+    ]},
+  ];
+
+  return `
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">SPX<span class="x"> ✕</span></div>
+        <div class="sub"><span>Cadence</span><span>· ${esc(u.role.toUpperCase())}</span></div>
+      </div>
+      <nav class="sidebar-nav">
+        ${groups.map(g => `
+          <div class="nav-group">
+            <div class="nav-group-title">${esc(g.title)}</div>
+            <ul style="list-style:none;">
+              ${g.items.map(it => `
+                <li>
+                  <a class="nav-item ${activeKey === it.key ? "active" : ""}" href="#${it.href}">
+                    <span class="ico">${it.ico}</span>
+                    <span>${esc(it.label)}</span>
+                    ${it.count ? `<span class="count">${it.count}</span>` : ""}
+                  </a>
+                </li>`).join("")}
+            </ul>
+          </div>`).join("")}
+      </nav>
+      <div class="sidebar-foot">
+        <button class="user-chip" data-act="user-menu" style="border:0;background:transparent;width:100%;text-align:left;">
+          ${avatar(u, "sm")}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;color:var(--ink);" class="truncate">${esc(u.displayName)}</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3);">${esc(u.role)}</div>
+          </div>
+          <span style="color:var(--ink-3);font-size:12px;">⋯</span>
+        </button>
+      </div>
+    </aside>
+  `;
+}
+
+function topbar() {
+  return `
+    <header class="topbar">
+      <div class="search-wrap" style="flex:1;max-width:520px;">
+        <span class="ico">⌕</span>
+        <input class="search-input" placeholder="Search Bugs, Epics, users…" data-act="cmdk-search" />
+      </div>
+      <button class="btn ghost" data-act="cmdk-open">⌘K</button>
+      <a class="btn primary" href="#/create">+ New</a>
+    </header>
+  `;
+}
+
+// ─── /login ──────────────────────────────────────────────────
+function viewLogin() {
+  return `
+    <main class="login-page">
+      <section class="login-left">
+        <div>
+          <div class="brand-logo">SPX<span class="x"> ✕</span></div>
+          <div class="brand-tag"><span>Cadence</span><span>· AI Engineering</span></div>
+          <h1 class="login-headline">Plan with <em>conviction</em>.<br/>Phase with <em>discipline</em>.</h1>
+          <p class="login-lede">Epic + milestone management for SPX Express AI Engineering. Waterfall delivery, two roles, computed health.</p>
+          <a href="#/guideline" style="display:inline-flex;margin-top:18px;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);">Read the user guide →</a>
+        </div>
+        <div>
+          <div class="eyebrow mb-3">Sample accounts · password 12345678</div>
+          <div class="sample-accounts">
+            ${SEED_USERS.filter(u => ["u_albert","u_andre"].includes(u.id)).map(u => `
+              <button class="sample-account" data-act="login-sample" data-email="${esc(u.email)}" data-pw="${esc(u.password)}">
+                <div class="role">${esc(u.role)}</div>
+                <div class="name">${esc(u.displayName)}</div>
+                <div class="email">${esc(u.email)}</div>
+              </button>`).join("")}
+          </div>
+        </div>
+      </section>
+      <section class="login-right">
+        <form class="login-form" id="login-form">
+          <div class="eyebrow mb-3">Sign in</div>
+          <h2 class="display" style="font-size:32px;line-height:1.1;margin-bottom:8px;">Welcome back.</h2>
+          <p style="color:var(--ink-3);margin-bottom:24px;">Use any sample account from the left.</p>
+          <div class="mb-4">
+            <label class="label" for="li-email">Email</label>
+            <input class="input" id="li-email" type="email" required placeholder="you@spxexpress.com" autocomplete="username" />
+          </div>
+          <div class="mb-4">
+            <label class="label" for="li-pw">Password</label>
+            <input class="input" id="li-pw" type="password" required placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <div id="li-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:12px;"></div>
+          <button class="btn primary" style="width:100%;" type="submit">Continue →</button>
+          <p style="text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-top:18px;">Demo build · no real auth · state in localStorage</p>
+        </form>
+      </section>
+    </main>
+  `;
+}
+function bindLogin() {
+  $("#login-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = $("#li-email").value.trim().toLowerCase();
+    const pw = $("#li-pw").value;
+    const u = state.users.find(x => x.email.toLowerCase() === email);
+    const err = $("#li-error");
+    if (!u) { err.textContent = "We don't recognize that email."; return; }
+    if (u.password !== pw) { err.textContent = "Password doesn't match."; return; }
+    state.currentUserId = u.id;
+    persist();
+    navigate(u.role === "pm" ? "/epics" : "/me");
+  });
+  $$("[data-act=login-sample]").forEach(b => b.addEventListener("click", () => {
+    $("#li-email").value = b.dataset.email;
+    $("#li-pw").value = b.dataset.pw;
+  }));
+}
+
+// ─── /me - Bug dashboard ─────────────────────────────────────
+function viewMe() {
+  const u = currentUser();
+  const mine = state.bugs.filter(b => b.assigneeId === u.id && !isClosed(b));
+  const myActive = mine.filter(b => ["in_progress","scheduled"].includes(b.status));
+  const myQueued = mine.filter(b => b.status === "backlog");
+  const myBlocked = mine.filter(b => b.blocked);
+  const blockingOthers = state.bugs.filter(b =>
+    b.assigneeId === u.id &&
+    state.bugs.some(o => o.blocked && o.blocked.blockerKey === b.key)
+  );
+
+  // Mentions awaiting reply
+  const mentionsForMe = state.comments
+    .filter(c => c.mentions.includes(u.id) && c.authorId !== u.id)
+    .filter(c => !state.comments.some(r => r.parentId === c.id && r.authorId === u.id))
+    .slice(0, 5);
+
+  const ageInStatus = (b) => {
+    const t = b.startedAt ? new Date(b.startedAt).getTime() : new Date(b.createdAt).getTime();
+    return (Date.now() - t) / DAY;
+  };
+
+  const bugRow = (b) => {
+    const age = ageInStatus(b);
+    const warn = (b.status === "in_progress" && age > 3) || (b.status === "review" && age > 2);
+    return `
+      <a class="card-tight" href="#/t/${esc(b.key)}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--rule-soft);border-radius:6px;background:var(--bg-card);margin-bottom:6px;">
+        <span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);">${esc(b.severity)}</span>
+        <span class="mono" style="font-size:12px;color:var(--ink-3);width:84px;">${esc(b.key)}</span>
+        <span style="flex:1;font-size:13px;" class="truncate">${esc(b.title)}</span>
+        <span class="pill">${esc(STATUS_LABEL[b.status])}</span>
+        ${warn ? `<span class="pill warn">${age>3?"3d+":"2d+"}</span>` : ""}
+        ${b.blocked ? `<span class="pill danger">⏸ blocked</span>` : ""}
+      </a>`;
+  };
+
+  return `
+    <div class="page-header">
+      <div class="eyebrow">My Work · ${esc(u.displayName.split(" ")[0])}</div>
+      <h1>Your <em>Bugs</em>, today.</h1>
+      <p class="lede">Assigned · queued · blocking · blocked. Click any row for the slide-over; ${u.role === "pm" ? "Epic Board" : "queue"} is in the sidebar.</p>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="eyebrow mb-3">My Bugs · ${myActive.length}</div>
+        ${myActive.length === 0 ? `<div class="empty"><div class="ico">○</div><div>No active Bugs assigned to you.</div></div>` : myActive.map(bugRow).join("")}
+
+        <div class="eyebrow mb-3 mt-6">Queued · ${myQueued.length}</div>
+        ${myQueued.length === 0 ? `<div class="card card-tight text-ink-3" style="font-style:italic;font-size:13px;">Nothing waiting in your queue.</div>` : myQueued.map(bugRow).join("")}
+      </div>
+
+      <div>
+        <div class="eyebrow mb-3">Blocking Others · ${blockingOthers.length}</div>
+        ${blockingOthers.length === 0 ? `<div class="card card-tight text-ink-3" style="font-style:italic;font-size:13px;">Nothing.</div>` : blockingOthers.map(bugRow).join("")}
+
+        <div class="eyebrow mb-3 mt-6">Blocked · ${myBlocked.length}</div>
+        ${myBlocked.length === 0 ? `<div class="card card-tight text-ink-3" style="font-style:italic;font-size:13px;">Nothing.</div>` : myBlocked.map(bugRow).join("")}
+
+        ${mentionsForMe.length > 0 ? `
+          <div class="eyebrow mb-3 mt-6">Mentions awaiting reply · ${mentionsForMe.length}</div>
+          <div class="card card-tight">
+            ${mentionsForMe.map(m => {
+              const author = findUser(m.authorId);
+              const bug = findBug(m.entityId);
+              return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--rule-soft);">
+                ${avatar(author, "xs")}
+                <span style="font-size:13px;color:var(--ink);">${esc(author?.displayName ?? "?")}</span>
+                <span style="font-size:12px;color:var(--ink-3);" class="truncate flex-1">${esc(m.body)}</span>
+                ${bug ? `<a class="mono" style="font-size:11px;color:var(--accent);" href="#/t/${esc(bug.key)}">${esc(bug.key)}</a>` : ""}
+              </div>`;
+            }).join("")}
+          </div>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+// ─── /epics - Epic Board ─────────────────────────────────────
+function viewEpics(query) {
+  const u = currentUser();
+  const view = query.view || "kanban";
+
+  const epics = state.epics.slice().sort((a,b) => a.key.localeCompare(b.key));
+
+  const tabs = ["kanban","list","table","timeline","backlog"];
+  const tabStrip = `
+    <div class="tabs mb-6">
+      ${tabs.map(t => `<a class="tab ${t===view?"active":""}" href="#/epics?view=${t}">${t}</a>`).join("")}
+    </div>`;
+
+  const create = u.role === "pm" ? `<button class="btn primary" data-act="new-epic">+ New Epic</button>` : "";
+
+  const header = `
+    <div class="page-header" style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;">
+      <div>
+        <div class="eyebrow">Epic Board</div>
+        <h1><em>Every</em> initiative, one surface.</h1>
+        <p class="lede">${epics.length} Epics in flight. Computed health on every render. Use the view tabs to shift altitude.</p>
+      </div>
+      <div class="page-actions">${create}</div>
+    </div>
+    ${tabStrip}
+  `;
+
+  if (view === "kanban") {
+    // Group by health
+    const lanes = ["not_started","on_track","at_risk","blocked"];
+    const grouped = Object.fromEntries(lanes.map(l => [l, []]));
+    epics.forEach(e => grouped[computeEpicHealth(e).health].push(e));
+    return header + `
+      <div class="kanban">
+        ${lanes.map(l => `
+          <div class="lane">
+            <div class="lane-head">
+              <span class="lane-title">${l.replace("_"," ")}</span>
+              <span class="lane-count">${grouped[l].length}</span>
+            </div>
+            ${grouped[l].map(epicCard).join("")}
+          </div>`).join("")}
+      </div>
+    `;
+  }
+
+  if (view === "list") {
+    return header + `
+      <div class="card" style="padding:0;">
+        ${epics.map(e => {
+          const ms = milestonesForEpic(e.id);
+          const done = ms.filter(m => m.status === "complete").length;
+          const pm = findUser(e.pmPicId);
+          return `<a href="#/e/${esc(e.key)}" style="display:grid;grid-template-columns:50px 1fr 120px 100px 100px 120px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--rule-soft);">
+            <span class="mono" style="color:var(--ink-3);font-size:12px;">${esc(e.key)}</span>
+            <span style="font-size:14px;">${esc(e.title)}</span>
+            <span>${healthPill(e)}</span>
+            <span class="mono" style="font-size:11px;color:var(--ink-3);">${ms.length > 0 ? `${done}/${ms.length} phases` : "no phases"}</span>
+            <span class="mono" style="font-size:11px;color:var(--ink-3);">${fmtShortDate(e.targetEndDate)}</span>
+            <span style="display:flex;align-items:center;gap:6px;">${avatar(pm,"xs")}<span style="font-size:12px;color:var(--ink-3);" class="truncate">${esc(pm?.displayName ?? "")}</span></span>
+          </a>`;
+        }).join("")}
+      </div>`;
+  }
+
+  if (view === "table") {
+    return header + `
+      <table class="table">
+        <thead><tr>
+          <th>Key</th><th>Title</th><th>Health</th><th>Quarter</th><th>Phases</th><th>Programs</th><th>PM</th><th>Target</th>
+        </tr></thead>
+        <tbody>
+          ${epics.map(e => {
+            const ms = milestonesForEpic(e.id);
+            const done = ms.filter(m => m.status === "complete").length;
+            const pm = findUser(e.pmPicId);
+            return `<tr onclick="location.hash='#/e/${esc(e.key)}'">
+              <td class="mono">${esc(e.key)}</td>
+              <td>${esc(e.title)}</td>
+              <td>${healthPill(e)}</td>
+              <td>${esc(e.quarter)}</td>
+              <td>${ms.length === 0 ? "—" : `${done}/${ms.length}`}</td>
+              <td>${e.programs.map(p => `<span class="pill" style="margin-right:2px;">${esc(p)}</span>`).join("")}</td>
+              <td>${avatar(pm,"xs")} <span style="font-size:12px;">${esc(pm?.displayName ?? "")}</span></td>
+              <td class="mono">${fmtShortDate(e.targetEndDate)}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  if (view === "timeline") {
+    // 12-week window centered on today
+    const totalDays = 90;
+    const startWindow = Date.now() - 30 * DAY;
+    const endWindow = startWindow + totalDays * DAY;
+    return header + `
+      <div class="card">
+        <div style="display:grid;grid-template-columns:240px 1fr;gap:14px;align-items:center;margin-bottom:8px;">
+          <div></div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink-3);">
+            <span>${fmtShortDate(iso(startWindow))}</span>
+            <span>Today</span>
+            <span>${fmtShortDate(iso(endWindow))}</span>
+          </div>
+        </div>
+        ${epics.map(e => {
+          const s = Math.max(0, (new Date(e.startDate).getTime() - startWindow) / (totalDays * DAY)) * 100;
+          const w = Math.min(100, (new Date(e.targetEndDate).getTime() - new Date(e.startDate).getTime()) / (totalDays * DAY)) * 100;
+          const todayPct = ((Date.now() - startWindow) / (totalDays * DAY)) * 100;
+          const h = computeEpicHealth(e).health;
+          return `<div style="display:grid;grid-template-columns:240px 1fr;gap:14px;align-items:center;padding:8px 0;border-top:1px solid var(--rule-soft);">
+            <a href="#/e/${esc(e.key)}" style="display:flex;align-items:center;gap:8px;">
+              <span class="mono" style="font-size:11px;color:var(--ink-3);width:38px;">${esc(e.key)}</span>
+              <span style="font-size:13px;" class="truncate">${esc(e.title)}</span>
+            </a>
+            <div class="gantt-track" style="height:14px;position:relative;">
+              <div class="gantt-today" style="left:${todayPct}%"></div>
+              <div class="gantt-bar" style="left:${s}%;width:${w}%;top:2px;bottom:2px;height:10px;border-radius:3px;background:${h==='on_track'?'var(--ok)':h==='at_risk'?'var(--warn)':h==='blocked'?'var(--danger)':'var(--rule)'};opacity:0.85;"></div>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>`;
+  }
+
+  if (view === "backlog") {
+    const backlogEpics = epics.filter(e => computeEpicHealth(e).health === "not_started");
+    return header + (backlogEpics.length === 0
+      ? `<div class="empty"><div class="ico">∅</div><h3>No upcoming Epics.</h3><div>Future-dated Epics appear here.</div></div>`
+      : backlogEpics.map(epicCard).join(""));
+  }
+
+  return header;
+}
+
+function epicCard(e) {
+  const ms = milestonesForEpic(e.id);
+  const done = ms.filter(m => m.status === "complete").length;
+  const pct = ms.length === 0 ? 0 : Math.round((done / ms.length) * 100);
+  const h = computeEpicHealth(e);
+  return `<a class="epic-card" href="#/e/${esc(e.key)}">
+    <div class="row" style="justify-content:space-between;">
+      <span class="key">${esc(e.key)}</span>
+      ${healthPill(e)}
+    </div>
+    <div class="title">${esc(e.title)}</div>
+    <div class="progress mb-3"><div class="progress-bar ${h.health}" style="width:${pct}%"></div></div>
+    <div class="meta">
+      ${e.programs.slice(0,3).map(p => `<span class="pill">${esc(p)}</span>`).join("")}
+      <span class="mono" style="font-size:10px;color:var(--ink-3);margin-left:auto;">${ms.length > 0 ? `${done}/${ms.length} phases` : "no phases"}</span>
+    </div>
+  </a>`;
+}
+
+// ─── /e/[key] - Epic detail ──────────────────────────────────
+function viewEpicDetail(key, query) {
+  const e = findEpicByKey(key);
+  if (!e) return tombstone("epic", key);
+  const u = currentUser();
+  const tab = query.tab || "overview";
+  const pm = findUser(e.pmPicId);
+  const ms = milestonesForEpic(e.id).slice().sort((a,b) => new Date(a.targetDate) - new Date(b.targetDate));
+  const bugs = bugsForEpic(e.id);
+  const health = computeEpicHealth(e);
+  const done = ms.filter(m => m.status === "complete").length;
+  const pct = ms.length === 0 ? 0 : Math.round((done / ms.length) * 100);
+
+  const header = `
+    <div class="page-header">
+      <div class="eyebrow"><a href="#/epics" style="color:var(--ink-3);">Epic Board</a> › ${esc(e.key)}</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;">
+        <div style="min-width:0;flex:1;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span class="pill accent">${esc(e.quarter)}</span>
+            ${healthPill(e)}
+            ${e.programs.map(p => `<span class="pill">${esc(p)}</span>`).join("")}
+          </div>
+          <h1>${esc(e.title)}</h1>
+        </div>
+        <div style="text-align:right;min-width:240px;">
+          <div class="eyebrow">PM</div>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:4px;">
+            ${avatar(pm, "sm")}
+            <span style="font-size:13px;">${esc(pm?.displayName ?? "")}</span>
+          </div>
+          <div class="eyebrow mt-3">Target end</div>
+          <div class="mono" style="margin-top:4px;">${fmtDate(e.targetEndDate)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      ${["overview","milestones","bugs","activity","comments","links"].map(t => `<a class="tab ${t===tab?"active":""}" href="#/e/${esc(e.key)}?tab=${t}">${t}</a>`).join("")}
+    </div>
+  `;
+
+  if (tab === "overview") {
+    return header + `
+      <div class="grid-2">
+        <div>
+          <div class="card mb-4">
+            <div class="eyebrow mb-2">Thesis</div>
+            <p style="font-size:14px;line-height:1.6;color:var(--ink-2);">${esc(e.thesis)}</p>
+          </div>
+          <div class="card">
+            <div class="eyebrow mb-2">Description</div>
+            <p style="font-size:13px;line-height:1.6;color:var(--ink-2);">${esc(e.description)}</p>
+          </div>
+        </div>
+        <div>
+          <div class="card mb-4">
+            <div class="eyebrow mb-2">Progress</div>
+            <div class="row gap-2 mb-2">
+              <span style="font-size:24px;font-family:var(--font-display);">${pct}%</span>
+              <span style="font-size:12px;color:var(--ink-3);">${ms.length > 0 ? `${done} of ${ms.length} milestones complete` : "no phases defined"}</span>
+            </div>
+            <div class="progress mb-3"><div class="progress-bar ${health.health}" style="width:${pct}%"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);">
+              <div>time-burn: <strong style="color:var(--ink);">${Math.round(health.timeBurn*100)}%</strong></div>
+              <div>progress-burn: <strong style="color:var(--ink);">${Math.round(health.progressBurn*100)}%</strong></div>
+              <div>deviation: <strong style="color:var(--ink);">${(health.deviation*100).toFixed(0)}%</strong></div>
+              <div>health: ${healthPill(e)}</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="eyebrow mb-2">Tags</div>
+            <div class="row" style="flex-wrap:wrap;">
+              ${e.tags.map(t => `<span class="pill">${esc(t)}</span>`).join("") || `<span style="color:var(--ink-3);font-style:italic;">No tags</span>`}
+            </div>
+            <div class="eyebrow mt-4 mb-2">Window</div>
+            <div class="mono" style="font-size:12px;">${fmtDate(e.startDate)} → ${fmtDate(e.targetEndDate)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (tab === "milestones") {
+    return header + milestonesTab(e, ms, u);
+  }
+
+  if (tab === "bugs") {
+    return header + `
+      <div class="row mb-4" style="justify-content:space-between;">
+        <div class="eyebrow">Bugs · ${bugs.length}</div>
+        <a class="btn primary sm" href="#/create?type=bug&epic=${esc(e.id)}">+ New Bug</a>
+      </div>
+      ${bugs.length === 0 ? `<div class="empty"><div class="ico">○</div><h3>No Bugs under this Epic yet.</h3></div>` : `
+        <table class="table">
+          <thead><tr><th>Key</th><th>Title</th><th>Severity</th><th>Status</th><th>Assignee</th><th>Created</th></tr></thead>
+          <tbody>
+            ${bugs.map(b => {
+              const a = findUser(b.assigneeId);
+              return `<tr onclick="location.hash='#/t/${esc(b.key)}'">
+                <td class="mono">${esc(b.key)}</td>
+                <td>${esc(b.title)}</td>
+                <td><span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);">${esc(b.severity)}</span></td>
+                <td><span class="pill">${esc(STATUS_LABEL[b.status])}</span></td>
+                <td>${a ? `${avatar(a,"xs")} <span style="font-size:12px;">${esc(a.displayName.split(" ")[0])}</span>` : `<span style="color:var(--ink-3);">—</span>`}</td>
+                <td class="mono" style="font-size:11px;color:var(--ink-3);">${relTime(b.createdAt)}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      `}
+    `;
+  }
+
+  if (tab === "comments") {
+    const cs = state.comments.filter(c => c.entityType === "epic" && c.entityId === e.id);
+    return header + commentsBlock(cs, "epic", e.id);
+  }
+
+  if (tab === "activity") {
+    const events = [];
+    ms.forEach(m => {
+      if (m.status === "complete") events.push({ ts: m.actualDate, msg: `Milestone <strong>${esc(m.name)}</strong> marked complete${new Date(m.actualDate) > new Date(m.targetDate) ? ` (slipped ${Math.round((new Date(m.actualDate)-new Date(m.targetDate))/DAY)}d)` : ""}.` });
+    });
+    events.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+    return header + `
+      <div class="eyebrow mb-3">Activity</div>
+      <div class="card" style="padding:0;">
+        ${events.length === 0 ? `<div class="empty"><div class="ico">·</div><div>No activity yet.</div></div>` : events.map(ev => `
+          <div style="display:grid;grid-template-columns:100px 1fr;gap:12px;padding:12px 18px;border-bottom:1px solid var(--rule-soft);">
+            <span class="mono" style="font-size:11px;color:var(--ink-3);">${fmtShortDate(ev.ts)}</span>
+            <span style="font-size:13px;">${ev.msg}</span>
+          </div>`).join("")}
+      </div>`;
+  }
+
+  if (tab === "links") {
+    return header + `<div class="empty"><div class="ico">⇄</div><h3>Cross-Epic links</h3><div>Dependencies between Epics surface here. Coming soon.</div></div>`;
+  }
+
+  return header;
+}
+
+function milestonesTab(e, ms, u) {
+  const isPM = u.role === "pm";
+  const totalDays = Math.max(1, (new Date(e.targetEndDate) - new Date(e.startDate)) / DAY);
+
+  const milestonesList = ms.length === 0 ? `
+    <div class="empty">
+      <div class="ico">▭</div>
+      <h3>No milestones yet.</h3>
+      <div style="margin-bottom:14px;">Define sequential waterfall phases for this Epic.</div>
+      ${isPM ? `<button class="btn primary" data-act="add-milestone" data-epic="${esc(e.id)}">Add your first phase →</button>` : ""}
+    </div>` : `
+    <div class="card mb-6" style="padding:0;">
+      ${ms.map((m, i) => {
+        const slip = m.actualDate && new Date(m.actualDate) > new Date(m.targetDate) ? Math.round((new Date(m.actualDate) - new Date(m.targetDate)) / DAY) : 0;
+        const prevDone = i === 0 ? true : ms[i-1].status === "complete";
+        const overdue = !m.actualDate && new Date() > new Date(m.targetDate);
+        const statusPill = m.status === "complete" ? `<span class="pill ok">complete</span>`
+          : m.status === "in_progress" ? `<span class="pill accent">in progress</span>`
+          : overdue ? `<span class="pill danger">slipped</span>`
+          : `<span class="pill">pending</span>`;
+        return `<div id="milestone-${esc(m.id)}" style="display:grid;grid-template-columns:50px 1fr 200px 140px 110px;gap:14px;align-items:start;padding:16px 18px;border-bottom:1px solid var(--rule-soft);">
+          <span class="mono" style="font-size:12px;color:var(--ink-3);">${String(i+1).padStart(2,"0")}</span>
+          <div>
+            <div style="font-size:14px;color:var(--ink);font-weight:500;">${esc(m.name)}</div>
+            <div style="font-size:12px;color:var(--ink-3);margin-top:4px;">
+              <strong style="color:var(--ink-2);">Entry:</strong> ${esc(m.entryCriteria)}
+            </div>
+            <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">
+              <strong style="color:var(--ink-2);">Exit:</strong> ${esc(m.exitCriteria)}
+            </div>
+          </div>
+          <div>
+            <div class="mono" style="font-size:11px;color:var(--ink-3);">Target ${fmtDate(m.targetDate)}</div>
+            ${m.actualDate ? `<div class="mono" style="font-size:11px;color:${slip>0?"var(--danger)":"var(--ok)"};">Actual ${fmtDate(m.actualDate)}${slip>0?` · +${slip}d slip`:""}</div>` : ""}
+          </div>
+          <div>${statusPill}</div>
+          <div>
+            ${isPM && m.status === "in_progress" ? `<button class="btn primary sm" data-act="complete-milestone" data-id="${esc(m.id)}">Mark complete →</button>` : ""}
+            ${isPM && m.status === "pending" && !prevDone ? `<button class="btn sm" disabled title="Previous milestone is still pending">Locked</button>` : ""}
+            ${isPM && m.status === "pending" && prevDone ? `<button class="btn primary sm" data-act="complete-milestone" data-id="${esc(m.id)}">Start →</button>` : ""}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+    ${isPM ? `<button class="btn secondary" data-act="add-milestone" data-epic="${esc(e.id)}">+ Add phase</button>` : ""}
+  `;
+
+  // Gantt
+  const gantt = ms.length === 0 ? "" : `
+    <div class="card mt-6">
+      <div class="eyebrow mb-3">Phase Gantt · planned vs. actual</div>
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:12px;align-items:center;margin-bottom:6px;">
+        <div></div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink-3);">
+          <span>${fmtShortDate(e.startDate)}</span>
+          <span>Today</span>
+          <span>${fmtShortDate(e.targetEndDate)}</span>
+        </div>
+      </div>
+      ${ms.map(m => {
+        // Planned bar: previous milestone's target -> this milestone's target (or start of epic -> target if first)
+        const prev = ms[ms.indexOf(m) - 1];
+        const plannedStart = prev ? new Date(prev.targetDate).getTime() : new Date(e.startDate).getTime();
+        const plannedEnd = new Date(m.targetDate).getTime();
+        const epicStart = new Date(e.startDate).getTime();
+        const epicEnd = new Date(e.targetEndDate).getTime();
+        const range = epicEnd - epicStart;
+        const pS = Math.max(0, (plannedStart - epicStart) / range) * 100;
+        const pW = Math.max(1, (plannedEnd - plannedStart) / range) * 100;
+        const todayPct = Math.min(100, Math.max(0, (Date.now() - epicStart) / range * 100));
+
+        let actualBar = "";
+        if (m.actualDate) {
+          const aEnd = new Date(m.actualDate).getTime();
+          const aW = Math.max(1, (aEnd - plannedStart) / range) * 100;
+          const slip = aEnd > plannedEnd;
+          actualBar = `<div class="gantt-bar actual" style="left:${pS}%;width:${aW}%;background:${slip?"var(--danger)":"var(--ok)"};"></div>`;
+        } else if (m.status === "in_progress") {
+          const nowPct = (Date.now() - epicStart) / range * 100;
+          const w = Math.max(1, nowPct - pS);
+          actualBar = `<div class="gantt-bar in-progress" style="left:${pS}%;width:${w}%;"></div>`;
+        }
+        return `<div style="display:grid;grid-template-columns:160px 1fr;gap:12px;align-items:center;padding:6px 0;border-top:1px solid var(--rule-soft);">
+          <span style="font-size:12px;">${esc(m.name)}</span>
+          <div class="gantt-track">
+            <div class="gantt-today" style="left:${todayPct}%"></div>
+            <div class="gantt-bar planned" style="left:${pS}%;width:${pW}%;"></div>
+            ${actualBar}
+          </div>
+        </div>`;
+      }).join("")}
+      <div class="row gap-4 mt-3" style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3);">
+        <span class="row gap-2"><span style="width:18px;height:5px;background:var(--rule);border-radius:2px;"></span> planned</span>
+        <span class="row gap-2"><span style="width:18px;height:5px;background:var(--ok);border-radius:2px;"></span> actual (on time)</span>
+        <span class="row gap-2"><span style="width:18px;height:5px;background:var(--danger);border-radius:2px;"></span> slipped</span>
+        <span class="row gap-2"><span style="width:18px;height:5px;background:var(--accent-soft);border:1px dashed var(--accent);border-radius:2px;"></span> in progress</span>
+      </div>
+    </div>
+  `;
+
+  return `
+    <div class="row mb-4" style="justify-content:space-between;">
+      <div class="eyebrow">Milestones · ${ms.filter(x=>x.status==='complete').length}/${ms.length} complete</div>
+      ${isPM && ms.length > 0 ? `<button class="btn secondary sm" data-act="add-milestone" data-epic="${esc(e.id)}">+ Add phase</button>` : ""}
+    </div>
+    ${milestonesList}
+    ${gantt}
+  `;
+}
+
+function commentsBlock(comments, entityType, entityId) {
+  return `
+    <div class="card mb-4">
+      <textarea class="textarea" id="cmt-${entityType}-${entityId}" placeholder="Add a comment… (@mention supported)" style="min-height:80px;"></textarea>
+      <div class="row mt-3" style="justify-content:flex-end;">
+        <button class="btn primary sm" data-act="post-comment" data-et="${entityType}" data-eid="${entityId}">Post</button>
+      </div>
+    </div>
+    ${comments.length === 0 ? `<div class="empty"><div class="ico">○</div><div>No comments yet.</div></div>` : comments.slice().reverse().map(c => {
+      const a = findUser(c.authorId);
+      return `<div class="card mb-3">
+        <div class="row gap-2 mb-2">
+          ${avatar(a,"sm")}
+          <strong style="font-size:13px;">${esc(a?.displayName ?? "")}</strong>
+          <span class="mono" style="font-size:11px;color:var(--ink-3);">${relTime(c.createdAt)}</span>
+        </div>
+        <div style="font-size:13px;line-height:1.5;">${esc(c.body)}</div>
+      </div>`;
+    }).join("")}
+  `;
+}
+
+// ─── /create ─────────────────────────────────────────────────
+function viewCreate(query) {
+  const u = currentUser();
+  const type = query.type || (u.role === "pm" ? null : "bug");
+
+  const canEpic = u.role === "pm";
+
+  if (!type) {
+    return `
+      <div class="page-header">
+        <div class="eyebrow">Create</div>
+        <h1>What are you <em>filing</em>?</h1>
+        <p class="lede">Pick a kind. Engineers can only file Bugs in the waterfall model.</p>
+      </div>
+      <div class="grid-2" style="max-width:760px;">
+        <a class="card" href="#/create?type=bug" style="border-left:4px solid var(--accent);">
+          <div class="row" style="justify-content:space-between;margin-bottom:10px;"><span style="font-size:24px;">🐞</span><span class="pill">Universal</span></div>
+          <h3 class="display" style="font-size:24px;">Bug</h3>
+          <p style="font-size:13px;color:var(--ink-3);margin-top:6px;">Something broken. Repro / Expected / Actual required. Lands in Backlog.</p>
+          <div class="mono mt-3" style="font-size:11px;color:var(--ink-4);">BUG-####</div>
+        </a>
+        ${canEpic ? `
+        <a class="card" href="#/create?type=epic" style="border-left:4px solid var(--accent);">
+          <div class="row" style="justify-content:space-between;margin-bottom:10px;"><span style="font-size:24px;">⊕</span><span class="pill accent">PM Lane</span></div>
+          <h3 class="display" style="font-size:24px;">Epic</h3>
+          <p style="font-size:13px;color:var(--ink-3);margin-top:6px;">Strategic initiative at quarter altitude. Title + thesis + programs + waterfall milestones.</p>
+          <div class="mono mt-3" style="font-size:11px;color:var(--ink-4);">EPC-####</div>
+        </a>` : `
+        <div class="card" style="opacity:0.5;">
+          <div class="row" style="justify-content:space-between;margin-bottom:10px;"><span style="font-size:24px;">⊕</span><span class="pill">PM only</span></div>
+          <h3 class="display" style="font-size:24px;">Epic</h3>
+          <p style="font-size:13px;color:var(--ink-3);margin-top:6px;">Only the PM role can file Epics.</p>
+        </div>`}
+      </div>
+      <div class="card mt-6" style="background:var(--bg-elevated);">
+        <div class="eyebrow mb-2">Where it lands</div>
+        <p style="font-size:13px;color:var(--ink-3);line-height:1.5;">Bugs land in Backlog. Epics land on the Epic Board with health=not_started until startDate is reached.</p>
+      </div>
+    `;
+  }
+
+  if (type === "epic" && !canEpic) return tombstone("forbidden", "/create?type=epic");
+
+  if (type === "bug") return viewBugForm(query);
+  if (type === "epic") return viewEpicForm();
+  return viewCreate({});
+}
+
+function viewBugForm(query) {
+  const u = currentUser();
+  const epics = state.epics;
+  const engineers = state.users.filter(u => u.role === "engineer");
+  return `
+    <div class="page-header">
+      <div class="eyebrow">Create · Bug</div>
+      <h1>File a <em>Bug</em>.</h1>
+      <p class="lede">Repro + Expected vs. Actual + scope is what makes a Bug actionable in under a minute.</p>
+    </div>
+    <form id="bug-form" class="grid-3" style="grid-template-columns:2fr 1fr;gap:24px;">
+      <div class="col">
+        <div>
+          <label class="label">Title</label>
+          <input class="input" name="title" required placeholder="e.g. Driver app push fires twice on Samsung S22" />
+        </div>
+        <div>
+          <label class="label">Description (markdown)</label>
+          <textarea class="textarea" name="description" placeholder="Short summary..."></textarea>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="label">Severity</label>
+            <select class="select" name="severity">
+              <option value="S1">S1 · Production down · routes to P0</option>
+              <option value="S2" selected>S2 · Major impact · routes to P1</option>
+              <option value="S3">S3 · Minor · routes to P2</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Priority</label>
+            <select class="select" name="priority">
+              <option value="P0">P0 · Drop everything</option>
+              <option value="P1" selected>P1 · This sprint</option>
+              <option value="P2">P2 · Later</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">Repro steps</label>
+          <textarea class="textarea" name="reproSteps" placeholder="1. ... 2. ... 3. ..."></textarea>
+        </div>
+        <div class="grid-2">
+          <div><label class="label">Expected</label><textarea class="textarea" name="expected"></textarea></div>
+          <div><label class="label">Actual</label><textarea class="textarea" name="actual"></textarea></div>
+        </div>
+        <div>
+          <label class="label">Affected scope</label>
+          <input class="input" name="affectedScope" placeholder="e.g. ~60 drivers, Jakarta" />
+        </div>
+        <div>
+          <label class="label">Sentry link · optional</label>
+          <input class="input" name="sentryLink" placeholder="https://sentry.io/issues/..." />
+        </div>
+      </div>
+      <div class="col">
+        <div>
+          <label class="label">Parent Epic</label>
+          <select class="select" name="epicId">
+            <option value="">Ad-hoc · no parent</option>
+            ${epics.map(e => `<option value="${esc(e.id)}" ${query.epic===e.id?"selected":""}>${esc(e.key)} · ${esc(e.title)}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label class="label">Assignee</label>
+          <select class="select" name="assigneeId">
+            <option value="">Unassigned</option>
+            ${engineers.map(e => `<option value="${esc(e.id)}">${esc(e.displayName)}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label class="label">Programs (multi)</label>
+          <div class="row" style="flex-wrap:wrap;gap:6px;" id="program-pills">
+            ${ALL_PROGRAMS.map(p => `<button type="button" class="pill" data-program="${esc(p)}" data-on="0" style="cursor:pointer;">${esc(p)}</button>`).join("")}
+          </div>
+        </div>
+        <div>
+          <label class="label">Tags · comma-separated</label>
+          <input class="input" name="tags" placeholder="mobile, android-14" />
+        </div>
+        <div class="card" style="background:var(--bg-elevated);">
+          <div class="eyebrow mb-2">Checklist</div>
+          <ul style="list-style:none;font-size:12px;color:var(--ink-3);line-height:1.8;">
+            <li>○ Title set</li>
+            <li>○ Repro steps</li>
+            <li>○ Expected vs Actual</li>
+            <li>○ Affected scope</li>
+          </ul>
+        </div>
+        <button class="btn primary" type="submit">File Bug → Backlog</button>
+      </div>
+    </form>
+  `;
+}
+
+function viewEpicForm() {
+  const u = currentUser();
+  const pms = state.users.filter(x => x.role === "pm");
+  return `
+    <div class="page-header">
+      <div class="eyebrow">Create · Epic</div>
+      <h1>File an <em>Epic</em>.</h1>
+      <p class="lede">Quarter altitude. Title + thesis + programs. Define milestones from the Epic detail after creation.</p>
+    </div>
+    <form id="epic-form" class="grid-3" style="grid-template-columns:2fr 1fr;gap:24px;">
+      <div class="col">
+        <div><label class="label">Key (domain code)</label><input class="input" name="key" required placeholder="CDN" style="text-transform:uppercase;" /></div>
+        <div><label class="label">Title</label><input class="input" name="title" required placeholder="e.g. Forecasting model retrain pipeline" /></div>
+        <div><label class="label">Thesis</label><textarea class="textarea" name="thesis" placeholder="Why this Epic, why now. 2-4 sentences. The conviction." style="min-height:140px;"></textarea></div>
+        <div><label class="label">Description</label><textarea class="textarea" name="description" style="min-height:100px;"></textarea></div>
+        <div class="grid-2">
+          <div><label class="label">Start date</label><input class="input" type="date" name="startDate" required /></div>
+          <div><label class="label">Target end date</label><input class="input" type="date" name="targetEndDate" required /></div>
+        </div>
+      </div>
+      <div class="col">
+        <div>
+          <label class="label">Quarter</label>
+          <select class="select" name="quarter">
+            <option>Q2 2026</option><option>Q3 2026</option><option>Q4 2026</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">PM owner (PIC)</label>
+          <select class="select" name="pmPicId" required>
+            ${pms.map(p => `<option value="${esc(p.id)}" ${p.id===u.id?"selected":""}>${esc(p.displayName)}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label class="label">Programs (multi)</label>
+          <div class="row" style="flex-wrap:wrap;gap:6px;" id="program-pills">
+            ${ALL_PROGRAMS.map(p => `<button type="button" class="pill" data-program="${esc(p)}" data-on="0" style="cursor:pointer;">${esc(p)}</button>`).join("")}
+          </div>
+        </div>
+        <div><label class="label">Tags · comma-separated</label><input class="input" name="tags" /></div>
+        <button class="btn primary" type="submit">Create Epic →</button>
+      </div>
+    </form>
+  `;
+}
+
+// ─── /t/[key] - Bug detail ───────────────────────────────────
+function viewBug(key) {
+  const b = findBugByKey(key);
+  if (!b) return tombstone("bug", key);
+  if (b.status === "cancelled" || b.status === "cannot_reproduce") {
+    return tombstone(b.status, b.key, b);
+  }
+  const u = currentUser();
+  const epic = findEpic(b.epicId);
+  const author = findUser(b.authorId);
+  const assignee = findUser(b.assigneeId);
+  const next = (STATUS_FLOW[b.status] || [])[0];
+  const acAllDone = b.acceptanceCriteria.every(ac => ac.done);
+  const canVerify = b.acceptanceCriteria.length === 0 || acAllDone;
+  const comments = state.comments.filter(c => c.entityType === "bug" && c.entityId === b.id);
+
+  return `
+    <div class="page-header">
+      <div class="eyebrow"><a href="#/epics" style="color:var(--ink-3);">${esc(epic?.key ?? "Ad-hoc")}</a> › <span style="color:var(--ink);">${esc(b.key)}</span></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;">
+        <div style="flex:1;min-width:0;">
+          <div class="row mb-3" style="flex-wrap:wrap;">
+            <span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);">${esc(b.severity)}</span>
+            <span class="pill" style="background:${b.priority==='P0'?'var(--danger-soft)':'var(--rule-soft)'};color:${b.priority==='P0'?'var(--danger)':'var(--ink-2)'};border-color:transparent;">${esc(b.priority)}</span>
+            <span class="pill ${b.status === 'verified' ? 'ok' : ''}">${esc(STATUS_LABEL[b.status])}</span>
+            ${b.blocked ? `<span class="pill danger">⏸ Blocked · ${esc(b.blocked.reason)}</span>` : ""}
+          </div>
+          <h1>${esc(b.title)}</h1>
+        </div>
+        <div class="page-actions">
+          ${b.blocked
+            ? `<button class="btn secondary sm" data-act="unblock-bug" data-id="${esc(b.id)}">Unblock</button>`
+            : `<button class="btn secondary sm" data-act="block-bug" data-id="${esc(b.id)}">⊘ Mark blocked</button>`}
+          ${next && (next !== "verified" || canVerify)
+            ? `<button class="btn primary sm" data-act="advance-bug" data-id="${esc(b.id)}" data-next="${esc(next)}">Move to ${esc(STATUS_LABEL[next])} →</button>`
+            : next === "verified" && !canVerify
+              ? `<button class="btn sm" disabled title="All ACs must be checked">Move to Verified →</button>`
+              : ""}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="grid-template-columns:2fr 1fr;gap:32px;">
+      <div class="col">
+        <div class="card">
+          <div class="eyebrow mb-2">Description</div>
+          <div style="font-size:14px;line-height:1.6;">${esc(b.description) || `<span class="text-ink-3" style="font-style:italic;">No description.</span>`}</div>
+        </div>
+
+        <div class="card" style="background:var(--bg-elevated);">
+          <div class="eyebrow mb-3">Bug context</div>
+          <div class="row mb-2"><strong style="width:120px;font-size:12px;color:var(--ink-3);">Repro steps</strong><div style="flex:1;font-size:13px;white-space:pre-wrap;">${esc(b.reproSteps) || "—"}</div></div>
+          <hr/>
+          <div class="row mb-2"><strong style="width:120px;font-size:12px;color:var(--ink-3);">Expected</strong><div style="flex:1;font-size:13px;">${esc(b.expected) || "—"}</div></div>
+          <hr/>
+          <div class="row mb-2"><strong style="width:120px;font-size:12px;color:var(--ink-3);">Actual</strong><div style="flex:1;font-size:13px;">${esc(b.actual) || "—"}</div></div>
+          <hr/>
+          <div class="row mb-2"><strong style="width:120px;font-size:12px;color:var(--ink-3);">Affected</strong><div style="flex:1;font-size:13px;">${esc(b.affectedScope) || "—"}</div></div>
+          ${b.sentryLink ? `<hr/><div class="row mb-2"><strong style="width:120px;font-size:12px;color:var(--ink-3);">Sentry</strong><a class="mono" href="${esc(b.sentryLink)}" target="_blank" rel="noreferrer" style="font-size:12px;color:var(--accent);">${esc(b.sentryLink)}</a></div>` : ""}
+        </div>
+
+        <div>
+          <div class="row mb-3"><div class="eyebrow">Acceptance Criteria · ${b.acceptanceCriteria.filter(a=>a.done).length}/${b.acceptanceCriteria.length}</div></div>
+          ${b.acceptanceCriteria.length === 0 ? `<div class="card text-ink-3" style="font-style:italic;">No acceptance criteria defined.</div>` : `
+            <div class="card" style="padding:0;">
+              ${b.acceptanceCriteria.map(ac => `
+                <label style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--rule-soft);cursor:pointer;">
+                  <input type="checkbox" data-act="toggle-ac" data-bug="${esc(b.id)}" data-ac="${esc(ac.id)}" ${ac.done?"checked":""} />
+                  <span style="font-size:13px;${ac.done?'text-decoration:line-through;color:var(--ink-4);':''}">${esc(ac.text)}</span>
+                </label>
+              `).join("")}
+            </div>`}
+        </div>
+
+        <div>
+          <div class="eyebrow mb-3">Comments · ${comments.length}</div>
+          ${commentsBlock(comments, "bug", b.id)}
+        </div>
+      </div>
+
+      <aside class="col" style="gap:14px;">
+        <div class="card">
+          <div class="eyebrow mb-2">Parent Epic</div>
+          ${epic ? `<a href="#/e/${esc(epic.key)}" style="color:var(--accent);font-size:13px;">${esc(epic.key)} · ${esc(epic.title)}</a>` : `<span class="text-ink-3" style="font-style:italic;font-size:13px;">Ad-hoc</span>`}
+        </div>
+        <div class="card">
+          <div class="eyebrow mb-2">Assignee</div>
+          ${assignee ? `<div class="row gap-2">${avatar(assignee, "sm")}<span style="font-size:13px;">${esc(assignee.displayName)}</span></div>` : `<span class="text-ink-3" style="font-style:italic;font-size:13px;">Unassigned</span>`}
+
+          <div class="eyebrow mt-4 mb-2">Reporter</div>
+          ${author ? `<div class="row gap-2">${avatar(author, "sm")}<span style="font-size:13px;">${esc(author.displayName)}</span></div>` : "—"}
+
+          <div class="eyebrow mt-4 mb-2">Created</div>
+          <div class="mono" style="font-size:12px;color:var(--ink-3);">${fmtDate(b.createdAt)} · ${relTime(b.createdAt)}</div>
+
+          <div class="eyebrow mt-4 mb-2">Tags</div>
+          <div class="row" style="flex-wrap:wrap;">
+            ${b.tags.map(t => `<span class="pill">${esc(t)}</span>`).join("") || `<span class="text-ink-3" style="font-style:italic;font-size:12px;">No tags</span>`}
+          </div>
+
+          <div class="eyebrow mt-4 mb-2">Programs</div>
+          <div class="row" style="flex-wrap:wrap;">
+            ${(b.programs || []).map(p => `<span class="pill accent">${esc(p)}</span>`).join("") || `<span class="text-ink-3" style="font-style:italic;font-size:12px;">Inherits Epic</span>`}
+          </div>
+        </div>
+      </aside>
+    </div>
+  `;
+}
+
+// ─── /backlog ────────────────────────────────────────────────
+function viewBacklog() {
+  const bugs = state.bugs.filter(b => b.status === "backlog")
+    .sort((a,b) => {
+      const sev = { S1:0, S2:1, S3:2 };
+      const pri = { P0:0, P1:1, P2:2 };
+      return (sev[a.severity] - sev[b.severity]) || (pri[a.priority] - pri[b.priority]);
+    });
+  return `
+    <div class="page-header">
+      <div class="eyebrow">Backlog</div>
+      <h1>Bugs waiting <em>triage</em>.</h1>
+      <p class="lede">${bugs.length} unscheduled Bugs sorted by severity then priority.</p>
+    </div>
+    ${bugs.length === 0 ? `<div class="empty"><div class="ico">✓</div><h3>Backlog is clean.</h3></div>` : `
+      <table class="table">
+        <thead><tr><th>Key</th><th>Title</th><th>Severity</th><th>Priority</th><th>Epic</th><th>Age</th></tr></thead>
+        <tbody>
+          ${bugs.map(b => {
+            const e = findEpic(b.epicId);
+            const age = Math.round((Date.now() - new Date(b.createdAt))/DAY);
+            const stale = age > 14;
+            return `<tr onclick="location.hash='#/t/${esc(b.key)}'">
+              <td class="mono">${esc(b.key)}</td>
+              <td>${esc(b.title)}</td>
+              <td><span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);">${esc(b.severity)}</span></td>
+              <td><span class="pill">${esc(b.priority)}</span></td>
+              <td class="mono" style="font-size:11px;color:var(--ink-3);">${esc(e?.key ?? "Ad-hoc")}</td>
+              <td class="mono" style="font-size:11px;color:${stale?'var(--warn)':'var(--ink-3)'};">${age}d</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>`}
+  `;
+}
+
+// ─── /my-tickets - My Bugs ───────────────────────────────────
+function viewMyBugs() {
+  const u = currentUser();
+  const mine = state.bugs.filter(b => b.authorId === u.id);
+  const counts = {
+    total: mine.length,
+    s1: mine.filter(b => b.severity === "S1").length,
+    s2: mine.filter(b => b.severity === "S2").length,
+    s3: mine.filter(b => b.severity === "S3").length,
+    open: mine.filter(b => !isClosed(b)).length,
+    closed: mine.filter(b => isClosed(b)).length,
+  };
+  return `
+    <div class="page-header">
+      <div class="eyebrow">My Bugs · ${esc(u.displayName.split(" ")[0])}</div>
+      <h1>Everything <em>you've filed</em>.</h1>
+      <p class="lede">${counts.total} Bugs authored · ${counts.s1} S1 · ${counts.s2} S2 · ${counts.s3} S3 · ${counts.open} open · ${counts.closed} closed.</p>
+    </div>
+    ${mine.length === 0 ? `<div class="empty"><div class="ico">○</div><h3>Nothing filed yet.</h3><a class="btn primary mt-3" href="#/create?type=bug">File your first Bug</a></div>` : `
+      <table class="table">
+        <thead><tr><th>Key</th><th>Title</th><th>Severity</th><th>Status</th><th>Assignee</th><th>Created</th></tr></thead>
+        <tbody>
+          ${mine.map(b => {
+            const a = findUser(b.assigneeId);
+            return `<tr onclick="location.hash='#/t/${esc(b.key)}'">
+              <td class="mono">${esc(b.key)}</td>
+              <td>${esc(b.title)}</td>
+              <td><span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);">${esc(b.severity)}</span></td>
+              <td><span class="pill">${esc(STATUS_LABEL[b.status])}</span></td>
+              <td>${a ? `${avatar(a,"xs")} <span style="font-size:12px;">${esc(a.displayName.split(" ")[0])}</span>` : `<span class="text-ink-3">—</span>`}</td>
+              <td class="mono" style="font-size:11px;color:var(--ink-3);">${relTime(b.createdAt)}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>`}
+  `;
+}
+
+// ─── /portfolio - Portfolio Health ───────────────────────────
+function viewPortfolio() {
+  const epics = state.epics;
+  const computed = epics.map(e => ({ e, h: computeEpicHealth(e) }));
+  const counts = {
+    total: epics.length,
+    on_track: computed.filter(x => x.h.health === "on_track").length,
+    at_risk: computed.filter(x => x.h.health === "at_risk").length,
+    blocked: computed.filter(x => x.h.health === "blocked").length,
+    not_started: computed.filter(x => x.h.health === "not_started").length,
+  };
+  const programAlloc = ALL_PROGRAMS.map(p => ({
+    p, count: epics.filter(e => e.programs.includes(p)).length,
+  }));
+  const maxProgram = Math.max(...programAlloc.map(x => x.count), 1);
+
+  // Top blockers: high-priority blocked bugs
+  const topBlockers = state.bugs
+    .filter(b => b.blocked && ["P0","P1"].includes(b.priority))
+    .slice(0, 5);
+
+  return `
+    <div class="page-header">
+      <div class="eyebrow">Portfolio Health</div>
+      <h1>The <em>quarter</em>, at a glance.</h1>
+      <p class="lede">Computed health for every Epic. Refresh on every render — no manual updates required.</p>
+    </div>
+
+    <div class="grid-4 mb-6">
+      <div class="card" style="border-left:4px solid var(--ink-4);">
+        <div class="eyebrow">Total Epics</div>
+        <div style="font-family:var(--font-display);font-size:32px;margin-top:6px;">${counts.total}</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--ok);">
+        <div class="eyebrow">On track</div>
+        <div style="font-family:var(--font-display);font-size:32px;margin-top:6px;color:var(--ok);">${counts.on_track}</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--warn);">
+        <div class="eyebrow">At risk</div>
+        <div style="font-family:var(--font-display);font-size:32px;margin-top:6px;color:var(--warn);">${counts.at_risk}</div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--danger);">
+        <div class="eyebrow">Blocked</div>
+        <div style="font-family:var(--font-display);font-size:32px;margin-top:6px;color:var(--danger);">${counts.blocked}</div>
+      </div>
+    </div>
+
+    <div class="grid-2 mb-6">
+      <div class="card">
+        <div class="eyebrow mb-3">Allocation by program</div>
+        <div>
+          ${programAlloc.map(({p,count}) => `
+            <div style="display:grid;grid-template-columns:80px 1fr 32px;gap:10px;align-items:center;padding:6px 0;">
+              <span class="mono" style="font-size:11px;color:var(--ink-3);">${esc(p)}</span>
+              <div style="height:14px;background:var(--bg-elevated);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${(count/maxProgram)*100}%;background:var(--accent);"></div>
+              </div>
+              <span class="mono" style="font-size:11px;color:var(--ink-2);text-align:right;">${count}</span>
+            </div>`).join("")}
+        </div>
+      </div>
+      <div class="card">
+        <div class="eyebrow mb-3">Top Blockers · ${topBlockers.length}</div>
+        ${topBlockers.length === 0 ? `<div class="text-ink-3" style="font-style:italic;font-size:13px;">No blocking P0/P1 Bugs.</div>` : topBlockers.map(b => `
+          <a href="#/t/${esc(b.key)}" style="display:block;padding:10px 0;border-bottom:1px solid var(--rule-soft);">
+            <div class="row gap-2">
+              <span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);">${esc(b.priority)}</span>
+              <span class="mono" style="font-size:12px;color:var(--ink-3);">${esc(b.key)}</span>
+              <span style="font-size:13px;" class="truncate flex-1">${esc(b.title)}</span>
+            </div>
+            <div class="text-ink-3 mt-2" style="font-size:12px;">${esc(b.blocked.reason)}</div>
+          </a>`).join("")}
+      </div>
+    </div>
+
+    <table class="table">
+      <thead><tr><th>Key</th><th>Title</th><th>Health</th><th>Phases</th><th>Programs</th><th>PM</th><th>Target</th></tr></thead>
+      <tbody>
+        ${computed.sort((a,b) => {
+          const order = { blocked:0, at_risk:1, on_track:2, not_started:3 };
+          return order[a.h.health] - order[b.h.health];
+        }).map(({e,h}) => {
+          const ms = milestonesForEpic(e.id);
+          const done = ms.filter(m => m.status==='complete').length;
+          const pm = findUser(e.pmPicId);
+          return `<tr onclick="location.hash='#/e/${esc(e.key)}'">
+            <td class="mono">${esc(e.key)}</td>
+            <td>${esc(e.title)}</td>
+            <td>${healthPill(e)}</td>
+            <td class="mono" style="font-size:12px;">${ms.length > 0 ? `${done}/${ms.length}` : "—"}</td>
+            <td>${e.programs.slice(0,3).map(p => `<span class="pill" style="margin-right:2px;">${esc(p)}</span>`).join("")}</td>
+            <td>${avatar(pm,"xs")} <span style="font-size:12px;">${esc(pm?.displayName?.split(' ')[0] ?? '')}</span></td>
+            <td class="mono" style="font-size:11px;">${fmtShortDate(e.targetEndDate)}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+// ─── /notifications ──────────────────────────────────────────
+function viewNotifications() {
+  const u = currentUser();
+  const mine = state.notifications.filter(n => n.userId === u.id && !n.archived);
+  const unread = mine.filter(n => !n.read);
+  const read = mine.filter(n => n.read);
+
+  const row = (n) => {
+    let href = "#";
+    if (n.entityType === "bug") { const b = findBug(n.entityId); if (b) href = `#/t/${b.key}`; }
+    if (n.entityType === "epic") { const e = findEpic(n.entityId); if (e) href = `#/e/${e.key}`; }
+    if (n.entityType === "milestone") { const m = state.milestones.find(x => x.id === n.entityId); const e = m && findEpic(m.epicId); if (e) href = `#/e/${e.key}?tab=milestones`; }
+    return `<a class="notif-row ${n.read?'read':'unread'}" href="${href}" data-id="${esc(n.id)}">
+      <div class="notif-dot"></div>
+      <div>
+        <div style="font-size:13px;color:var(--ink);">${esc(n.title)}</div>
+        <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">${esc(n.body)}</div>
+        <div class="mono mt-2" style="font-size:10px;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.14em;">${esc(n.kind.replace("_"," "))} · ${relTime(n.createdAt)}</div>
+      </div>
+      <div class="row gap-2" onclick="event.preventDefault();event.stopPropagation();">
+        ${!n.read ? `<button class="btn ghost sm" data-act="mark-read" data-id="${esc(n.id)}">Mark read</button>` : ""}
+        <button class="btn ghost sm" data-act="archive-notif" data-id="${esc(n.id)}">Archive</button>
+      </div>
+    </a>`;
+  };
+
+  return `
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;">
+      <div>
+        <div class="eyebrow">Notifications</div>
+        <h1>Your <em>inbox</em>.</h1>
+        <p class="lede">${unread.length} unread · ${read.length} read. milestone_at_risk fires 7 days before incomplete targets.</p>
+      </div>
+      <div class="page-actions">
+        ${unread.length > 0 ? `<button class="btn secondary" data-act="mark-all-read">Mark all read</button>` : ""}
+      </div>
+    </div>
+    ${unread.length > 0 ? `<div class="eyebrow mb-2">Unread</div><div class="card" style="padding:0;">${unread.map(row).join("")}</div>` : ""}
+    ${read.length > 0 ? `<div class="eyebrow mb-2 mt-6">Read</div><div class="card" style="padding:0;">${read.map(row).join("")}</div>` : ""}
+    ${mine.length === 0 ? `<div class="empty"><div class="ico">✦</div><h3>Inbox zero.</h3></div>` : ""}
+  `;
+}
+
+// ─── /settings ───────────────────────────────────────────────
+function viewSettings(query) {
+  const tab = query.tab || "workspace";
+  const tabs = ["workspace","sso","roles","integrations","notifications"];
+
+  const body = (() => {
+    if (tab === "workspace") {
+      return `
+        <div style="max-width:680px;">
+          ${settingsRow("Workspace name", "SPX Express · AI Engineering")}
+          ${settingsRow("Delivery model", "Waterfall (Epic + Milestones)")}
+          ${settingsRow("Identity provider", "SPX SSO (SAML 2.0)")}
+          ${settingsRow("Pods", "Routing · Sorting · Forecasting · Platform")}
+          ${settingsRow("Markdown subset", "GitHub-flavored (GFM)")}
+          ${settingsRow("Health thresholds", "on_track <10% · at_risk 10-24% · blocked >=25% or past target")}
+          <div class="mt-4" style="padding-top:14px;border-top:1px solid var(--rule);">
+            <button class="btn danger" data-act="reset-demo">Reset demo data</button>
+          </div>
+        </div>`;
+    }
+    if (tab === "sso") {
+      return `
+        <div style="max-width:680px;">
+          ${settingsRow("Protocol", "SAML 2.0 (SP-initiated)")}
+          ${settingsRow("IdP", "SPX Identity (Okta)")}
+          ${settingsRow("Login URL", "https://idp.spx-express.com/saml/login")}
+          ${settingsRow("ACS callback", "https://cadence.spx-express.com/auth/sso/callback")}
+          ${settingsRow("Session TTL", "8h sliding · 24h hard cap")}
+          ${settingsRow("MFA", "Enforced at IdP")}
+        </div>`;
+    }
+    if (tab === "roles") {
+      const caps = [
+        ["Create Epic", "✓", "—"],
+        ["Edit Epic (PIC only)", "✓", "—"],
+        ["Create / edit Epic milestones", "✓", "—"],
+        ["Mark milestone complete", "✓", "—"],
+        ["Create Bug", "✓", "✓"],
+        ["Move Bug status", "✓", "✓"],
+        ["Assign Bug to engineer", "✓", "—"],
+        ["Check Acceptance Criteria", "✓", "✓"],
+        ["Post comment / reply", "✓", "✓"],
+        ["Mark Bug blocked / unblocked", "✓", "✓"],
+        ["View Portfolio Health", "✓", "✓"],
+      ];
+      return `<table class="table">
+        <thead><tr><th>Capability</th><th>PM</th><th>Engineer</th></tr></thead>
+        <tbody>${caps.map(([cap,pm,eng]) => `<tr><td>${esc(cap)}</td><td class="mono">${esc(pm)}</td><td class="mono">${esc(eng)}</td></tr>`).join("")}</tbody>
+      </table>`;
+    }
+    if (tab === "integrations") {
+      const integ = [
+        { name: "Lark", body: "milestone_at_risk + mention dispatch", status: "Connected" },
+        { name: "Slack", body: "Optional secondary channel", status: "Off" },
+        { name: "GitHub", body: "Bug ↔ PR linking via [BUG-####]", status: "Connected" },
+        { name: "Sentry", body: "Bug Sentry-link field", status: "Connected" },
+        { name: "Linear", body: "One-way export · v2", status: "Off" },
+        { name: "PagerDuty", body: "P0 escalation routing", status: "Off" },
+      ];
+      return `<div class="grid-3">${integ.map(i => `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;">
+            <strong>${esc(i.name)}</strong>
+            <span class="pill ${i.status==='Connected'?'ok':''} dot">${esc(i.status)}</span>
+          </div>
+          <p style="font-size:12px;color:var(--ink-3);margin-top:8px;">${esc(i.body)}</p>
+          <button class="btn ${i.status==='Connected'?'secondary':'primary'} sm mt-3" style="width:100%;">${i.status==='Connected'?'Disconnect':'Connect'}</button>
+        </div>`).join("")}</div>`;
+    }
+    if (tab === "notifications") {
+      const kinds = ["mention","assignment","status_change","sla_breach","milestone_at_risk","health_change","blocked","bug_needs_verify","digest"];
+      return `<table class="table" style="max-width:680px;">
+        <thead><tr><th>Event</th><th>In-app</th><th>Lark</th><th>Email</th></tr></thead>
+        <tbody>${kinds.map(k => {
+          const p = state.channelPrefs[k] || { inApp:false, lark:false, email:false };
+          return `<tr>
+            <td>${esc(k.replace("_"," "))}</td>
+            <td><input type="checkbox" ${p.inApp?'checked':''} data-act="pref" data-kind="${esc(k)}" data-ch="inApp" /></td>
+            <td><input type="checkbox" ${p.lark?'checked':''} data-act="pref" data-kind="${esc(k)}" data-ch="lark" /></td>
+            <td><input type="checkbox" ${p.email?'checked':''} data-act="pref" data-kind="${esc(k)}" data-ch="email" /></td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>`;
+    }
+    return "";
+  })();
+
+  return `
+    <div class="page-header">
+      <div class="eyebrow">Settings</div>
+      <h1><em>Workspace</em> configuration.</h1>
+      <p class="lede">Admin-only in production. In this demo, anyone can see it.</p>
+    </div>
+    <div class="tabs">${tabs.map(t => `<a class="tab ${t===tab?"active":""}" href="#/settings?tab=${t}">${t}</a>`).join("")}</div>
+    ${body}
+  `;
+}
+function settingsRow(label, value) {
+  return `<div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule-soft);align-items:center;">
+    <span class="mono" style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.14em;">${esc(label)}</span>
+    <span style="font-size:13px;">${esc(value)}</span>
+  </div>`;
+}
+
+// ─── /u/[handle] - profile ───────────────────────────────────
+function viewUser(handle) {
+  const profile = state.users.find(u => u.handle === handle);
+  if (!profile) return tombstone("user", handle);
+
+  const assigned = state.bugs.filter(b => b.assigneeId === profile.id && !isClosed(b));
+  const ownedEpics = profile.role === "pm" ? state.epics.filter(e => e.pmPicId === profile.id) : [];
+
+  return `
+    <div class="page-header">
+      <div class="row gap-4">
+        ${avatar(profile, "lg")}
+        <div>
+          <div class="eyebrow">@${esc(profile.handle)}</div>
+          <h1>${esc(profile.displayName)}</h1>
+          <div class="row gap-2 mt-2">
+            <span class="pill ${profile.role==='pm'?'accent':''}">${esc(profile.role)}</span>
+            <span class="pill ${profile.status==='available'?'ok':profile.status==='ooo'?'danger':''} dot">${esc(profile.status)}</span>
+            ${profile.expertise.map(e => `<span class="pill">${esc(e)}</span>`).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="eyebrow mb-3">Assigned Bugs · ${assigned.length}</div>
+        ${assigned.length === 0 ? `<div class="text-ink-3" style="font-style:italic;">Nothing assigned.</div>` : assigned.map(b => `
+          <a href="#/t/${esc(b.key)}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule-soft);">
+            <span class="pill" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-soft);">${esc(b.severity)}</span>
+            <span class="mono" style="font-size:11px;color:var(--ink-3);">${esc(b.key)}</span>
+            <span style="font-size:13px;" class="truncate flex-1">${esc(b.title)}</span>
+            <span class="pill">${esc(STATUS_LABEL[b.status])}</span>
+          </a>`).join("")}
+      </div>
+
+      ${ownedEpics.length > 0 ? `<div class="card">
+        <div class="eyebrow mb-3">Epics owned · ${ownedEpics.length}</div>
+        ${ownedEpics.map(e => `
+          <a href="#/e/${esc(e.key)}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule-soft);">
+            <span class="mono" style="font-size:11px;color:var(--ink-3);">${esc(e.key)}</span>
+            <span style="font-size:13px;" class="truncate flex-1">${esc(e.title)}</span>
+            ${healthPill(e)}
+          </a>`).join("")}
+      </div>` : `<div class="card"><div class="eyebrow mb-3">PR activity</div><div class="text-ink-3" style="font-style:italic;font-size:12px;">Mocked feed coming soon.</div></div>`}
+    </div>
+  `;
+}
+
+// ─── /guideline (public) ─────────────────────────────────────
+function viewGuideline(path) {
+  const overviewSection = `
+    <section style="background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:14px;">
+      <div class="eyebrow mb-2">What it is</div>
+      <h2 class="display" style="font-size:24px;margin-bottom:8px;">A waterfall delivery surface for SPX AI Engineering.</h2>
+      <p style="font-size:14px;color:var(--ink-2);line-height:1.6;">Cadence tracks Epics with sequential milestones, plus Bug tickets for defect tracking. Two roles only - PM plans + phases, Engineer executes + files defects. Health is computed from milestone completion vs. time elapsed; no manual override.</p>
+    </section>
+
+    <section style="background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:14px;">
+      <div class="eyebrow mb-2">Four core decisions</div>
+      <ol style="font-size:13px;color:var(--ink-2);line-height:1.7;padding-left:20px;">
+        <li><strong>Two roles only</strong> - PM and Engineer.</li>
+        <li><strong>Epic + milestones</strong> is the unit of work. Engineering Tickets and Tech Tasks are removed.</li>
+        <li><strong>Health is computed</strong>, not entered. Derived from milestone completion vs. time elapsed.</li>
+        <li><strong>AI is advisory</strong>. Suggestions show confidence; humans accept or override.</li>
+      </ol>
+    </section>
+
+    <section style="background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:14px;">
+      <div class="eyebrow mb-2">Computing Epic health</div>
+      <pre style="font-family:var(--font-mono);font-size:12px;background:var(--bg-elevated);padding:14px;border-radius:6px;border:1px solid var(--rule-soft);overflow-x:auto;line-height:1.6;">
+deviation = timeBurn - progressBurn
+
+timeBurn     = (now - startDate) / (targetEndDate - startDate)   // clamped [0,1]
+progressBurn = completedMilestones / totalMilestones             // falls back to doneBugs/totalBugs
+
+health =
+  not_started  if now < startDate
+  blocked      if now > targetEndDate AND progressBurn < 1
+  blocked      if deviation >= 0.25
+  at_risk      if deviation 0.10 - 0.24
+  on_track     if deviation < 0.10</pre>
+    </section>
+  `;
+
+  const pmSection = `
+    <section style="background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:14px;">
+      <div class="eyebrow mb-2">PM weekly loop</div>
+      <ol style="font-size:13px;color:var(--ink-2);line-height:1.7;padding-left:20px;">
+        <li>Open <strong>/epics</strong> → walk every Epic, check health pill.</li>
+        <li>For any at_risk / blocked Epic → open <strong>/e/[key]</strong> → Milestones tab.</li>
+        <li>Mark current phase complete if exit criteria met; the next phase auto-enters in_progress.</li>
+        <li>If a milestone is approaching target (T-7), Cadence will fire a milestone_at_risk notification.</li>
+        <li>End of week: open <strong>/portfolio</strong> for the leadership read.</li>
+      </ol>
+    </section>
+    <section style="background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:14px;">
+      <div class="eyebrow mb-2">Defining waterfall phases</div>
+      <p style="font-size:13px;color:var(--ink-2);line-height:1.6;">On any Epic's Milestones tab, click <strong>+ Add phase</strong>. A typical waterfall sequence is Requirements → Design → Build → Test → Deploy. Each phase has entry criteria, target date, and exit criteria. Phases unlock sequentially; the system warns before out-of-sequence completion.</p>
+    </section>
+  `;
+
+  const engSection = `
+    <section style="background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:14px;">
+      <div class="eyebrow mb-2">Engineer daily loop</div>
+      <ol style="font-size:13px;color:var(--ink-2);line-height:1.7;padding-left:20px;">
+        <li>Open <strong>/me</strong>. See My Bugs · Queued · Blocking Others · Blocked.</li>
+        <li>Pull the next Bug into in_progress.</li>
+        <li>When ready for review, advance via <strong>Move to Review →</strong>.</li>
+        <li>If you're stuck: <strong>Mark blocked</strong> with a reason and the blocker key.</li>
+        <li>To file a defect: <strong>/create</strong> → Bug. Fill repro / expected / actual / scope / severity.</li>
+      </ol>
+    </section>
+    <section style="background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:24px;margin-bottom:14px;">
+      <div class="eyebrow mb-2">Bug status flow</div>
+      <pre style="font-family:var(--font-mono);font-size:12px;background:var(--bg-elevated);padding:14px;border-radius:6px;border:1px solid var(--rule-soft);overflow-x:auto;">
+draft → backlog → scheduled → in_progress → review → verifying → verified
+
+Parallel paths:
+  → cannot_reproduce (from backlog or in_progress)
+  → cancelled (any state)
+
+All ACs must be checked before status can advance to verified.</pre>
+    </section>
+  `;
+
+  const tab = path === "/guideline-pm" ? "pm" : path === "/guideline-eng" ? "eng" : "overview";
+  return `
+    <header style="position:sticky;top:0;background:var(--bg-card);border-bottom:1px solid var(--rule);z-index:30;">
+      <div style="max-width:1100px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:24px;">
+        <a href="#/login" style="font-family:var(--font-display);font-style:italic;font-size:24px;">Cadence</a>
+        <nav style="display:flex;gap:4px;flex:1;">
+          <a class="btn ${tab==='overview'?'primary':'ghost'} sm" href="#/guideline">Overview</a>
+          <a class="btn ${tab==='pm'?'primary':'ghost'} sm" href="#/guideline-pm">For PM</a>
+          <a class="btn ${tab==='eng'?'primary':'ghost'} sm" href="#/guideline-eng">For Engineer</a>
+        </nav>
+        <a class="btn primary" href="#/login">Open the app →</a>
+      </div>
+    </header>
+    <main style="max-width:880px;margin:0 auto;padding:40px 24px;">
+      <div class="eyebrow mb-2">User guide · ${tab==='overview'?'Overview':tab==='pm'?'For PM':'For Engineer'}</div>
+      <h1 class="display" style="font-size:48px;line-height:1.05;margin-bottom:14px;">
+        ${tab==='overview'? 'How <em style="color:var(--accent);font-style:italic;">Cadence</em> moves work.'
+        : tab==='pm'      ? 'The PM\\'s <em style="color:var(--accent);font-style:italic;">week</em>, in waterfall.'
+        :                   'What an <em style="color:var(--accent);font-style:italic;">engineer</em> does.'}
+      </h1>
+      <p style="font-size:16px;color:var(--ink-2);max-width:640px;margin-bottom:32px;line-height:1.6;">
+        ${tab==='overview'? 'Waterfall delivery, two roles, computed health. A short read on every surface.'
+        : tab==='pm'      ? 'Plan Epics, define phases, watch milestone slip warnings, read portfolio health.'
+        :                   'Run Bugs through scheduled → in_progress → review → verifying → verified.'}
+      </p>
+      ${tab==='overview' ? overviewSection : tab==='pm' ? pmSection : engSection}
+    </main>
+  `;
+}
+
+function tombstone(kind, key, bug) {
+  const map = {
+    bug: { title: "Bug not found", emoji: "○" },
+    cancelled: { title: "This Bug was cancelled", emoji: "✕" },
+    cannot_reproduce: { title: "Bug closed as cannot-reproduce", emoji: "○" },
+    epic: { title: "Epic not found", emoji: "▭" },
+    user: { title: "User not found", emoji: "?" },
+    forbidden: { title: "Not available to your role", emoji: "⊘" },
+  };
+  const m = map[kind] || { title: "Not found", emoji: "✕" };
+  return `<div class="tombstone">
+    <div class="ico">${m.emoji}</div>
+    <h1>${esc(m.title)}</h1>
+    <div class="key">${esc(key)}</div>
+    ${bug ? `<div class="mt-4" style="font-size:13px;color:var(--ink-3);">${esc(bug.title)}</div>` : ""}
+    <a class="btn primary mt-6" href="#/">← Back home</a>
+  </div>`;
+}
+
+function viewNotFound(path) {
+  return `<div class="tombstone">
+    <div class="ico">404</div>
+    <h1>Page not found</h1>
+    <div class="key">${esc(path)}</div>
+    <a class="btn primary mt-6" href="#/">← Back home</a>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * EVENT BINDERS - one per route + common
+ * ════════════════════════════════════════════════════════════════ */
+function bindCommon() {
+  // User menu
+  $("[data-act=user-menu]")?.addEventListener("click", () => {
+    const u = currentUser();
+    openModal(`<div class="modal sm">
+      <div class="modal-head"><h2>${esc(u.displayName)}</h2><button class="btn ghost sm" data-act="close-modal">✕</button></div>
+      <div class="modal-body">
+        <div class="row gap-2 mb-3">${avatar(u,"md")}<div><div style="font-size:13px;">${esc(u.email)}</div><div class="mono" style="font-size:11px;color:var(--ink-3);">${esc(u.handle)}</div></div></div>
+        <a class="btn secondary" style="width:100%;margin-bottom:6px;" href="#/u/${esc(u.handle)}" data-close>My profile</a>
+        <a class="btn secondary" style="width:100%;margin-bottom:6px;" href="#/settings" data-close>Settings</a>
+        <button class="btn secondary" style="width:100%;margin-bottom:6px;" data-act="theme-toggle">Toggle ${state.theme==='dark'?'light':'dark'} mode</button>
+        <button class="btn danger" style="width:100%;" data-act="logout">Sign out</button>
+      </div>
+    </div>`);
+  });
+  $$("[data-act=close-modal], [data-close]").forEach(b => b.addEventListener("click", closeAllModals));
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-act]");
+    if (!t) return;
+    const a = t.dataset.act;
+    if (a === "logout") {
+      state.currentUserId = null; persist(); closeAllModals();
+      navigate("/login");
+    } else if (a === "theme-toggle") {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = state.theme;
+      persist();
+      closeAllModals();
+      render();
+    } else if (a === "cmdk-open") {
+      openCmdK();
+    }
+  }, { once: false });
+
+  // Cmd-K shortcut
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      openCmdK();
+    }
+  });
+}
+
+function openCmdK() {
+  if ($(".cmdk-modal")) return;
+  const m = openModal(`<div class="modal cmdk-modal">
+    <div class="modal-body" style="padding:0;">
+      <input class="input" id="cmdk-input" placeholder="Search Bugs · Epics · users — or 'assign BUG-0042 to andre'" style="border:0;border-radius:0;border-bottom:1px solid var(--rule);font-size:15px;padding:14px 18px;" autofocus />
+      <div id="cmdk-results" style="max-height:50vh;overflow-y:auto;"></div>
+    </div>
+  </div>`);
+  const input = $("#cmdk-input");
+  const results = $("#cmdk-results");
+  const render = () => {
+    const q = input.value.trim().toLowerCase();
+    let html = "";
+    if (q) {
+      // NL: assign BUG-X to NAME
+      const assignMatch = q.match(/^assign\s+([a-z0-9-]+)\s+to\s+([a-z]+)/i);
+      if (assignMatch) {
+        const bug = findBugByKey(assignMatch[1].toUpperCase());
+        const user = state.users.find(u => u.role === "engineer" && u.handle.split(".")[0].startsWith(assignMatch[2].toLowerCase()));
+        if (bug && user) html += cmdkRow(`Assign ${bug.key} → ${user.displayName}`, "command", () => {
+          bug.assigneeId = user.id;
+          persist(); closeAllModals();
+          toast(`${bug.key} assigned to ${user.displayName.split(' ')[0]}`, "success");
+          render();
+        });
+      }
+      // NL: move BUG-X to STATUS
+      const moveMatch = q.match(/^move\s+([a-z0-9-]+)\s+to\s+(.+)$/i);
+      if (moveMatch) {
+        const bug = findBugByKey(moveMatch[1].toUpperCase());
+        const want = moveMatch[2].trim().toLowerCase().replace(/\s+/g,"_");
+        if (bug && BUG_STATUSES.includes(want)) html += cmdkRow(`Move ${bug.key} → ${STATUS_LABEL[want]}`, "command", () => {
+          bug.status = want;
+          if (want === "in_progress" && !bug.startedAt) bug.startedAt = iso(Date.now());
+          if (["verified","cancelled","cannot_reproduce"].includes(want)) bug.closedAt = iso(Date.now());
+          persist(); closeAllModals();
+          toast(`${bug.key} → ${STATUS_LABEL[want]}`, "success");
+          location.hash = `#/t/${bug.key}`;
+        });
+      }
+      // Fuzzy: bugs
+      state.bugs.filter(b => (b.key+" "+b.title).toLowerCase().includes(q)).slice(0, 5).forEach(b => {
+        html += cmdkRow(`<span class="mono" style="color:var(--ink-3);">${esc(b.key)}</span> · ${esc(b.title)}`, "Bug", () => {
+          closeAllModals(); location.hash = `#/t/${b.key}`;
+        });
+      });
+      // Epics
+      state.epics.filter(e => (e.key+" "+e.title).toLowerCase().includes(q)).slice(0, 5).forEach(e => {
+        html += cmdkRow(`<span class="mono" style="color:var(--ink-3);">${esc(e.key)}</span> · ${esc(e.title)}`, "Epic", () => {
+          closeAllModals(); location.hash = `#/e/${e.key}`;
+        });
+      });
+      // Users
+      state.users.filter(u => (u.displayName+" "+u.handle).toLowerCase().includes(q)).slice(0, 3).forEach(u => {
+        html += cmdkRow(`${esc(u.displayName)} <span style="color:var(--ink-3);">@${esc(u.handle)}</span>`, esc(u.role), () => {
+          closeAllModals(); location.hash = `#/u/${u.handle}`;
+        });
+      });
+      if (!html) html = `<div style="padding:24px;color:var(--ink-3);font-style:italic;">No matches.</div>`;
+    } else {
+      html += `<div style="padding:14px 18px;font-family:var(--font-mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.14em;">Quick nav</div>`;
+      ["/me","/epics","/portfolio","/backlog","/my-tickets","/notifications","/settings"].forEach(p => {
+        html += cmdkRow(`Navigate to <span class="mono">${esc(p)}</span>`, "Page", () => { closeAllModals(); location.hash = "#" + p; });
+      });
+    }
+    results.innerHTML = html;
+    // Re-bind click handlers
+    $$(".cmdk-row").forEach((el, i) => {
+      el.addEventListener("click", () => cmdkClickHandlers[i]?.());
+    });
+  };
+  const cmdkClickHandlers = [];
+  function cmdkRow(label, badge, onClick) {
+    cmdkClickHandlers.push(onClick);
+    return `<div class="cmdk-row" style="padding:10px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid var(--rule-soft);" onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background='var(--bg-card)'">
+      <div style="flex:1;font-size:13px;">${label}</div>
+      <span class="pill">${esc(badge)}</span>
+    </div>`;
+  }
+  input.addEventListener("input", render);
+  render();
+}
+
+function bindRoute(routeKey, path, query) {
+  if (routeKey === "/me") {
+    // nothing special; rows are anchors
+  }
+  if (path === "/create" || path.startsWith("/create")) {
+    // Program pill toggles
+    $$("[data-program]").forEach(p => p.addEventListener("click", () => {
+      const on = p.dataset.on === "1";
+      p.dataset.on = on ? "0" : "1";
+      if (on) { p.style.background = ""; p.style.color = ""; p.style.borderColor = ""; }
+      else { p.style.background = "var(--accent)"; p.style.color = "#fff"; p.style.borderColor = "var(--accent)"; }
+    }));
+    const bugForm = $("#bug-form");
+    bugForm?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(bugForm);
+      const programs = $$("#program-pills [data-on='1']").map(x => x.dataset.program);
+      const num = state.bugs.length + 50; // next BUG-####
+      const key = `BUG-${String(num).padStart(4,"0")}`;
+      const newBug = {
+        id: `t_${Date.now()}`,
+        key,
+        title: fd.get("title"),
+        description: fd.get("description") || "",
+        priority: fd.get("priority"),
+        severity: fd.get("severity"),
+        status: "backlog",
+        epicId: fd.get("epicId") || null,
+        authorId: currentUser().id,
+        assigneeId: fd.get("assigneeId") || null,
+        tags: String(fd.get("tags") || "").split(",").map(s => s.trim()).filter(Boolean),
+        reproSteps: fd.get("reproSteps") || "",
+        expected: fd.get("expected") || "",
+        actual: fd.get("actual") || "",
+        affectedScope: fd.get("affectedScope") || "",
+        sentryLink: fd.get("sentryLink") || null,
+        programs,
+        createdAt: iso(Date.now()),
+        startedAt: null, closedAt: null, blocked: null,
+        acceptanceCriteria: [],
+      };
+      state.bugs.push(newBug); persist();
+      toast(`Filed ${key} → Backlog`, "success");
+      navigate(`/t/${key}`);
+    });
+    const epicForm = $("#epic-form");
+    epicForm?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(epicForm);
+      const programs = $$("#program-pills [data-on='1']").map(x => x.dataset.program);
+      const key = String(fd.get("key")).toUpperCase();
+      if (state.epics.some(x => x.key === key)) { toast(`Epic ${key} already exists.`, "error"); return; }
+      const newEpic = {
+        id: `ep_${Date.now()}`, key,
+        title: fd.get("title"),
+        thesis: fd.get("thesis") || "",
+        description: fd.get("description") || "",
+        quarter: fd.get("quarter"),
+        programs,
+        pmPicId: fd.get("pmPicId"),
+        startDate: fd.get("startDate") ? iso(new Date(fd.get("startDate"))) : iso(Date.now()),
+        targetEndDate: fd.get("targetEndDate") ? iso(new Date(fd.get("targetEndDate"))) : dShift(60),
+        tags: String(fd.get("tags") || "").split(",").map(s => s.trim()).filter(Boolean),
+      };
+      state.epics.push(newEpic); persist();
+      toast(`Epic ${key} created`, "success");
+      navigate(`/e/${key}`);
+    });
+  }
+
+  if (routeKey === "/epics") {
+    $("[data-act=new-epic]")?.addEventListener("click", () => navigate("/create?type=epic"));
+    // Milestone interactions
+    $$("[data-act=add-milestone]").forEach(b => b.addEventListener("click", () => {
+      const epicId = b.dataset.epic;
+      openMilestoneForm(epicId);
+    }));
+    $$("[data-act=complete-milestone]").forEach(b => b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      const m = state.milestones.find(x => x.id === id);
+      if (!m) return;
+      // Out-of-sequence guard
+      const siblings = milestonesForEpic(m.epicId).sort((a,b) => new Date(a.targetDate) - new Date(b.targetDate));
+      const idx = siblings.findIndex(x => x.id === id);
+      const prevIncomplete = siblings.slice(0, idx).filter(x => x.status !== "complete");
+      const doIt = () => {
+        if (m.status === "pending") { m.status = "in_progress"; persist(); render(); return; }
+        m.status = "complete";
+        m.actualDate = iso(Date.now());
+        // Auto-advance next
+        const next = siblings[idx + 1];
+        if (next && next.status === "pending") next.status = "in_progress";
+        persist(); render();
+        toast(`Milestone ${m.name} complete`, "success");
+      };
+      if (m.status === "in_progress" && prevIncomplete.length > 0) {
+        openModal(`<div class="modal sm">
+          <div class="modal-head"><h2>Out-of-sequence?</h2><button class="btn ghost sm" data-act="close-modal">✕</button></div>
+          <div class="modal-body">
+            <p style="font-size:14px;color:var(--ink-2);">Milestone <strong>${esc(prevIncomplete[0].name)}</strong> is still pending. Complete it first or confirm skip.</p>
+          </div>
+          <div class="modal-foot">
+            <button class="btn secondary sm" data-act="close-modal">Cancel</button>
+            <button class="btn danger sm" id="confirm-skip">Confirm skip</button>
+          </div>
+        </div>`);
+        $("#confirm-skip").addEventListener("click", () => { closeAllModals(); doIt(); });
+      } else {
+        doIt();
+      }
+    }));
+  }
+
+  if (routeKey === "/t") {
+    $$("[data-act=advance-bug]").forEach(b => b.addEventListener("click", () => {
+      const id = b.dataset.id, next = b.dataset.next;
+      const bug = findBug(id);
+      if (!bug) return;
+      if (next === "verified" && !bug.acceptanceCriteria.every(a => a.done)) {
+        toast("Can't mark Verified - some acceptance criteria are unchecked.", "error");
+        return;
+      }
+      bug.status = next;
+      if (next === "in_progress" && !bug.startedAt) bug.startedAt = iso(Date.now());
+      if (["verified","cancelled","cannot_reproduce"].includes(next)) bug.closedAt = iso(Date.now());
+      persist();
+      toast(`${bug.key} → ${STATUS_LABEL[next]}`, "success");
+      render();
+    }));
+    $$("[data-act=toggle-ac]").forEach(cb => cb.addEventListener("change", () => {
+      const bug = findBug(cb.dataset.bug);
+      const ac = bug?.acceptanceCriteria.find(a => a.id === cb.dataset.ac);
+      if (ac) { ac.done = cb.checked; persist(); render(); }
+    }));
+    $$("[data-act=block-bug]").forEach(b => b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      openModal(`<div class="modal sm">
+        <div class="modal-head"><h2>Mark blocked</h2><button class="btn ghost sm" data-act="close-modal">✕</button></div>
+        <div class="modal-body">
+          <label class="label">Reason</label>
+          <textarea class="textarea" id="block-reason" placeholder="What's blocking this?"></textarea>
+          <label class="label mt-3">Blocker key · optional</label>
+          <input class="input" id="block-key" placeholder="BUG-####" />
+        </div>
+        <div class="modal-foot">
+          <button class="btn secondary sm" data-act="close-modal">Cancel</button>
+          <button class="btn primary sm" id="confirm-block">Mark blocked</button>
+        </div>
+      </div>`);
+      $("#confirm-block").addEventListener("click", () => {
+        const reason = $("#block-reason").value.trim();
+        if (!reason) { toast("Reason required.", "error"); return; }
+        const bug = findBug(id);
+        bug.blocked = { reason, blockerKey: $("#block-key").value.trim().toUpperCase() || null };
+        persist(); closeAllModals(); toast(`${bug.key} marked blocked`, "warn"); render();
+      });
+    }));
+    $$("[data-act=unblock-bug]").forEach(b => b.addEventListener("click", () => {
+      const bug = findBug(b.dataset.id);
+      if (bug) { bug.blocked = null; persist(); toast(`${bug.key} unblocked`, "success"); render(); }
+    }));
+    $$("[data-act=post-comment]").forEach(b => b.addEventListener("click", () => {
+      const et = b.dataset.et, eid = b.dataset.eid;
+      const ta = $(`#cmt-${et}-${eid}`);
+      const body = ta.value.trim();
+      if (!body) return;
+      const mentions = (body.match(/@([a-z][a-z0-9.\-_]+)/g) || []).map(m => m.slice(1)).map(h => state.users.find(u => u.handle === h)?.id).filter(Boolean);
+      state.comments.push({
+        id: `c_${Date.now()}`, entityType: et, entityId: eid, parentId: null,
+        authorId: currentUser().id, body, mentions, createdAt: iso(Date.now()),
+      });
+      persist(); toast("Comment posted", "success"); render();
+    }));
+  }
+
+  if (routeKey === "/notifications") {
+    $$("[data-act=mark-read]").forEach(b => b.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const n = state.notifications.find(x => x.id === b.dataset.id);
+      if (n) { n.read = true; persist(); render(); }
+    }));
+    $$("[data-act=archive-notif]").forEach(b => b.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const n = state.notifications.find(x => x.id === b.dataset.id);
+      if (n) { n.archived = true; persist(); render(); }
+    }));
+    $("[data-act=mark-all-read]")?.addEventListener("click", () => {
+      const u = currentUser();
+      state.notifications.forEach(n => { if (n.userId === u.id) n.read = true; });
+      persist(); render();
+    });
+    // Auto-mark on click
+    $$(".notif-row").forEach(r => r.addEventListener("click", () => {
+      const id = r.dataset.id;
+      const n = state.notifications.find(x => x.id === id);
+      if (n) { n.read = true; persist(); }
+    }));
+  }
+
+  if (routeKey === "/settings") {
+    $("[data-act=reset-demo]")?.addEventListener("click", resetMockData);
+    $$("[data-act=pref]").forEach(cb => cb.addEventListener("change", () => {
+      const k = cb.dataset.kind, ch = cb.dataset.ch;
+      state.channelPrefs[k] = state.channelPrefs[k] || { inApp:false, lark:false, email:false };
+      state.channelPrefs[k][ch] = cb.checked;
+      persist();
+    }));
+  }
+}
+
+function openMilestoneForm(epicId) {
+  openModal(`<div class="modal">
+    <div class="modal-head"><h2>Add phase</h2><button class="btn ghost sm" data-act="close-modal">✕</button></div>
+    <div class="modal-body">
+      <label class="label">Phase name</label>
+      <input class="input" id="ms-name" placeholder="e.g. Requirements" />
+      <label class="label mt-3">Target date</label>
+      <input class="input" type="date" id="ms-target" />
+      <label class="label mt-3">Entry criteria</label>
+      <textarea class="textarea" id="ms-entry" placeholder="What needs to be true to start this phase?"></textarea>
+      <label class="label mt-3">Exit criteria</label>
+      <textarea class="textarea" id="ms-exit" placeholder="What needs to be true to mark this complete?"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn secondary sm" data-act="close-modal">Cancel</button>
+      <button class="btn primary sm" id="add-milestone-confirm">Add phase</button>
+    </div>
+  </div>`);
+  $("#add-milestone-confirm").addEventListener("click", () => {
+    const name = $("#ms-name").value.trim();
+    const target = $("#ms-target").value;
+    if (!name) { toast("Name required.", "error"); return; }
+    if (!target) { toast("Target date required.", "error"); return; }
+    state.milestones.push({
+      id: `m_${Date.now()}`, epicId, name,
+      targetDate: iso(new Date(target)),
+      entryCriteria: $("#ms-entry").value.trim() || "—",
+      exitCriteria: $("#ms-exit").value.trim() || "—",
+      actualDate: null,
+      status: "pending",
+    });
+    // If this is the first milestone and the Epic startDate is reached, set it to in_progress
+    const epic = findEpic(epicId);
+    const ms = milestonesForEpic(epicId);
+    if (ms.length === 1 && new Date() >= new Date(epic.startDate)) {
+      ms[0].status = "in_progress";
+    }
+    persist();
+    closeAllModals();
+    toast(`Phase '${name}' added`, "success");
+    render();
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * BOOT
+ * ════════════════════════════════════════════════════════════════ */
+document.documentElement.dataset.theme = state.theme || "light";
+if (!location.hash) location.hash = "#/login";
+render();
+</script>
+</body>
+</html>
