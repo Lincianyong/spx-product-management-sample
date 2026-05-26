@@ -1,6 +1,7 @@
 import type {
   User,
   Epic,
+  Milestone,
   Ticket,
   TicketType,
   TicketStatus,
@@ -350,6 +351,49 @@ const closedTicket = (opts: {
     ...(opts.severity ? { severity: opts.severity } : {}),
   };
 };
+
+// ─── Milestones (waterfall phases per Epic) ─────────────────────────
+// PRD § 13.2: pending → in_progress → complete, sequentially gated by order.
+// First milestone enters in_progress automatically when the Epic's
+// startDate is reached. Mix of completed / in-flight / pending so the
+// computed health signals on /epics + /portfolio have variety.
+const mDays = (n: number) => isoDate(addDays(today, n));
+
+export const seedMilestones: Milestone[] = [
+  // CDN — Forecasting model retrain (started 30d ago, target +30d)
+  // 3 of 5 phases done, currently in Test.
+  { id: "m_cdn_1", epicId: "ep_cdn", order: 1, name: "Requirements", targetDate: mDays(-25), entryCriteria: "PM signs off on thesis + program tags.", exitCriteria: "Training dataset path validated; governance OK.", status: "complete", actualDate: mDays(-26) },
+  { id: "m_cdn_2", epicId: "ep_cdn", order: 2, name: "Design",       targetDate: mDays(-18), entryCriteria: "Requirements complete.",                    exitCriteria: "ML system design doc signed by EM.",                  status: "complete", actualDate: mDays(-17) },
+  { id: "m_cdn_3", epicId: "ep_cdn", order: 3, name: "Build",        targetDate: mDays(-5),  entryCriteria: "Design approved.",                          exitCriteria: "Drift gate + calibration pipeline merged.",            status: "complete", actualDate: mDays(-3) },
+  { id: "m_cdn_4", epicId: "ep_cdn", order: 4, name: "Test",         targetDate: mDays(12),  entryCriteria: "Build complete.",                           exitCriteria: "Eval suite shows MAPE within ±2% vs baseline.",        status: "in_progress", actualDate: null },
+  { id: "m_cdn_5", epicId: "ep_cdn", order: 5, name: "Deploy",       targetDate: mDays(28),  entryCriteria: "Test passes.",                              exitCriteria: "Canary 10% > 48h with no degradation.",                status: "pending", actualDate: null },
+
+  // RTE — Ferry timetable awareness (in_progress, design slipping a bit)
+  { id: "m_rte_1", epicId: "ep_rte", order: 1, name: "Requirements", targetDate: mDays(-15), entryCriteria: "PM signs thesis.",          exitCriteria: "PT ASDP feed access validated.",          status: "complete",     actualDate: mDays(-13) },
+  { id: "m_rte_2", epicId: "ep_rte", order: 2, name: "Design",       targetDate: mDays(-8),  entryCriteria: "Requirements OK.",          exitCriteria: "Reroute scoring spec frozen.",            status: "in_progress",  actualDate: null },
+  { id: "m_rte_3", epicId: "ep_rte", order: 3, name: "Build",        targetDate: mDays(3),   entryCriteria: "Design OK.",                exitCriteria: "Loader + scorer merged to main.",         status: "pending",      actualDate: null },
+  { id: "m_rte_4", epicId: "ep_rte", order: 4, name: "Deploy",       targetDate: mDays(14),  entryCriteria: "Build complete.",           exitCriteria: "Canary OK on Madura traffic for 72h.",    status: "pending",      actualDate: null },
+
+  // MAD — Madura ops dashboard (5 phases, 2 done, currently building)
+  { id: "m_mad_1", epicId: "ep_mad", order: 1, name: "Requirements", targetDate: mDays(-12), entryCriteria: "PM signs thesis.",          exitCriteria: "Station ops sign off on widget set.",     status: "complete",    actualDate: mDays(-11) },
+  { id: "m_mad_2", epicId: "ep_mad", order: 2, name: "Design",       targetDate: mDays(-4),  entryCriteria: "Requirements OK.",          exitCriteria: "Dashboard mock approved.",                status: "complete",    actualDate: mDays(-4)  },
+  { id: "m_mad_3", epicId: "ep_mad", order: 3, name: "Build",        targetDate: mDays(15),  entryCriteria: "Design OK.",                exitCriteria: "Cutoff alerts + parcel-flow live.",       status: "in_progress", actualDate: null },
+  { id: "m_mad_4", epicId: "ep_mad", order: 4, name: "Test",         targetDate: mDays(28),  entryCriteria: "Build complete.",           exitCriteria: "End-to-end UAT pass.",                    status: "pending",     actualDate: null },
+  { id: "m_mad_5", epicId: "ep_mad", order: 5, name: "Deploy",       targetDate: mDays(38),  entryCriteria: "Test passes.",              exitCriteria: "Madura station team trained.",            status: "pending",     actualDate: null },
+
+  // HUB — Hub capacity hourly signals
+  { id: "m_hub_1", epicId: "ep_hub", order: 1, name: "Requirements", targetDate: mDays(-6),  entryCriteria: "PM signs thesis.",          exitCriteria: "Sortation team signs scope.",             status: "complete",    actualDate: mDays(-5)  },
+  { id: "m_hub_2", epicId: "ep_hub", order: 2, name: "Build",        targetDate: mDays(20),  entryCriteria: "Requirements OK.",          exitCriteria: "Hourly aggregator + UI shipped.",         status: "in_progress", actualDate: null },
+  { id: "m_hub_3", epicId: "ep_hub", order: 3, name: "Test",         targetDate: mDays(35),  entryCriteria: "Build complete.",           exitCriteria: "Signals match 6h spot checks.",           status: "pending",     actualDate: null },
+  { id: "m_hub_4", epicId: "ep_hub", order: 4, name: "Deploy",       targetDate: mDays(43),  entryCriteria: "Test passes.",              exitCriteria: "Sorting leads onboarded.",                status: "pending",     actualDate: null },
+
+  // DRV — Driver app reliability (blocked — past target with work remaining)
+  { id: "m_drv_1", epicId: "ep_drv", order: 1, name: "Requirements", targetDate: mDays(-20), entryCriteria: "PM signs thesis.",          exitCriteria: "Driver-app scope frozen.",                status: "complete",    actualDate: mDays(-19) },
+  { id: "m_drv_2", epicId: "ep_drv", order: 2, name: "Build",        targetDate: mDays(-10), entryCriteria: "Requirements OK.",          exitCriteria: "Timestamp drift fix + offline fallback.", status: "in_progress", actualDate: null },
+  { id: "m_drv_3", epicId: "ep_drv", order: 3, name: "Deploy",       targetDate: mDays(-2),  entryCriteria: "Build complete.",           exitCriteria: "Canary cohort 10% drivers Jakarta.",      status: "pending",     actualDate: null },
+
+  // OBS — Eng observability baseline (Q3, not started yet — no milestones until kickoff)
+];
 
 export const seedTickets: Ticket[] = [
   {

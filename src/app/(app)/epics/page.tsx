@@ -21,6 +21,7 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, HealthPill, Pill, Button, DatePicker, Modal, Input, toast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
 import { cn, healthLabel, formatDate } from "@/lib/utils";
 import type { Epic, Health } from "@/lib/types";
+import { computeEpicHealth } from "@/lib/health";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
 import { EpicSlideOver } from "@/components/epics/EpicSlideOver";
 import { Markdown } from "@/components/Markdown";
@@ -265,9 +266,11 @@ function useGroups(epics: Epic[], groupBy: GroupBy) {
 
 function EpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) => void }) {
   const tickets = useAppStore((s) => s.tickets);
+  const milestones = useAppStore((s) => s.milestones);
   const users = useAppStore((s) => s.users);
   const pm = users.find((u) => u.id === epic.pmPicId);
   const childTickets = tickets.filter((t) => t.epicId === epic.id);
+  const signal = computeEpicHealth(epic, milestones, tickets);
 
   // Native <button> mirrors TicketCard so clicks reliably register inside a
   // dnd-kit listener'd parent - the browser fires `click` on pointerup with
@@ -283,7 +286,7 @@ function EpicCard({ epic, onOpen }: { epic: Epic; onOpen: (k: string) => void })
     >
       <div className="flex items-center justify-between mb-2">
         <span className="font-mono text-[11px] text-ink-3">{epic.key}</span>
-        <HealthPill h={epic.health} />
+        <HealthPill h={signal.health} reason={signal.reason} />
       </div>
       <h3 className="display text-display-s text-ink leading-tight mb-2">{epic.title}</h3>
       <p className="text-[13px] text-ink-2 line-clamp-3 mb-3">{epic.thesis}</p>

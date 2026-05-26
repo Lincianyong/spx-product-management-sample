@@ -28,6 +28,7 @@ type TicketFilter = "all" | "in_flight" | "done" | "blocked";
 
 export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
   const epics = useAppStore((s) => s.epics);
+  const milestones = useAppStore((s) => s.milestones);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
 
@@ -45,7 +46,7 @@ export function EpicView({ epicKey, variant = "slide-over", onClose }: Props) {
     () => tickets.filter((t) => t.epicId === epic.id),
     [tickets, epic.id]
   );
-  const signal = computeEpicHealth(epic, tickets);
+  const signal = computeEpicHealth(epic, milestones, tickets);
 
   const [filter, setFilter] = useState<TicketFilter>("all");
 

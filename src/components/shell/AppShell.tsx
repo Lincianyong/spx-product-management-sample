@@ -100,7 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (gPressed) {
         const k = e.key.toLowerCase();
         const map: Record<string, string> = {
-          b: "/sprint",
+          b: "/backlog",
           m: "/me",
           e: "/epics",
           p: "/portfolio",

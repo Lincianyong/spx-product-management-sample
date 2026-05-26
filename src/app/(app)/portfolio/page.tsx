@@ -20,6 +20,8 @@ import { useAppStore, useCurrentUser } from "@/lib/store";
 import { Avatar, HealthPill, Pill, ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/lib/useDocumentTitle";
+import { computeEpicHealth } from "@/lib/health";
+import type { Epic, Health } from "@/lib/types";
 
 type Range = "3m" | "6m" | "12m";
 type HealthFilter = "all" | "on_track" | "at_risk" | "blocked" | "not_started";
@@ -31,6 +33,7 @@ const RANGE_LENGTHS: Record<Range, number> = { "3m": 6, "6m": 12, "12m": 24 };
 export default function PortfolioPage() {
   useDocumentTitle("Portfolio Health");
   const allEpics = useAppStore((s) => s.epics);
+  const milestones = useAppStore((s) => s.milestones);
   const tickets = useAppStore((s) => s.tickets);
   const users = useAppStore((s) => s.users);
   const currentUser = useCurrentUser();
@@ -46,21 +49,32 @@ export default function PortfolioPage() {
     return allEpics.filter((e) => e.pmPicId === currentUser.id);
   }, [allEpics, scope, currentUser]);
 
+  // Computed health per epic — PRD § 12. Memoised so cards + filters reuse.
+  const healthById = useMemo(() => {
+    const map = new Map<string, Health>();
+    for (const e of epics) {
+      map.set(e.id, computeEpicHealth(e, milestones, tickets).health);
+    }
+    return map;
+  }, [epics, milestones, tickets]);
+
+  const healthOf = (e: Epic) => healthById.get(e.id) ?? "not_started";
+
   const total = epics.length;
   const byHealth = {
-    on_track: epics.filter((e) => e.health === "on_track").length,
-    at_risk: epics.filter((e) => e.health === "at_risk").length,
-    blocked: epics.filter((e) => e.health === "blocked").length,
-    not_started: epics.filter((e) => e.health === "not_started").length,
+    on_track: epics.filter((e) => healthOf(e) === "on_track").length,
+    at_risk: epics.filter((e) => healthOf(e) === "at_risk").length,
+    blocked: epics.filter((e) => healthOf(e) === "blocked").length,
+    not_started: epics.filter((e) => healthOf(e) === "not_started").length,
   };
 
   const filteredEpics = useMemo(() => {
     let arr = epics.slice();
-    if (healthFilter !== "all") arr = arr.filter((e) => e.health === healthFilter);
+    if (healthFilter !== "all") arr = arr.filter((e) => healthOf(e) === healthFilter);
     if (sortBy === "key") arr.sort((a, b) => a.key.localeCompare(b.key));
     if (sortBy === "health") {
       const order: Record<string, number> = { blocked: 0, at_risk: 1, on_track: 2, not_started: 3 };
-      arr.sort((a, b) => order[a.health] - order[b.health]);
+      arr.sort((a, b) => order[healthOf(a)] - order[healthOf(b)]);
     }
     if (sortBy === "tickets") {
       arr.sort(
@@ -70,7 +84,8 @@ export default function PortfolioPage() {
       );
     }
     return arr;
-  }, [epics, healthFilter, sortBy, tickets]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [epics, healthFilter, sortBy, tickets, healthById]);
 
   const blockers = tickets
     .filter((t) => t.blocked || t.status === "scheduled")
@@ -192,7 +207,7 @@ export default function PortfolioPage() {
                     <h3 className="text-[14px] text-ink truncate">{e.title}</h3>
                     <p className="text-[12px] text-ink-3 line-clamp-1">{e.thesis}</p>
                   </div>
-                  <HealthPill h={e.health} />
+                  <HealthPill h={healthOf(e)} />
                   <Pill variant="neutral">{childTickets} tix</Pill>
                   <Avatar user={pm} size="xs" />
                 </Link>

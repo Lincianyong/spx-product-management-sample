@@ -6,6 +6,7 @@ import type {
   Ticket,
   Sprint,
   Epic,
+  Milestone,
   Comment,
   Notification,
   ActivityEntry,
@@ -21,6 +22,7 @@ import {
   seedComments,
   seedNotifications,
   seedActivity,
+  seedMilestones,
 } from "./mock-data";
 
 export interface SavedView {
@@ -66,6 +68,7 @@ export interface AppState {
 
   users: User[];
   epics: Epic[];
+  milestones: Milestone[];
   tickets: Ticket[];
   sprints: Sprint[];
   comments: Comment[];
@@ -73,6 +76,10 @@ export interface AppState {
   activity: ActivityEntry[];
 
   // Mutations
+  addMilestone: (epicId: string, m: Omit<Milestone, "id" | "epicId" | "order" | "status" | "actualDate">, actorId: string) => string;
+  updateMilestone: (id: string, patch: Partial<Milestone>, actorId: string) => void;
+  completeMilestone: (id: string, actorId: string) => void;
+  deleteMilestone: (id: string, actorId: string) => void;
   setTicketStatus: (ticketId: string, status: TicketStatus, actorId: string, opts?: { force?: boolean }) => void;
   isValidTransition: (ticketId: string, to: TicketStatus) => boolean;
   toggleAcceptanceCriterion: (ticketId: string, acId: string, actorId: string) => void;
@@ -110,6 +117,7 @@ export interface AppState {
 const baseSeed = () => ({
   users: seedUsers,
   epics: seedEpics,
+  milestones: seedMilestones,
   tickets: seedTickets,
   sprints: seedSprints,
   comments: seedComments,
@@ -160,6 +168,121 @@ export const useAppStore = create<AppState>()(
       deleteView: (id) => set((s) => ({ savedViews: s.savedViews.filter((v) => v.id !== id) })),
 
       ...baseSeed(),
+
+      addMilestone: (epicId, m, actorId) => {
+        const id = `m_${Math.random().toString(36).slice(2, 10)}`;
+        set((s) => {
+          const siblings = s.milestones.filter((x) => x.epicId === epicId);
+          const order = siblings.reduce((acc, x) => Math.max(acc, x.order), 0) + 1;
+          // First-ever milestone: if epic has started, it goes in_progress; otherwise pending.
+          const epic = s.epics.find((e) => e.id === epicId);
+          const epicStarted = epic ? new Date(epic.startDate).getTime() <= Date.now() : false;
+          const status: Milestone["status"] = siblings.length === 0 && epicStarted ? "in_progress" : "pending";
+          const milestone: Milestone = {
+            id,
+            epicId,
+            order,
+            status,
+            actualDate: null,
+            name: m.name,
+            targetDate: m.targetDate,
+            entryCriteria: m.entryCriteria,
+            exitCriteria: m.exitCriteria,
+          };
+          return {
+            milestones: [...s.milestones, milestone],
+            activity: [
+              ...s.activity,
+              {
+                id: `a_${Date.now()}`,
+                entityType: "epic" as const,
+                entityId: epicId,
+                actorId,
+                action: "milestone_added",
+                afterValue: m.name,
+                timestamp: new Date().toISOString(),
+                aiInfluenced: false,
+              },
+            ],
+          };
+        });
+        return id;
+      },
+
+      updateMilestone: (id, patch, actorId) =>
+        set((s) => ({
+          milestones: s.milestones.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+          activity: [
+            ...s.activity,
+            {
+              id: `a_${Date.now()}`,
+              entityType: "epic" as const,
+              entityId: s.milestones.find((m) => m.id === id)?.epicId ?? "",
+              actorId,
+              action: "milestone_updated",
+              timestamp: new Date().toISOString(),
+              aiInfluenced: false,
+            },
+          ],
+        })),
+
+      completeMilestone: (id, actorId) =>
+        set((s) => {
+          const m = s.milestones.find((x) => x.id === id);
+          if (!m) return s;
+          const now = new Date().toISOString();
+          const slipDays = Math.max(0, Math.round((Date.now() - new Date(m.targetDate).getTime()) / 86_400_000));
+
+          // Find the next milestone in order and auto-advance to in_progress.
+          const siblings = s.milestones
+            .filter((x) => x.epicId === m.epicId)
+            .sort((a, b) => a.order - b.order);
+          const idx = siblings.findIndex((x) => x.id === id);
+          const next = siblings[idx + 1];
+
+          return {
+            milestones: s.milestones.map((x) => {
+              if (x.id === id) return { ...x, status: "complete" as const, actualDate: now };
+              if (next && x.id === next.id && x.status === "pending") return { ...x, status: "in_progress" as const };
+              return x;
+            }),
+            activity: [
+              ...s.activity,
+              {
+                id: `a_${Date.now()}`,
+                entityType: "epic" as const,
+                entityId: m.epicId,
+                actorId,
+                action: slipDays > 0 ? `milestone_complete_slipped_${slipDays}d` : "milestone_complete",
+                afterValue: m.name,
+                timestamp: now,
+                aiInfluenced: false,
+              },
+            ],
+          };
+        }),
+
+      deleteMilestone: (id, actorId) =>
+        set((s) => {
+          const m = s.milestones.find((x) => x.id === id);
+          if (!m) return s;
+          return {
+            milestones: s.milestones.filter((x) => x.id !== id),
+            activity: [
+              ...s.activity,
+              {
+                id: `a_${Date.now()}`,
+                entityType: "epic" as const,
+                entityId: m.epicId,
+                actorId,
+                action: "milestone_deleted",
+                beforeValue: m.name,
+                timestamp: new Date().toISOString(),
+                aiInfluenced: false,
+              },
+            ],
+          };
+        }),
 
       isValidTransition: (ticketId: string, to: TicketStatus): boolean => {
         const ticket = get().tickets.find((t: Ticket) => t.id === ticketId);
@@ -492,7 +615,7 @@ export const useAppStore = create<AppState>()(
       // Bumped when the persisted shape grew (theme + sidebarCollapsed
       // were added). Bumped again to v7 to re-seed Epic.programs so the
       // portfolio allocation chart shows variety on existing installs.
-      version: 7,
+      version: 8,
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : (undefined as unknown as Storage))),
       // Defensive merge: if the persisted blob is malformed (different shape
       // from a previous build), fall back to current defaults instead of
@@ -525,6 +648,7 @@ export const useAppStore = create<AppState>()(
         currentUserId: s.currentUserId,
         users: s.users,
         epics: s.epics,
+        milestones: s.milestones,
         tickets: s.tickets,
         sprints: s.sprints,
         comments: s.comments,

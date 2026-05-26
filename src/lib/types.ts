@@ -131,6 +131,27 @@ export interface Epic {
   programs?: Program[];
 }
 
+/**
+ * Sequential waterfall phase on an Epic. PRD § 13.2.
+ * Milestones execute in creation order; milestone N enters in_progress
+ * only when N-1 is complete (or N=1 once startDate is reached).
+ */
+export type MilestoneStatus = "pending" | "in_progress" | "complete";
+
+export interface Milestone {
+  id: string;
+  epicId: string;
+  name: string;             // e.g. Requirements, Design, Build, Test, Deploy
+  targetDate: string;
+  entryCriteria: string;
+  exitCriteria: string;
+  status: MilestoneStatus;
+  /** Set when the milestone is marked complete; if > targetDate, the milestone is slipped. */
+  actualDate: string | null;
+  /** Display order. Lowest order runs first. */
+  order: number;
+}
+
 export interface AcceptanceCriterion {
   id: string;
   text: string;

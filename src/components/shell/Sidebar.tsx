@@ -6,17 +6,14 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BookOpen,
-  CheckCircle2,
   ChevronsLeft,
   ChevronsRight,
-  Columns3,
   FileText,
   Grid3x3,
   LayoutGrid,
   List,
   PlusSquare,
   Settings as SettingsIcon,
-  TrendingUp,
   User as UserIcon,
 } from "lucide-react";
 import { useAppStore, useCurrentUser } from "@/lib/store";
@@ -74,8 +71,6 @@ export function Sidebar() {
     {
       title: "Plan",
       items: [
-        { label: "Sprint Board", href: "/sprint", icon: Columns3 },
-        { label: "Sprint Close", href: "/sprint-close", icon: CheckCircle2 },
         { label: "Backlog", href: "/backlog", icon: List },
       ],
     },
@@ -83,7 +78,6 @@ export function Sidebar() {
       title: "Portfolio",
       items: [
         { label: "Epic Board", href: "/epics", icon: LayoutGrid },
-        { label: "Timeline", href: "/timeline", icon: TrendingUp },
         { label: "Portfolio Health", href: "/portfolio", icon: Activity },
       ],
     },
